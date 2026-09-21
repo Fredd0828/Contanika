@@ -143,6 +143,11 @@ MEDIA_ROOT = RUTA_BASE / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# Django 6.0 cambiará el esquema por defecto de URLField de http a https.
+# Se adopta desde ya https para los campos de URL del sistema (fotos, firmas
+# y archivos en Supabase Storage).
+FORMS_URLFIELD_ASSUME_HTTPS = True
+
 # ---------------------------------------------------------------
 # Bloqueo de fuerza bruta en el inicio de sesión (django-axes)
 # ---------------------------------------------------------------

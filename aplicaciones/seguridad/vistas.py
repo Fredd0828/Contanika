@@ -7,6 +7,12 @@ from django.views.generic import TemplateView
 
 from .models import Modulo
 
+# Rutas de los módulos ya construidos. A medida que se desarrolla cada módulo
+# se agrega aquí su ruta para que la tarjeta del panel quede navegable.
+RUTAS_MODULOS = {
+    Modulo.MOD01_CLIENTES: "clientes:lista",
+}
+
 
 class IniciarSesionView(LoginView):
     """Formulario de acceso al sistema (CU001)."""
@@ -35,6 +41,8 @@ class PanelView(LoginRequiredMixin, TemplateView):
         contexto = super().get_context_data(**kwargs)
         usuario = self.request.user
         contexto["modulos"] = [
-            modulo for modulo in Modulo.objects.all() if usuario.tiene_modulo_habilitado(modulo.codigo_modulo)
+            {"modulo": modulo, "url": RUTAS_MODULOS.get(modulo.codigo_modulo)}
+            for modulo in Modulo.objects.all()
+            if usuario.tiene_modulo_habilitado(modulo.codigo_modulo)
         ]
         return contexto

@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block titulo %}{{ cliente.nombre_razon_social }}{% endblock %}
+
+{% block contenido %}
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+        <h1 class="h3 mb-1">{{ cliente.nombre_razon_social }}</h1>
+        <p class="text-muted mb-0">{{ cliente.nit_cedula }} · {{ cliente.tipo_persona }}
+            {% if cliente.estado == "Activo" %}
+            <span class="badge text-bg-success">Activo</span>
+            {% else %}
+            <span class="badge text-bg-secondary">Inactivo</span>
+            {% endif %}
+        </p>
+    </div>
+    <div class="d-flex gap-2">
+        {% if puede_editar %}
+        <a class="btn btn-outline-primary" href="{% url 'clientes:editar' cliente.pk %}">Editar</a>
+        {% if cliente.estado == "Activo" %}
+        <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#modalInactivar">Inactivar</button>
+        {% endif %}
+        {% endif %}
+        <a class="btn btn-outline-secondary" href="{% url 'clientes:lista' %}">Volver</a>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header">Datos del cliente</div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-5">Régimen tributario</dt><dd class="col-sm-7">{{ cliente.regimen_tributario|default:"—" }}</dd>
+                    <dt class="col-sm-5">Responsable de IVA</dt><dd class="col-sm-7">{% if cliente.responsable_iva %}Sí{% else %}No{% endif %}</dd>
+                    <dt class="col-sm-5">Ciudad</dt><dd class="col-sm-7">{{ cliente.ciudad|default:"—" }}</dd>
+                    <dt class="col-sm-5">Municipio principal</dt><dd class="col-sm-7">{{ cliente.municipio_principal|default:"—" }}</dd>
+                    <dt class="col-sm-5">Contacto</dt><dd class="col-sm-7">{{ cliente.informacion_contacto|default:"—" }}</dd>
+                    <dt class="col-sm-5">Responsable asignado</dt><dd class="col-sm-7">{{ cliente.responsable.nombre|default:"—" }}</dd>
+                    <dt class="col-sm-5">Fecha de registro</dt><dd class="col-sm-7">{{ cliente.fecha_registro }}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card shadow-sm mb-3">
+            <div class="card-header">Tipos de servicio contable</div>
+            <div class="card-body">
+                {% for servicio in cliente.servicios.all %}
+                <span class="badge text-bg-light border me-1">{{ servicio.tipo_servicio.nombre_servicio }}</span>
+                {% empty %}<span class="text-muted">Sin servicios registrados.</span>{% endfor %}
+            </div>
+        </div>
+        <div class="card shadow-sm">
+            <div class="card-header">Municipios adicionales (multi-ICA)</div>
+            <div class="card-body">
+                {% for municipio in cliente.municipios_adicionales.all %}
+                <span class="badge text-bg-light border me-1">{{ municipio.municipio }}</span>
+                {% empty %}<span class="text-muted">Sin municipios adicionales.</span>{% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header">Credenciales y accesos a portales</div>
+            <div class="card-body">
+                {% if cliente.credenciales.all %}
+                <table class="table table-sm align-middle mb-0">
+                    <thead class="table-light">
+                        <tr><th>Concepto</th><th>Usuario</th><th>Clave</th><th>Última actualización</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                        {% for credencial in cliente.credenciales.all %}
+                        <tr>
+                            <td>{{ credencial.concepto }}</td>
+                            <td>{{ credencial.usuario_acceso }}</td>
+                            <td>••••••••</td>
+                            <td>{{ credencial.fecha_ultima_actualizacion|date:"d/m/Y" }}</td>
+                            <td>
+                                {% if credencial.requiere_actualizacion %}
+                                <span class="badge text-bg-warning">Actualizar (más de 90 días)</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% endif %}
+                <p class="text-muted mb-0 {% if cliente.credenciales.all %}mt-3{% endif %}">
+                    La creación, edición y consulta con botón mostrar/ocultar se habilitará en el siguiente bloque del módulo.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if puede_editar %}
+<div class="modal fade" id="modalInactivar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Inactivar cliente</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                El cliente quedará como <strong>Inactivo</strong> y conservará todo su historial.
+                ¿Desea continuar?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form method="post" action="{% url 'clientes:inactivar' cliente.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Sí, inactivar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

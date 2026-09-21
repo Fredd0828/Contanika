@@ -5,6 +5,7 @@ venv/
 # Secretos y configuración local
 .env
 *.env.local
+CREDENCIALES_PRUEBA.md
 
 # Python
 __pycache__/

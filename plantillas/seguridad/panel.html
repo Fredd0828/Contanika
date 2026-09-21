@@ -5,14 +5,23 @@
 {% block contenido %}
 <h1 class="h3 mb-4">Panel principal</h1>
 <div class="row g-3">
-    {% for modulo in modulos %}
+    {% for entrada in modulos %}
     <div class="col-md-4">
-        <div class="card h-100 shadow-sm">
+        {% if entrada.url %}
+        <a href="{% url entrada.url %}" class="text-decoration-none">
+        {% endif %}
+        <div class="card h-100 shadow-sm {% if entrada.url %}border-primary{% endif %}">
             <div class="card-body">
-                <h2 class="h6 text-muted mb-1">{{ modulo.codigo_modulo }}</h2>
-                <p class="h5 mb-0">{{ modulo.nombre_modulo }}</p>
+                <h2 class="h6 text-muted mb-1">{{ entrada.modulo.codigo_modulo }}</h2>
+                <p class="h5 mb-0 text-body">{{ entrada.modulo.nombre_modulo }}</p>
+                {% if entrada.url %}
+                <span class="badge text-bg-primary mt-2">Disponible</span>
+                {% else %}
+                <span class="badge text-bg-secondary mt-2">Próximamente</span>
+                {% endif %}
             </div>
         </div>
+        {% if entrada.url %}</a>{% endif %}
     </div>
     {% empty %}
     <div class="col-12">
