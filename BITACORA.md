@@ -155,3 +155,62 @@ python gestionar.py runserver
   clave, enmascarado y aviso de más de 90 días sin actualizar.
 - Reporte de credenciales (solo en pantalla, sin descarga) para el Administrador.
 - Bloquear la edición de credenciales al Contador Junior.
+
+---
+
+## Lunes 21 de septiembre de 2026 — Alineación de la interfaz al prototipo
+
+**Objetivo del bloque:** reemplazar el diseño básico por el del archivo
+`contanika-prototipo.html`, para que las capturas de evidencia y los módulos
+siguientes nazcan con el diseño definitivo.
+
+### Trabajo realizado
+
+1. **Sistema de diseño** en `estaticos/css/contanika.css`: paleta del
+   prototipo (navy `#001524`, teal `#15616D`, naranja `#FF7D00`, verde
+   `#0a8a5c`, rojo `#e05252`), tipografías Montserrat + Open Sans e íconos
+   Bootstrap Icons.
+2. **Estructura base** (`plantillas/base.html`): barra lateral fija de 232 px,
+   barra superior con saludo, buscador y avatar, y área de contenido en
+   tarjetas; adaptable a celular con botón de menú.
+3. **Menú lateral dinámico** (`seguridad/menu.py` y
+   `seguridad/context_processors.py`): muestra solo los módulos habilitados
+   para el rol (RQF031), marca el módulo activo y señala con "Pronto" los
+   módulos aún no construidos.
+4. **Inicio de sesión** con el estilo del prototipo (degradado navy→teal,
+   tarjeta blanca y logo Contanika).
+5. **Panel principal** con franja de indicadores reales (clientes activos,
+   inactivos, servicios registrados y usuarios del equipo) y tarjetas de
+   módulos.
+6. **Reestilo de las tres pantallas de clientes** (listado, formulario y
+   detalle) con tablas, insignias, filtros y botones del prototipo.
+
+### Cómo verificarlo (entorno local)
+
+```bash
+cd /home/fredd/documentos/ubuntu/contanika/codigo
+source .venv/bin/activate
+python gestionar.py runserver
+```
+
+1. `http://127.0.0.1:8000` → nuevo inicio de sesión.
+2. Iniciar sesión → panel con indicadores y tarjetas de módulos.
+3. Entrar a **Clientes** → listado con filtros, formulario y detalle nuevos.
+4. Reducir el ancho de la ventana → el menú lateral se oculta y aparece el
+   botón de menú (diseño adaptable).
+
+### Resultado de las pruebas
+
+- 35 pruebas: **35 aprobadas**. Cobertura: **93 %**.
+- Ruff, bandit y pip-audit sin hallazgos.
+
+### Evidencias a capturar (con el diseño nuevo)
+
+- `evidencias/00-inicio/`: login, panel y panel de administración.
+- `evidencias/01-clientes/`: listado, formulario, detalle e inactivación.
+
+### Pendientes del Módulo 1 (siguientes bloques)
+
+- Importación masiva desde plantilla Excel con resumen de importados y errores.
+- Credenciales y accesos a portales (cifrado, mostrar/ocultar, aviso de 90 días)
+  y su control por rol.

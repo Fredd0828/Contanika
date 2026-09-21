@@ -2,36 +2,36 @@
 
 {% block titulo %}Iniciar sesión{% endblock %}
 
-{% block contenido %}
-<div class="row justify-content-center">
-    <div class="col-md-5">
-        <div class="card shadow-sm">
-            <div class="card-body p-4">
-                <h1 class="h4 text-center mb-4">Iniciar sesión</h1>
-                {% if form.errors %}
-                <div class="alert alert-danger" role="alert">
-                    Las credenciales no son correctas. Verifique e intente de nuevo.
-                </div>
-                {% endif %}
-                <form method="post" novalidate>
-                    {% csrf_token %}
-                    <div class="mb-3">
-                        <label for="{{ form.username.id_for_label }}" class="form-label">Correo electrónico</label>
-                        <input type="email" name="{{ form.username.html_name }}" id="{{ form.username.id_for_label }}"
-                               class="form-control" autocomplete="username" required autofocus>
-                    </div>
-                    <div class="mb-3">
-                        <label for="{{ form.password.id_for_label }}" class="form-label">Contraseña</label>
-                        <input type="password" name="{{ form.password.html_name }}" id="{{ form.password.id_for_label }}"
-                               class="form-control" autocomplete="current-password" required>
-                    </div>
-                    <button type="submit" class="btn btn-primary w-100">Ingresar</button>
-                </form>
+{% block contenido_publico %}
+<div id="login">
+    <div>
+        <div class="login-card">
+            <div class="login-logo">
+                <div class="login-logo-icon"><i class="bi bi-grid-3x3-gap-fill"></i></div>
+                <div class="login-name"><span class="w">Conta</span><span class="o">nika</span></div>
             </div>
+            <div class="login-sub">Befrec Y Asociados SAS · Bogotá D.C.</div>
+            {% if form.errors %}
+            <div class="alert alert-danger py-2 px-3 small" role="alert">
+                Las credenciales no son correctas. Verifique e intente de nuevo.
+            </div>
+            {% endif %}
+            <form method="post" novalidate>
+                {% csrf_token %}
+                <div class="lf">
+                    <label for="{{ form.username.id_for_label }}">Correo electrónico</label>
+                    <input type="email" name="{{ form.username.html_name }}" id="{{ form.username.id_for_label }}"
+                           autocomplete="username" required autofocus>
+                </div>
+                <div class="lf">
+                    <label for="{{ form.password.id_for_label }}">Contraseña</label>
+                    <input type="password" name="{{ form.password.html_name }}" id="{{ form.password.id_for_label }}"
+                           autocomplete="current-password" required>
+                </div>
+                <button type="submit" class="login-btn"><i class="bi bi-box-arrow-in-right"></i> Iniciar sesión</button>
+            </form>
         </div>
-        <p class="text-center text-muted small mt-3">
-            Sistema de información Contanika — Befrec Y Asociados SAS
-        </p>
+        <div class="login-foot">Sistema de información Contanika — gestión integral del despacho contable</div>
     </div>
 </div>
 {% endblock %}

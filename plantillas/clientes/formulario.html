@@ -3,7 +3,16 @@
 {% block titulo %}{% if object %}Editar cliente{% else %}Nuevo cliente{% endif %}{% endblock %}
 
 {% block contenido %}
-<h1 class="h3 mb-4">{% if object %}Editar cliente{% else %}Nuevo cliente{% endif %}</h1>
+<div class="panel">
+    <div class="ph mb-0">
+        <div class="ph-title" style="font-size:18px">
+            {% if object %}Editar cliente{% else %}Nuevo cliente{% endif %}
+        </div>
+        <a class="ph-link" href="{% if object %}{% url 'clientes:detalle' object.pk %}{% else %}{% url 'clientes:lista' %}{% endif %}">
+            <i class="bi bi-arrow-left"></i> Volver
+        </a>
+    </div>
+</div>
 
 <form method="post" novalidate>
     {% csrf_token %}
@@ -12,108 +21,102 @@
     <div class="alert alert-danger">{{ formulario.non_field_errors }}</div>
     {% endif %}
 
-    <div class="card shadow-sm mb-3">
-        <div class="card-header">Ficha del cliente</div>
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-8">
-                    <label class="form-label" for="{{ formulario.nombre_razon_social.id_for_label }}">Nombre o razón social *</label>
-                    {{ formulario.nombre_razon_social }}
-                    {{ formulario.nombre_razon_social.errors }}
+    <div class="panel mb-3">
+        <div class="ph"><div class="ph-title"><i class="bi bi-person-vcard"></i> Ficha del cliente</div></div>
+        <div class="row g-3">
+            <div class="col-md-8">
+                <label class="form-label" for="{{ formulario.nombre_razon_social.id_for_label }}">Nombre o razón social *</label>
+                {{ formulario.nombre_razon_social }}
+                {{ formulario.nombre_razon_social.errors }}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="{{ formulario.nit_cedula.id_for_label }}">NIT o cédula *</label>
+                {{ formulario.nit_cedula }}
+                {{ formulario.nit_cedula.errors }}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="{{ formulario.tipo_persona.id_for_label }}">Tipo de persona *</label>
+                {{ formulario.tipo_persona }}
+                {{ formulario.tipo_persona.errors }}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="{{ formulario.regimen_tributario.id_for_label }}">Régimen tributario</label>
+                {{ formulario.regimen_tributario }}
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <div class="form-check">
+                    {{ formulario.responsable_iva }}
+                    <label class="form-check-label" for="{{ formulario.responsable_iva.id_for_label }}">Responsable de IVA</label>
                 </div>
-                <div class="col-md-4">
-                    <label class="form-label" for="{{ formulario.nit_cedula.id_for_label }}">NIT o cédula *</label>
-                    {{ formulario.nit_cedula }}
-                    {{ formulario.nit_cedula.errors }}
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label" for="{{ formulario.tipo_persona.id_for_label }}">Tipo de persona *</label>
-                    {{ formulario.tipo_persona }}
-                    {{ formulario.tipo_persona.errors }}
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label" for="{{ formulario.regimen_tributario.id_for_label }}">Régimen tributario</label>
-                    {{ formulario.regimen_tributario }}
-                </div>
-                <div class="col-md-4 d-flex align-items-end">
-                    <div class="form-check">
-                        {{ formulario.responsable_iva }}
-                        <label class="form-check-label" for="{{ formulario.responsable_iva.id_for_label }}">Responsable de IVA</label>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label" for="{{ formulario.ciudad.id_for_label }}">Ciudad</label>
-                    {{ formulario.ciudad }}
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label" for="{{ formulario.municipio_principal.id_for_label }}">Municipio principal</label>
-                    {{ formulario.municipio_principal }}
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label" for="{{ formulario.informacion_contacto.id_for_label }}">Información de contacto</label>
-                    {{ formulario.informacion_contacto }}
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label" for="{{ formulario.responsable.id_for_label }}">Responsable asignado</label>
-                    {{ formulario.responsable }}
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label" for="{{ formulario.estado.id_for_label }}">Estado</label>
-                    {{ formulario.estado }}
-                </div>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="{{ formulario.ciudad.id_for_label }}">Ciudad</label>
+                {{ formulario.ciudad }}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="{{ formulario.municipio_principal.id_for_label }}">Municipio principal</label>
+                {{ formulario.municipio_principal }}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="{{ formulario.informacion_contacto.id_for_label }}">Información de contacto</label>
+                {{ formulario.informacion_contacto }}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="{{ formulario.responsable.id_for_label }}">Responsable asignado</label>
+                {{ formulario.responsable }}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="{{ formulario.estado.id_for_label }}">Estado</label>
+                {{ formulario.estado }}
             </div>
         </div>
     </div>
 
-    <div class="card shadow-sm mb-3">
-        <div class="card-header">Tipos de servicio contable</div>
-        <div class="card-body">
-            <div class="row">
-                {% for casilla in formulario.tipos_servicio %}
-                <div class="col-md-4">
-                    <div class="form-check">
-                        {{ casilla.tag }}
-                        <label class="form-check-label" for="{{ casilla.id_for_label }}">{{ casilla.choice_label }}</label>
-                    </div>
+    <div class="panel mb-3">
+        <div class="ph"><div class="ph-title"><i class="bi bi-briefcase"></i> Tipos de servicio contable</div></div>
+        <div class="row">
+            {% for casilla in formulario.tipos_servicio %}
+            <div class="col-md-4">
+                <div class="form-check">
+                    {{ casilla.tag }}
+                    <label class="form-check-label" for="{{ casilla.id_for_label }}">{{ casilla.choice_label }}</label>
                 </div>
-                {% endfor %}
             </div>
-            <div class="mt-3">
-                <label class="form-label" for="{{ formulario.nuevo_tipo_servicio.id_for_label }}">{{ formulario.nuevo_tipo_servicio.label }}</label>
-                {{ formulario.nuevo_tipo_servicio }}
-            </div>
+            {% endfor %}
+        </div>
+        <div class="mt-3">
+            <label class="form-label" for="{{ formulario.nuevo_tipo_servicio.id_for_label }}">{{ formulario.nuevo_tipo_servicio.label }}</label>
+            {{ formulario.nuevo_tipo_servicio }}
         </div>
     </div>
 
-    <div class="card shadow-sm mb-3">
-        <div class="card-header">Municipios adicionales (multi-ICA)</div>
-        <div class="card-body">
-            {{ formset_municipios.management_form }}
-            <div id="filas-municipios">
-                {% for fila in formset_municipios %}
-                <div class="row g-2 align-items-center mb-2 fila-municipio">
-                    <div class="col-md-6">
-                        {{ fila.municipio }}
-                        {{ fila.municipio.errors }}
-                    </div>
-                    <div class="col-md-3">
-                        {% if fila.instance.pk %}
-                        <div class="form-check">
-                            {{ fila.DELETE }}
-                            <label class="form-check-label">Quitar</label>
-                        </div>
-                        {% endif %}
-                    </div>
+    <div class="panel mb-3">
+        <div class="ph"><div class="ph-title"><i class="bi bi-geo-alt"></i> Municipios adicionales (multi-ICA)</div></div>
+        {{ formset_municipios.management_form }}
+        <div id="filas-municipios">
+            {% for fila in formset_municipios %}
+            <div class="row g-2 align-items-center mb-2 fila-municipio">
+                <div class="col-md-6">
+                    {{ fila.municipio }}
+                    {{ fila.municipio.errors }}
                 </div>
-                {% endfor %}
+                <div class="col-md-3">
+                    {% if fila.instance.pk %}
+                    <div class="form-check">
+                        {{ fila.DELETE }}
+                        <label class="form-check-label">Quitar</label>
+                    </div>
+                    {% endif %}
+                </div>
             </div>
-            <button type="button" class="btn btn-outline-secondary btn-sm mt-2" id="agregar-municipio">Agregar municipio</button>
+            {% endfor %}
         </div>
+        <button type="button" class="ph-link mt-2" id="agregar-municipio"><i class="bi bi-plus-lg"></i> Agregar municipio</button>
     </div>
 
     <div class="d-flex gap-2">
-        <button type="submit" class="btn btn-primary">Guardar</button>
-        <a class="btn btn-outline-secondary" href="{% if object %}{% url 'clientes:detalle' object.pk %}{% else %}{% url 'clientes:lista' %}{% endif %}">Cancelar</a>
+        <button type="submit" class="ph-btn"><i class="bi bi-check-lg"></i> Guardar</button>
+        <a class="ph-link" href="{% if object %}{% url 'clientes:detalle' object.pk %}{% else %}{% url 'clientes:lista' %}{% endif %}">Cancelar</a>
     </div>
 </form>
 
