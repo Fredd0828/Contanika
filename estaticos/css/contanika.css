@@ -1,0 +1,9 @@
+/* Estilos propios del sistema Contanika (se complementan con Bootstrap 5). */
+body {
+    font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.navbar-brand {
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}

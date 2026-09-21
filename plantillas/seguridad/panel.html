@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block titulo %}Panel principal{% endblock %}
+
+{% block contenido %}
+<h1 class="h3 mb-4">Panel principal</h1>
+<div class="row g-3">
+    {% for modulo in modulos %}
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="h6 text-muted mb-1">{{ modulo.codigo_modulo }}</h2>
+                <p class="h5 mb-0">{{ modulo.nombre_modulo }}</p>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="alert alert-warning">Su rol no tiene módulos habilitados. Contacte al Administrador.</div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

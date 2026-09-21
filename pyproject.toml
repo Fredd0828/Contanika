@@ -1,0 +1,33 @@
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.local"
+python_files = ["test_*.py"]
+testpaths = ["pruebas"]
+pythonpath = ["."]
+addopts = "-q --strict-markers"
+
+[tool.coverage.run]
+source = ["aplicaciones"]
+omit = ["*/migrations/*", "*/management/commands/*"]
+
+[tool.coverage.report]
+show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+]
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+exclude = [".venv", "migrations", "estaticos_recolectados"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "DJ"]
+ignore = ["DJ001"]
+
+[tool.ruff.lint.per-file-ignores]
+"pruebas/**" = ["S101"]
+
+[tool.bandit]
+exclude_dirs = [".venv", "migrations", "pruebas"]
+skips = ["B101"]
