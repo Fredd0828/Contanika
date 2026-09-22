@@ -47,8 +47,6 @@ class ListaClientesView(ModuloHabilitadoMixin, ListView):
             tipo_documento=parametros.get("tipo_documento") or None,
             responsable=parametros.get("responsable") or None,
             estado=parametros.get("estado") or None,
-            fecha_desde=parametros.get("fecha_desde") or None,
-            fecha_hasta=parametros.get("fecha_hasta") or None,
         )
         # El Contador Junior solo consulta los clientes asignados a él.
         if self.request.user.es_contador_junior:

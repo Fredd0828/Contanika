@@ -18,8 +18,6 @@ def filtrar_clientes(
     tipo_documento=None,
     responsable=None,
     estado=None,
-    fecha_desde=None,
-    fecha_hasta=None,
 ):
     """
     Devuelve los clientes que cumplen los filtros desplegables del listado.
@@ -46,10 +44,6 @@ def filtrar_clientes(
         consulta = consulta.filter(responsable_id=responsable)
     if estado:
         consulta = consulta.filter(estado=estado)
-    if fecha_desde:
-        consulta = consulta.filter(fecha_registro__gte=fecha_desde)
-    if fecha_hasta:
-        consulta = consulta.filter(fecha_registro__lte=fecha_hasta)
     return consulta
 
 
