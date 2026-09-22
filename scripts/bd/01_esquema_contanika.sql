@@ -253,6 +253,7 @@ CREATE TABLE public.cliente (
     ciudad character varying(60) NOT NULL,
     municipio_principal character varying(60) NOT NULL,
     informacion_contacto character varying(200) NOT NULL,
+    correo_cliente character varying(200) NOT NULL,
     estado character varying(15) NOT NULL,
     fecha_registro date NOT NULL,
     id_usuario_responsable integer

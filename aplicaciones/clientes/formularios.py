@@ -61,11 +61,13 @@ class ClienteForm(ModeloFormularioBase):
             "ciudad",
             "municipio_principal",
             "informacion_contacto",
+            "correo_cliente",
             "responsable",
             "estado",
         ]
         widgets = {
-            "informacion_contacto": forms.TextInput(),
+            "informacion_contacto": forms.TextInput(attrs={"placeholder": "Teléfono"}),
+            "correo_cliente": forms.EmailInput(attrs={"placeholder": "correo@cliente.co"}),
         }
 
     def __init__(self, *args, **kwargs):

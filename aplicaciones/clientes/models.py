@@ -32,6 +32,7 @@ class Cliente(models.Model):
     ciudad = models.CharField(max_length=60, blank=True)
     municipio_principal = models.CharField(max_length=60, blank=True)
     informacion_contacto = models.CharField(max_length=200, blank=True)
+    correo_cliente = models.EmailField(max_length=200, blank=True)
     responsable = models.ForeignKey(
         "seguridad.Usuario",
         on_delete=models.PROTECT,

@@ -21,6 +21,7 @@ FILA_VALIDA = [
     "Sí",
     "Bogotá D.C.",
     "Bogotá D.C.",
+    "3101234567",
     "contacto@trigal.co",
     "",
     "Declaración de renta; IVA",
@@ -66,7 +67,7 @@ def test_junior_no_puede_importar(client, usuario_junior):
 
 
 def test_importar_archivo_valido(client, usuario_senior):
-    """Un archivo correcto crea los clientes con servicios y municipios."""
+    """Un archivo correcto crea los clientes con servicios, municipios y correo."""
     client.force_login(usuario_senior)
     respuesta = client.post(
         reverse("clientes:importar"),
@@ -77,11 +78,13 @@ def test_importar_archivo_valido(client, usuario_senior):
     assert creado.responsable == usuario_senior
     assert creado.servicios.count() == 2
     assert creado.municipios_adicionales.filter(municipio="Soacha").exists()
+    assert creado.informacion_contacto == "3101234567"
+    assert creado.correo_cliente == "contacto@trigal.co"
 
 
 def test_importacion_informa_filas_con_error(client, usuario_senior):
     """Las filas inválidas no se importan y se informa el motivo."""
-    fila_sin_nit = ["Cliente sin NIT", "", "Natural", "", "No", "", "", "", "", "", ""]
+    fila_sin_nit = ["Cliente sin NIT", "", "Natural", "", "No", "", "", "", "", "", "", ""]
     client.force_login(usuario_senior)
     respuesta = client.post(
         reverse("clientes:importar"),

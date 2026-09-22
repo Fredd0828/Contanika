@@ -81,6 +81,7 @@ def cliente(usuario_administrador):
         regimen_tributario="Régimen ordinario",
         ciudad="Bogotá D.C.",
         municipio_principal="Bogotá D.C.",
-        informacion_contacto="gerencia@larebaja.co",
+        informacion_contacto="3101234567",
+        correo_cliente="gerencia@larebaja.co",
         responsable=usuario_administrador,
     )

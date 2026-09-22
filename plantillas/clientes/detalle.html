@@ -37,7 +37,8 @@
                 <dt class="col-sm-5 text-muted fw-normal">Responsable de IVA</dt><dd class="col-sm-7">{% if cliente.responsable_iva %}Sí{% else %}No{% endif %}</dd>
                 <dt class="col-sm-5 text-muted fw-normal">Ciudad</dt><dd class="col-sm-7">{{ cliente.ciudad|default:"—" }}</dd>
                 <dt class="col-sm-5 text-muted fw-normal">Municipio principal</dt><dd class="col-sm-7">{{ cliente.municipio_principal|default:"—" }}</dd>
-                <dt class="col-sm-5 text-muted fw-normal">Contacto</dt><dd class="col-sm-7">{{ cliente.informacion_contacto|default:"—" }}</dd>
+                <dt class="col-sm-5 text-muted fw-normal">Teléfono</dt><dd class="col-sm-7">{{ cliente.informacion_contacto|default:"—" }}</dd>
+                <dt class="col-sm-5 text-muted fw-normal">Correo del cliente</dt><dd class="col-sm-7">{{ cliente.correo_cliente|default:"—" }}</dd>
                 <dt class="col-sm-5 text-muted fw-normal">Responsable asignado</dt><dd class="col-sm-7">{{ cliente.responsable.nombre|default:"—" }}</dd>
                 <dt class="col-sm-5 text-muted fw-normal">Fecha de registro</dt><dd class="col-sm-7">{{ cliente.fecha_registro }}</dd>
             </dl>

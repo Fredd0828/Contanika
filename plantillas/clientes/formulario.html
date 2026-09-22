@@ -58,8 +58,12 @@
                 {{ formulario.municipio_principal }}
             </div>
             <div class="col-md-4">
-                <label class="form-label" for="{{ formulario.informacion_contacto.id_for_label }}">Información de contacto</label>
+                <label class="form-label" for="{{ formulario.informacion_contacto.id_for_label }}">Teléfono</label>
                 {{ formulario.informacion_contacto }}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="{{ formulario.correo_cliente.id_for_label }}">Correo del cliente</label>
+                {{ formulario.correo_cliente }}
             </div>
             <div class="col-md-4">
                 <label class="form-label" for="{{ formulario.responsable.id_for_label }}">Responsable asignado</label>
