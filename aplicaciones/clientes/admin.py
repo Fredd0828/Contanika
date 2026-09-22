@@ -17,8 +17,15 @@ class ClienteServicioInline(admin.TabularInline):
 
 @admin.register(Cliente)
 class ClienteAdmin(admin.ModelAdmin):
-    list_display = ["nombre_razon_social", "nit_cedula", "tipo_persona", "regimen_tributario", "estado"]
-    list_filter = ["estado", "tipo_persona", "regimen_tributario", "ciudad"]
+    list_display = [
+        "nombre_razon_social",
+        "nit_cedula",
+        "tipo_documento",
+        "tipo_persona",
+        "regimen_tributario",
+        "estado",
+    ]
+    list_filter = ["estado", "tipo_documento", "tipo_persona", "regimen_tributario", "ciudad"]
     search_fields = ["nombre_razon_social", "nit_cedula"]
     inlines = [ClienteMunicipioInline, ClienteServicioInline]
 

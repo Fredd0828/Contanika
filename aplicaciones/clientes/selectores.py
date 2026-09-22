@@ -15,6 +15,7 @@ def filtrar_clientes(
     municipio=None,
     regimen_tributario=None,
     tipo_persona=None,
+    tipo_documento=None,
     responsable=None,
     estado=None,
     fecha_desde=None,
@@ -39,6 +40,8 @@ def filtrar_clientes(
         consulta = consulta.filter(regimen_tributario=regimen_tributario)
     if tipo_persona:
         consulta = consulta.filter(tipo_persona=tipo_persona)
+    if tipo_documento:
+        consulta = consulta.filter(tipo_documento=tipo_documento)
     if responsable:
         consulta = consulta.filter(responsable_id=responsable)
     if estado:
@@ -70,4 +73,5 @@ def opciones_filtro():
         "ciudades": valores("ciudad"),
         "municipios": valores("municipio_principal"),
         "regimenes": valores("regimen_tributario"),
+        "tipos_documento": Cliente.OPCIONES_TIPO_DOCUMENTO,
     }

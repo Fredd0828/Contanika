@@ -77,6 +77,7 @@ def cliente(usuario_administrador):
     return Cliente.objects.create(
         nombre_razon_social="Comercializadora La Rebaja SAS",
         nit_cedula="900123456",
+        tipo_documento=Cliente.NIT,
         tipo_persona=Cliente.JURIDICA,
         regimen_tributario="Régimen ordinario",
         ciudad="Bogotá D.C.",

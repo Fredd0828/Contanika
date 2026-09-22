@@ -22,7 +22,8 @@ Usuario = get_user_model()
 # Relación entre la clave interna de cada dato y el encabezado de la plantilla.
 COLUMNAS = [
     ("nombre", "Nombre o razón social", 32),
-    ("nit", "NIT o cédula", 18),
+    ("nit", "Número de documento", 20),
+    ("tipo_documento", "Tipo de documento", 22),
     ("tipo_persona", "Tipo de persona", 16),
     ("regimen", "Régimen tributario", 24),
     ("responsable_iva", "Responsable de IVA", 20),
@@ -38,6 +39,7 @@ COLUMNAS = [
 EJEMPLO = {
     "nombre": "Comercializadora La Rebaja SAS",
     "nit": "900123456",
+    "tipo_documento": "NIT",
     "tipo_persona": "Jurídica",
     "regimen": "Régimen ordinario",
     "responsable_iva": "Sí",
@@ -87,6 +89,7 @@ def generar_plantilla_clientes():
         ("Municipio principal", "Municipio principal de domicilio."),
         ("Teléfono del cliente", "Teléfono fijo o celular del cliente."),
         ("Correo del cliente", "Correo electrónico del cliente."),
+        ("Tipo de documento", "NIT, CC, CE, TI, Pasaporte o RUT. Si se deja vacío, se asigna NIT."),
         (
             "Correo del contador (asignado en Contanika)",
             "Correo de un usuario en Contanika. Vacío o no encontrado = se asigna a quien importa.",
@@ -140,12 +143,15 @@ def _leer_fila(valores, mapa, numero_fila):
 
     nombre = dato("nombre")
     nit = dato("nit")
+    tipo_documento = dato("tipo_documento").upper()
     tipo_persona = dato("tipo_persona").capitalize()
 
     if not nombre:
         raise ValueError("Falta el nombre o razón social.")
     if not nit:
         raise ValueError("Falta el NIT o cédula.")
+    if tipo_documento and tipo_documento not in dict(Cliente.OPCIONES_TIPO_DOCUMENTO):
+        raise ValueError("El tipo de documento debe ser NIT, CC, CE, TI, Pasaporte o RUT.")
     if tipo_persona not in (Cliente.NATURAL, Cliente.JURIDICA):
         raise ValueError("El tipo de persona debe ser Natural o Jurídica.")
 
@@ -162,6 +168,7 @@ def _leer_fila(valores, mapa, numero_fila):
         "fila": numero_fila,
         "nombre": nombre,
         "nit": nit,
+        "tipo_documento": tipo_documento or Cliente.NIT,
         "tipo_persona": tipo_persona,
         "regimen": dato("regimen"),
         "responsable_iva": responsable_iva in VALORES_VERDADEROS,
@@ -228,6 +235,7 @@ def _crear_cliente(datos, usuario):
     cliente = Cliente.objects.create(
         nombre_razon_social=datos["nombre"],
         nit_cedula=datos["nit"],
+        tipo_documento=datos["tipo_documento"],
         tipo_persona=datos["tipo_persona"],
         regimen_tributario=datos["regimen"],
         responsable_iva=datos["responsable_iva"],

@@ -16,6 +16,7 @@ ENCABEZADOS = [columna[1] for columna in COLUMNAS]
 FILA_VALIDA = [
     "Panadería El Trigal SAS",
     "901222333",
+    "NIT",
     "Jurídica",
     "Régimen ordinario",
     "Sí",
@@ -80,11 +81,40 @@ def test_importar_archivo_valido(client, usuario_senior):
     assert creado.municipios_adicionales.filter(municipio="Soacha").exists()
     assert creado.informacion_contacto == "3101234567"
     assert creado.correo_cliente == "contacto@trigal.co"
+    assert creado.tipo_documento == Cliente.NIT
+
+
+def test_importar_sin_tipo_documento_usa_nit(client, usuario_senior):
+    """Si el tipo de documento está vacío, se asigna NIT por defecto."""
+    fila = list(FILA_VALIDA)
+    fila[2] = ""
+    client.force_login(usuario_senior)
+    respuesta = client.post(
+        reverse("clientes:importar"),
+        {"archivo": _archivo_excel([fila])},
+    )
+    assert respuesta.status_code == 200
+    creado = Cliente.objects.get(nit_cedula="901222333")
+    assert creado.tipo_documento == Cliente.NIT
+
+
+def test_importar_tipo_documento_invalido(client, usuario_senior):
+    """Un tipo de documento no reconocido se reporta como error."""
+    fila = list(FILA_VALIDA)
+    fila[2] = "XXX"
+    client.force_login(usuario_senior)
+    respuesta = client.post(
+        reverse("clientes:importar"),
+        {"archivo": _archivo_excel([fila])},
+    )
+    assert respuesta.status_code == 200
+    assert "tipo de documento" in respuesta.content.decode()
+    assert Cliente.objects.count() == 0
 
 
 def test_importacion_informa_filas_con_error(client, usuario_senior):
     """Las filas inválidas no se importan y se informa el motivo."""
-    fila_sin_nit = ["Cliente sin NIT", "", "Natural", "", "No", "", "", "", "", "", "", ""]
+    fila_sin_nit = ["Cliente sin NIT", "", "", "Natural", "", "No", "", "", "", "", "", "", ""]
     client.force_login(usuario_senior)
     respuesta = client.post(
         reverse("clientes:importar"),

@@ -14,6 +14,7 @@ def _datos_cliente(**extra):
     datos = {
         "nombre_razon_social": "Panadería El Trigal SAS",
         "nit_cedula": "901222333",
+        "tipo_documento": Cliente.NIT,
         "tipo_persona": Cliente.JURIDICA,
         "regimen_tributario": "Régimen ordinario",
         "ciudad": "Bogotá D.C.",

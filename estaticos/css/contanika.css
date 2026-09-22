@@ -699,6 +699,11 @@ a {
     color: var(--brown);
 }
 
+.bt-doc {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
 .badge-est {
     display: inline-block;
     font-size: 9.5px;

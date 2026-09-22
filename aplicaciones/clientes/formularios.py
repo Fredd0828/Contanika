@@ -55,6 +55,7 @@ class ClienteForm(ModeloFormularioBase):
         fields = [
             "nombre_razon_social",
             "nit_cedula",
+            "tipo_documento",
             "tipo_persona",
             "regimen_tributario",
             "responsable_iva",
@@ -68,6 +69,9 @@ class ClienteForm(ModeloFormularioBase):
         widgets = {
             "informacion_contacto": forms.TextInput(attrs={"placeholder": "Teléfono"}),
             "correo_cliente": forms.EmailInput(attrs={"placeholder": "correo@cliente.co"}),
+        }
+        labels = {
+            "nit_cedula": "Número de documento",
         }
 
     def __init__(self, *args, **kwargs):

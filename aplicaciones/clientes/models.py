@@ -19,6 +19,21 @@ class Cliente(models.Model):
     JURIDICA = "Jurídica"
     OPCIONES_TIPO_PERSONA = [(NATURAL, NATURAL), (JURIDICA, JURIDICA)]
 
+    NIT = "NIT"
+    CC = "CC"
+    CE = "CE"
+    TI = "TI"
+    PASAPORTE = "Pasaporte"
+    RUT = "RUT"
+    OPCIONES_TIPO_DOCUMENTO = [
+        (NIT, "NIT"),
+        (CC, "Cédula de Ciudadanía"),
+        (CE, "Cédula de Extranjería"),
+        (TI, "Tarjeta de Identidad"),
+        (PASAPORTE, "Pasaporte"),
+        (RUT, "RUT"),
+    ]
+
     ACTIVO = "Activo"
     INACTIVO = "Inactivo"
     OPCIONES_ESTADO = [(ACTIVO, ACTIVO), (INACTIVO, INACTIVO)]
@@ -26,6 +41,11 @@ class Cliente(models.Model):
     id_cliente = models.AutoField(primary_key=True)
     nombre_razon_social = models.CharField(max_length=200)
     nit_cedula = models.CharField(max_length=20)
+    tipo_documento = models.CharField(
+        max_length=15,
+        choices=OPCIONES_TIPO_DOCUMENTO,
+        default=NIT,
+    )
     tipo_persona = models.CharField(max_length=10, choices=OPCIONES_TIPO_PERSONA)
     regimen_tributario = models.CharField(max_length=40, blank=True)
     responsable_iva = models.BooleanField(default=False)

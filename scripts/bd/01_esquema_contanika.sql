@@ -247,6 +247,7 @@ CREATE TABLE public.cliente (
     id_cliente integer NOT NULL,
     nombre_razon_social character varying(200) NOT NULL,
     nit_cedula character varying(20) NOT NULL,
+    tipo_documento character varying(15) NOT NULL,
     tipo_persona character varying(10) NOT NULL,
     regimen_tributario character varying(40) NOT NULL,
     responsable_iva boolean NOT NULL,

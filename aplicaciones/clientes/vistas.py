@@ -44,6 +44,7 @@ class ListaClientesView(ModuloHabilitadoMixin, ListView):
             municipio=parametros.get("municipio") or None,
             regimen_tributario=parametros.get("regimen_tributario") or None,
             tipo_persona=parametros.get("tipo_persona") or None,
+            tipo_documento=parametros.get("tipo_documento") or None,
             responsable=parametros.get("responsable") or None,
             estado=parametros.get("estado") or None,
             fecha_desde=parametros.get("fecha_desde") or None,

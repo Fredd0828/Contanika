@@ -8,7 +8,7 @@
         <div>
             <div class="ph-title" style="font-size:18px">{{ cliente.nombre_razon_social }}</div>
             <div class="ph-meta mt-1">
-                {{ cliente.nit_cedula }} · {{ cliente.tipo_persona }} ·
+                {{ cliente.get_tipo_documento_display }} {{ cliente.nit_cedula }} · {{ cliente.tipo_persona }} ·
                 {% if cliente.estado == "Activo" %}
                 <span class="badge-est be-g">Activo</span>
                 {% else %}
@@ -33,6 +33,7 @@
         <div class="panel h-100">
             <div class="ph"><div class="ph-title"><i class="bi bi-person-vcard"></i> Datos del cliente</div></div>
             <dl class="row mb-0">
+                <dt class="col-sm-5 text-muted fw-normal">Tipo de documento</dt><dd class="col-sm-7">{{ cliente.get_tipo_documento_display }}</dd>
                 <dt class="col-sm-5 text-muted fw-normal">Régimen tributario</dt><dd class="col-sm-7">{{ cliente.regimen_tributario|default:"—" }}</dd>
                 <dt class="col-sm-5 text-muted fw-normal">Responsable de IVA</dt><dd class="col-sm-7">{% if cliente.responsable_iva %}Sí{% else %}No{% endif %}</dd>
                 <dt class="col-sm-5 text-muted fw-normal">Ciudad</dt><dd class="col-sm-7">{{ cliente.ciudad|default:"—" }}</dd>

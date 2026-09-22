@@ -45,6 +45,15 @@
             </select>
         </div>
         <div class="campo">
+            <label for="f-tipo-doc">Tipo de documento</label>
+            <select id="f-tipo-doc" name="tipo_documento">
+                <option value="">Todos</option>
+                {% for valor, etiqueta in opciones.tipos_documento %}
+                <option value="{{ valor }}" {% if filtros.tipo_documento == valor %}selected{% endif %}>{{ etiqueta }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="campo">
             <label for="f-tipo">Tipo de persona</label>
             <select id="f-tipo" name="tipo_persona">
                 <option value="">Todos</option>
@@ -90,8 +99,9 @@
             <thead>
                 <tr>
                     <th>Nombre o razón social</th>
-                    <th>NIT o cédula</th>
-                    <th>Tipo</th>
+                    <th>Número de documento</th>
+                    <th>Tipo de documento</th>
+                    <th>Tipo de persona</th>
                     <th>Régimen</th>
                     <th>IVA</th>
                     <th>Municipio</th>
@@ -107,6 +117,9 @@
                         <a href="{% url 'clientes:detalle' cliente.pk %}" class="cli-name">{{ cliente.nombre_razon_social }}</a>
                     </td>
                     <td class="cli-nit">{{ cliente.nit_cedula }}</td>
+                    <td>
+                        <span class="badge-tipo bt-doc">{{ cliente.get_tipo_documento_display }}</span>
+                    </td>
                     <td>
                         {% if cliente.tipo_persona == "Jurídica" %}
                         <span class="badge-tipo bt-emp">Jurídica</span>
@@ -133,7 +146,7 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="9" class="text-center text-muted py-4">No hay clientes que cumplan los filtros.</td>
+                    <td colspan="10" class="text-center text-muted py-4">No hay clientes que cumplan los filtros.</td>
                 </tr>
                 {% endfor %}
             </tbody>

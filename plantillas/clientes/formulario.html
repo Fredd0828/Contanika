@@ -30,9 +30,14 @@
                 {{ formulario.nombre_razon_social.errors }}
             </div>
             <div class="col-md-4">
-                <label class="form-label" for="{{ formulario.nit_cedula.id_for_label }}">NIT o cédula *</label>
+                <label class="form-label" for="{{ formulario.nit_cedula.id_for_label }}">Número de documento *</label>
                 {{ formulario.nit_cedula }}
                 {{ formulario.nit_cedula.errors }}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="{{ formulario.tipo_documento.id_for_label }}">Tipo de documento *</label>
+                {{ formulario.tipo_documento }}
+                {{ formulario.tipo_documento.errors }}
             </div>
             <div class="col-md-4">
                 <label class="form-label" for="{{ formulario.tipo_persona.id_for_label }}">Tipo de persona *</label>
