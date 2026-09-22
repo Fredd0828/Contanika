@@ -29,7 +29,7 @@ COLUMNAS = [
     ("ciudad", "Ciudad", 20),
     ("municipio_principal", "Municipio principal", 22),
     ("contacto", "Información de contacto", 28),
-    ("responsable_correo", "Correo del responsable", 28),
+    ("responsable_correo", "Correo del contador (asignado en Contanika)", 32),
     ("tipos_servicio", "Tipos de servicio", 30),
     ("municipios_adicionales", "Municipios adicionales", 30),
 ]
@@ -85,8 +85,8 @@ def generar_plantilla_clientes():
         ("Municipio principal", "Municipio principal de domicilio."),
         ("Información de contacto", "Teléfono, correo u otro dato de contacto."),
         (
-            "Correo del responsable",
-            "Correo del usuario del despacho a cargo. Si se deja vacío, se asigna a quien importa.",
+            "Correo del contador (asignado en Contanika)",
+            "Correo de un usuario en Contanika. Vacío o no encontrado = se asigna a quien importa.",
         ),
         ("Tipos de servicio", "Varios separados por punto y coma. Ej: Declaración de renta; IVA"),
         ("Municipios adicionales", "Varios separados por punto y coma (multi-ICA)."),
@@ -154,8 +154,6 @@ def _leer_fila(valores, mapa, numero_fila):
     responsable = None
     if correo_responsable:
         responsable = Usuario.objects.filter(correo__iexact=correo_responsable).first()
-        if responsable is None:
-            raise ValueError(f"No existe un usuario con el correo {correo_responsable}.")
 
     return {
         "fila": numero_fila,
