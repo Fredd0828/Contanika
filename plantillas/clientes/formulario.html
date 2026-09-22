@@ -149,16 +149,31 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
+    // Agregar filas de municipios adicionales
     const boton = document.getElementById("agregar-municipio");
     const contenedor = document.getElementById("filas-municipios");
     const plantilla = document.getElementById("plantilla-municipio").innerHTML;
     const total = document.getElementById("id_municipios-TOTAL_FORMS");
-    if (!boton || !contenedor || !total) { return; }
-    boton.addEventListener("click", function () {
-        const indice = parseInt(total.value, 10);
-        contenedor.insertAdjacentHTML("beforeend", plantilla.replace(/__prefix__/g, indice));
-        total.value = indice + 1;
-    });
+    if (boton && contenedor && total) {
+        boton.addEventListener("click", function () {
+            const indice = parseInt(total.value, 10);
+            contenedor.insertAdjacentHTML("beforeend", plantilla.replace(/__prefix__/g, indice));
+            total.value = indice + 1;
+        });
+    }
+
+    // Autocompletar régimen tributario según tipo de persona
+    const tipoPersona = document.getElementById("{{ formulario.tipo_persona.id_for_label }}");
+    const regimen = document.getElementById("{{ formulario.regimen_tributario.id_for_label }}");
+    if (tipoPersona && regimen) {
+        tipoPersona.addEventListener("change", function () {
+            if (this.value === "Natural") {
+                regimen.value = "No responsable";
+            } else if (this.value === "Jurídica") {
+                regimen.value = "Régimen ordinario";
+            }
+        });
+    }
 });
 </script>
 {% endblock %}

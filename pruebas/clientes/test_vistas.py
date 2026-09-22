@@ -108,6 +108,28 @@ def test_no_permite_nit_duplicado(client, usuario_senior, cliente):
     assert "Ya existe un cliente" in respuesta.content.decode()
 
 
+def test_rechaza_nit_con_mas_de_10_digitos(client, usuario_senior):
+    """El formulario rechaza un NIT con más de 10 dígitos."""
+    client.force_login(usuario_senior)
+    respuesta = client.post(
+        reverse("clientes:crear"),
+        _datos_cliente(nit_cedula="12345678901"),
+    )
+    assert respuesta.status_code == 200
+    assert "como máximo 10 caracteres" in respuesta.content.decode()
+
+
+def test_rechaza_nit_con_letras(client, usuario_senior):
+    """El formulario rechaza un NIT que contenga letras."""
+    client.force_login(usuario_senior)
+    respuesta = client.post(
+        reverse("clientes:crear"),
+        _datos_cliente(nit_cedula="123ABC456"),
+    )
+    assert respuesta.status_code == 200
+    assert "solo debe contener dígitos" in respuesta.content.decode()
+
+
 def test_inactivar_conserva_el_cliente(client, usuario_administrador, cliente):
     """Inactivar un cliente no lo elimina y conserva su historial."""
     client.force_login(usuario_administrador)

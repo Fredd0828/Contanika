@@ -8,6 +8,13 @@ por el listado, la exportación y el futuro reporte de clientes (Módulo 10).
 from django.db.models import Q
 
 from .models import Cliente
+from .municipios_colombia import MUNICIPIOS_COLOMBIA
+
+REGIMENES_BASE = [
+    "No responsable",
+    "Régimen ordinario",
+    "Régimen simple de tributación",
+]
 
 
 def filtrar_clientes(
@@ -49,10 +56,11 @@ def filtrar_clientes(
 
 def opciones_filtro():
     """
-    Valores ya registrados para llenar los filtros desplegables.
+    Valores para llenar los filtros desplegables y datalists.
 
-    Se alimentan de los datos existentes, de modo que los filtros crezcan con
-    el portafolio real del despacho sin escribir listas fijas.
+    Combina una lista base de municipios de Colombia y regímenes comunes
+    con los valores ya registrados en el sistema, de modo que los filtros
+    crezcan con el portafolio real del despacho.
     """
 
     def valores(campo):
@@ -63,9 +71,13 @@ def opciones_filtro():
             .order_by(campo)
         )
 
+    ciudades_registradas = set(valores("ciudad"))
+    municipios_registrados = set(valores("municipio_principal"))
+    regimenes_registrados = set(valores("regimen_tributario"))
+
     return {
-        "ciudades": valores("ciudad"),
-        "municipios": valores("municipio_principal"),
-        "regimenes": valores("regimen_tributario"),
+        "ciudades": sorted(ciudades_registradas | set(MUNICIPIOS_COLOMBIA)),
+        "municipios": sorted(municipios_registrados | set(MUNICIPIOS_COLOMBIA)),
+        "regimenes": sorted(regimenes_registrados | set(REGIMENES_BASE)),
         "tipos_documento": Cliente.OPCIONES_TIPO_DOCUMENTO,
     }

@@ -150,6 +150,10 @@ def _leer_fila(valores, mapa, numero_fila):
         raise ValueError("Falta el nombre o razón social.")
     if not nit:
         raise ValueError("Falta el NIT o cédula.")
+    if not nit.isdigit():
+        raise ValueError("El número de documento solo debe contener dígitos.")
+    if len(nit) > 10:
+        raise ValueError("El número de documento no puede tener más de 10 dígitos.")
     if tipo_documento and tipo_documento not in dict(Cliente.OPCIONES_TIPO_DOCUMENTO):
         raise ValueError("El tipo de documento debe ser NIT, CC, CE, TI, Pasaporte o RUT.")
     if tipo_persona not in (Cliente.NATURAL, Cliente.JURIDICA):

@@ -30,16 +30,42 @@
 
 <div class="row g-3">
     <div class="col-lg-6">
-        <div class="panel h-100">
-            <div class="ph"><div class="ph-title"><i class="bi bi-person-vcard"></i> Datos del cliente</div></div>
+        <div class="panel mb-3">
+            <div class="ph"><div class="ph-title"><i class="bi bi-person-vcard"></i> Identificación</div></div>
             <dl class="row mb-0">
                 <dt class="col-sm-5 text-muted fw-normal">Tipo de documento</dt><dd class="col-sm-7">{{ cliente.get_tipo_documento_display }}</dd>
+                <dt class="col-sm-5 text-muted fw-normal">Número de documento</dt><dd class="col-sm-7">{{ cliente.nit_cedula }}</dd>
+                <dt class="col-sm-5 text-muted fw-normal">Tipo de persona</dt><dd class="col-sm-7">{{ cliente.tipo_persona }}</dd>
+            </dl>
+        </div>
+
+        <div class="panel mb-3">
+            <div class="ph"><div class="ph-title"><i class="bi bi-receipt"></i> Información fiscal</div></div>
+            <dl class="row mb-0">
                 <dt class="col-sm-5 text-muted fw-normal">Régimen tributario</dt><dd class="col-sm-7">{{ cliente.regimen_tributario|default:"—" }}</dd>
                 <dt class="col-sm-5 text-muted fw-normal">Responsable de IVA</dt><dd class="col-sm-7">{% if cliente.responsable_iva %}Sí{% else %}No{% endif %}</dd>
+            </dl>
+        </div>
+
+        <div class="panel mb-3">
+            <div class="ph"><div class="ph-title"><i class="bi bi-geo-alt"></i> Ubicación</div></div>
+            <dl class="row mb-0">
                 <dt class="col-sm-5 text-muted fw-normal">Ciudad</dt><dd class="col-sm-7">{{ cliente.ciudad|default:"—" }}</dd>
                 <dt class="col-sm-5 text-muted fw-normal">Municipio principal</dt><dd class="col-sm-7">{{ cliente.municipio_principal|default:"—" }}</dd>
+            </dl>
+        </div>
+
+        <div class="panel mb-3">
+            <div class="ph"><div class="ph-title"><i class="bi bi-envelope"></i> Contacto</div></div>
+            <dl class="row mb-0">
                 <dt class="col-sm-5 text-muted fw-normal">Teléfono</dt><dd class="col-sm-7">{{ cliente.informacion_contacto|default:"—" }}</dd>
                 <dt class="col-sm-5 text-muted fw-normal">Correo del cliente</dt><dd class="col-sm-7">{{ cliente.correo_cliente|default:"—" }}</dd>
+            </dl>
+        </div>
+
+        <div class="panel">
+            <div class="ph"><div class="ph-title"><i class="bi bi-person-check"></i> Asignación</div></div>
+            <dl class="row mb-0">
                 <dt class="col-sm-5 text-muted fw-normal">Responsable asignado</dt><dd class="col-sm-7">{{ cliente.responsable.nombre|default:"—" }}</dd>
                 <dt class="col-sm-5 text-muted fw-normal">Fecha de registro</dt><dd class="col-sm-7">{{ cliente.fecha_registro }}</dd>
             </dl>
@@ -53,15 +79,13 @@
             <span class="chip-servicio">{{ servicio.tipo_servicio.nombre_servicio }}</span>
             {% empty %}<span class="text-muted">Sin servicios registrados.</span>{% endfor %}
         </div>
-        <div class="panel">
+        <div class="panel mb-3">
             <div class="ph"><div class="ph-title"><i class="bi bi-geo-alt"></i> Municipios adicionales (multi-ICA)</div></div>
             {% for municipio in cliente.municipios_adicionales.all %}
             <span class="chip-servicio">{{ municipio.municipio }}</span>
             {% empty %}<span class="text-muted">Sin municipios adicionales.</span>{% endfor %}
         </div>
-    </div>
 
-    <div class="col-12">
         <div class="panel">
             <div class="ph">
                 <div class="ph-title"><i class="bi bi-key"></i> Credenciales y accesos a portales</div>

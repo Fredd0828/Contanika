@@ -112,6 +112,20 @@ def test_importar_tipo_documento_invalido(client, usuario_senior):
     assert Cliente.objects.count() == 0
 
 
+def test_importar_nit_con_mas_de_10_digitos(client, usuario_senior):
+    """Un NIT con más de 10 dígitos se reporta como error."""
+    fila = list(FILA_VALIDA)
+    fila[1] = "12345678901"
+    client.force_login(usuario_senior)
+    respuesta = client.post(
+        reverse("clientes:importar"),
+        {"archivo": _archivo_excel([fila])},
+    )
+    assert respuesta.status_code == 200
+    assert "más de 10 dígitos" in respuesta.content.decode()
+    assert Cliente.objects.count() == 0
+
+
 def test_importacion_informa_filas_con_error(client, usuario_senior):
     """Las filas inválidas no se importan y se informa el motivo."""
     fila_sin_nit = ["Cliente sin NIT", "", "", "Natural", "", "No", "", "", "", "", "", "", ""]

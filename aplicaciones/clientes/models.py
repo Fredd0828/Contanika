@@ -40,7 +40,7 @@ class Cliente(models.Model):
 
     id_cliente = models.AutoField(primary_key=True)
     nombre_razon_social = models.CharField(max_length=200)
-    nit_cedula = models.CharField(max_length=20)
+    nit_cedula = models.CharField(max_length=10)
     tipo_documento = models.CharField(
         max_length=15,
         choices=OPCIONES_TIPO_DOCUMENTO,

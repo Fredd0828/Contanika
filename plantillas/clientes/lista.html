@@ -19,30 +19,24 @@
     <form method="get" class="filters mb-3">
         <div class="campo">
             <label for="f-ciudad">Ciudad</label>
-            <select id="f-ciudad" name="ciudad">
-                <option value="">Todas</option>
-                {% for valor in opciones.ciudades %}
-                <option value="{{ valor }}" {% if filtros.ciudad == valor %}selected{% endif %}>{{ valor }}</option>
-                {% endfor %}
-            </select>
+            <input type="text" id="f-ciudad" name="ciudad" value="{{ filtros.ciudad|default:'' }}" list="f-lista-ciudades" placeholder="Escriba para buscar...">
+            <datalist id="f-lista-ciudades">
+                {% for valor in opciones.ciudades %}<option value="{{ valor }}"></option>{% endfor %}
+            </datalist>
         </div>
         <div class="campo">
             <label for="f-municipio">Municipio</label>
-            <select id="f-municipio" name="municipio">
-                <option value="">Todos</option>
-                {% for valor in opciones.municipios %}
-                <option value="{{ valor }}" {% if filtros.municipio == valor %}selected{% endif %}>{{ valor }}</option>
-                {% endfor %}
-            </select>
+            <input type="text" id="f-municipio" name="municipio" value="{{ filtros.municipio|default:'' }}" list="f-lista-municipios" placeholder="Escriba para buscar...">
+            <datalist id="f-lista-municipios">
+                {% for valor in opciones.municipios %}<option value="{{ valor }}"></option>{% endfor %}
+            </datalist>
         </div>
         <div class="campo">
             <label for="f-regimen">Régimen tributario</label>
-            <select id="f-regimen" name="regimen_tributario">
-                <option value="">Todos</option>
-                {% for valor in opciones.regimenes %}
-                <option value="{{ valor }}" {% if filtros.regimen_tributario == valor %}selected{% endif %}>{{ valor }}</option>
-                {% endfor %}
-            </select>
+            <input type="text" id="f-regimen" name="regimen_tributario" value="{{ filtros.regimen_tributario|default:'' }}" list="f-lista-regimenes" placeholder="Escriba para buscar...">
+            <datalist id="f-lista-regimenes">
+                {% for valor in opciones.regimenes %}<option value="{{ valor }}"></option>{% endfor %}
+            </datalist>
         </div>
         <div class="campo">
             <label for="f-tipo-doc">Tipo de documento</label>
