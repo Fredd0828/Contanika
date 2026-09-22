@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block titulo %}Importar clientes{% endblock %}
+
+{% block contenido %}
+<div class="panel">
+    <div class="ph mb-0">
+        <div class="ph-title" style="font-size:18px"><i class="bi bi-upload"></i> Importar clientes desde Excel</div>
+        <a class="ph-link" href="{% url 'clientes:lista' %}"><i class="bi bi-arrow-left"></i> Volver</a>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-5">
+        <div class="panel h-100">
+            <div class="ph"><div class="ph-title"><i class="bi bi-1-circle"></i> Descargue la plantilla</div></div>
+            <p class="text-muted">
+                Descargue la plantilla, diligencie una fila por cliente y guárdela en formato .xlsx.
+                En la hoja <strong>Instrucciones</strong> encontrará qué debe llevar cada columna.
+            </p>
+            <a class="ph-btn" href="{% url 'clientes:plantilla' %}"><i class="bi bi-download"></i> Descargar plantilla</a>
+        </div>
+    </div>
+
+    <div class="col-lg-7">
+        <div class="panel h-100">
+            <div class="ph"><div class="ph-title"><i class="bi bi-2-circle"></i> Suba el archivo diligenciado</div></div>
+            <form method="post" enctype="multipart/form-data" novalidate>
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label" for="{{ formulario.archivo.id_for_label }}">{{ formulario.archivo.label }}</label>
+                    {{ formulario.archivo }}
+                    {% if formulario.archivo.errors %}
+                    <div class="text-danger small mt-1">{{ formulario.archivo.errors }}</div>
+                    {% endif %}
+                </div>
+                <button type="submit" class="ph-btn"><i class="bi bi-check-lg"></i> Importar</button>
+            </form>
+        </div>
+    </div>
+
+    {% if resultado %}
+    <div class="col-12">
+        <div class="panel">
+            <div class="ph">
+                <div class="ph-title"><i class="bi bi-clipboard-check"></i> Resultado de la importación</div>
+            </div>
+            <div class="row g-3 mb-3">
+                <div class="col-md-4">
+                    <div class="kpi">
+                        <div class="kpi-label">Filas leídas</div>
+                        <div class="kpi-num c-text">{{ resultado.total }}</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="kpi" style="--teal: #0a8a5c">
+                        <div class="kpi-label">Importadas correctamente</div>
+                        <div class="kpi-num c-green">{{ resultado.importados }}</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="kpi">
+                        <div class="kpi-label">Con error</div>
+                        <div class="kpi-num c-red">{{ resultado.errores|length }}</div>
+                    </div>
+                </div>
+            </div>
+
+            {% if resultado.errores %}
+            <div class="table-responsive">
+                <table class="tbl">
+                    <thead>
+                        <tr><th>Fila</th><th>Motivo del error</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for error in resultado.errores %}
+                        <tr>
+                            <td><span class="badge-est be-r">Fila {{ error.fila }}</span></td>
+                            <td>{{ error.mensaje }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-success mb-0">Todas las filas se importaron correctamente.</div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

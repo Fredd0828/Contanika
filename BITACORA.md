@@ -211,6 +211,52 @@ python gestionar.py runserver
 
 ### Pendientes del Módulo 1 (siguientes bloques)
 
-- Importación masiva desde plantilla Excel con resumen de importados y errores.
 - Credenciales y accesos a portales (cifrado, mostrar/ocultar, aviso de 90 días)
   y su control por rol.
+
+---
+
+## Lunes 21 de septiembre de 2026 — Módulo 1, bloque 2
+
+**Objetivo del bloque:** importación masiva de clientes desde una plantilla de
+Excel con validación fila por fila (RQF013).
+
+### Trabajo realizado
+
+1. **Plantilla Excel descargable** (`clientes/plantilla/`) con los encabezados
+   del sistema, una fila de ejemplo y una hoja de instrucciones que explica
+   cada columna.
+2. **Importación** (`clientes/importar/`): sube el archivo .xlsx, valida cada
+   fila (campos obligatorios, tipo de persona, responsable de IVA, NIT sin
+   repetir dentro del archivo ni contra el sistema, correo del responsable) e
+   importa únicamente las filas válidas.
+3. **Resumen en pantalla**: filas leídas, importadas correctamente y con error,
+   con el número de fila y el motivo de cada fallo.
+4. **Cifrado/seguridad**: se valida la extensión y el tamaño del archivo
+   (máximo 5 MB) y los permisos por rol (solo Administrador y Contador Senior).
+5. Botones **Plantilla** e **Importar** en el listado de clientes.
+
+### Cómo verificarlo (entorno local)
+
+1. Entrar a **Clientes → Plantilla** y descargar el archivo.
+2. Diligenciar una o dos filas y guardar en .xlsx.
+3. **Clientes → Importar**, subir el archivo y ver el resumen.
+4. Probar con una fila sin NIT para ver el reporte de error.
+
+### Resultado de las pruebas
+
+- 42 pruebas en total: **42 aprobadas** (7 nuevas de importación).
+- Cobertura: **92 %**. Ruff, bandit y pip-audit sin hallazgos.
+- Casos cubiertos: archivo válido, filas con error, NIT duplicado, extensión
+  inválida y permisos del Contador Junior.
+
+### Evidencias a capturar (carpeta `evidencias/01-clientes/`)
+
+1. Plantilla de Excel descargada.
+2. Pantalla de importación con el resumen de importados y errores.
+
+### Pendientes del Módulo 1 (siguiente bloque)
+
+- Credenciales y accesos a portales: registrar, editar, mostrar/ocultar la
+  clave, enmascarado, cifrado y aviso de más de 90 días sin actualizar.
+- Reporte de credenciales (solo en pantalla) y control del Contador Junior.

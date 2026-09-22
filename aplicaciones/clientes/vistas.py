@@ -8,14 +8,16 @@ asignados. Todas las vistas exigen sesión y el módulo habilitado (RQF031).
 
 from django.contrib import messages
 from django.contrib.auth import get_user_model
-from django.shortcuts import get_object_or_404, redirect
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, DetailView, ListView, UpdateView, View
 
 from aplicaciones.seguridad.models import Modulo, Rol
 from aplicaciones.seguridad.permisos import ModuloHabilitadoMixin, RolRequeridoMixin
 
-from .formularios import ClienteForm, ClienteMunicipioFormSet
+from .formularios import ClienteForm, ClienteMunicipioFormSet, ImportarClientesForm
+from .importacion import generar_plantilla_clientes, importar_clientes
 from .models import Cliente
 from .selectores import filtrar_clientes, opciones_filtro
 from .servicios import guardar_cliente, inactivar_cliente
@@ -156,3 +158,45 @@ class InactivarClienteView(ModuloHabilitadoMixin, RolRequeridoMixin, View):
         inactivar_cliente(cliente)
         messages.success(request, "El cliente se inactivó correctamente; su historial se conserva.")
         return redirect("clientes:detalle", pk=cliente.pk)
+
+
+class DescargarPlantillaClientesView(ModuloHabilitadoMixin, RolRequeridoMixin, View):
+    """Descarga la plantilla de Excel para la importación masiva de clientes."""
+
+    codigo_modulo = Modulo.MOD01_CLIENTES
+    roles_permitidos = ROLES_EDITAN
+
+    def get(self, request):
+        archivo = generar_plantilla_clientes()
+        respuesta = HttpResponse(
+            archivo.getvalue(),
+            content_type=("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+        )
+        respuesta["Content-Disposition"] = 'attachment; filename="plantilla_clientes_contanika.xlsx"'
+        return respuesta
+
+
+class ImportarClientesView(ModuloHabilitadoMixin, RolRequeridoMixin, View):
+    """Carga un archivo Excel, valida cada fila e importa las filas válidas."""
+
+    codigo_modulo = Modulo.MOD01_CLIENTES
+    roles_permitidos = ROLES_EDITAN
+    template_name = "clientes/importar.html"
+
+    def get(self, request):
+        return render(request, self.template_name, {"formulario": ImportarClientesForm()})
+
+    def post(self, request):
+        formulario = ImportarClientesForm(request.POST, request.FILES)
+        resultado = None
+        if formulario.is_valid():
+            try:
+                resultado = importar_clientes(formulario.cleaned_data["archivo"], request.user)
+                messages.success(request, "El archivo se procesó correctamente.")
+            except ValueError as error:
+                formulario.add_error("archivo", str(error))
+        return render(
+            request,
+            self.template_name,
+            {"formulario": formulario, "resultado": resultado},
+        )

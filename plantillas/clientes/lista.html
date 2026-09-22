@@ -9,6 +9,8 @@
         <div class="ph-actions">
             <span class="ph-meta">{% if is_paginated %}{{ page_obj.paginator.count }}{% else %}{{ clientes|length }}{% endif %} registro(s)</span>
             {% if puede_editar %}
+            <a class="ph-link" href="{% url 'clientes:plantilla' %}"><i class="bi bi-download"></i> Plantilla</a>
+            <a class="ph-link" href="{% url 'clientes:importar' %}"><i class="bi bi-upload"></i> Importar</a>
             <a class="ph-btn" href="{% url 'clientes:crear' %}"><i class="bi bi-plus-lg"></i> Nuevo cliente</a>
             {% endif %}
         </div>

@@ -4,7 +4,7 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.forms import inlineformset_factory
 
-from aplicaciones.comunes.formularios import ModeloFormularioBase
+from aplicaciones.comunes.formularios import FormularioBase, ModeloFormularioBase
 
 from .models import Cliente, ClienteMunicipio, TipoServicio
 
@@ -116,3 +116,21 @@ ClienteMunicipioFormSet = inlineformset_factory(
     extra=1,
     can_delete=True,
 )
+
+
+class ImportarClientesForm(FormularioBase):
+    """Formulario de carga del archivo Excel de clientes."""
+
+    archivo = forms.FileField(
+        label="Archivo de Excel (.xlsx)",
+        widget=forms.ClearableFileInput(attrs={"accept": ".xlsx"}),
+    )
+
+    def clean_archivo(self):
+        """Valida la extensión y el tamaño del archivo antes de procesarlo."""
+        archivo = self.cleaned_data["archivo"]
+        if not archivo.name.lower().endswith(".xlsx"):
+            raise forms.ValidationError("El archivo debe estar en formato Excel (.xlsx).")
+        if archivo.size > 5 * 1024 * 1024:
+            raise forms.ValidationError("El archivo no debe superar los 5 MB.")
+        return archivo
