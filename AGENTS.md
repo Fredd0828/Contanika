@@ -19,10 +19,14 @@ Contexto técnico y convenciones de trabajo para agentes de código que colabore
 | Calidad | `bash scripts/calidad.sh` |
 | Credenciales dev | `paula@befrec.co` / `Contanika2026*` |
 | Repositorio | https://github.com/fredd0828/Contanika |
-| Rama de trabajo | `feature/modulo-2-calendario` |
+| Rama de trabajo | `feature/modulo-3-tareas` |
 | Rama principal | `main` |
 
-**Nota Git:** el push a GitHub requiere token PAT porque `credential-helper store` no quedó configurado. Cada push se hace manual con el token.
+**Nota Git:** una rama por módulo, creada a partir de la última rama de trabajo (no siempre desde
+`main`, para no perder de la vista lo ya construido mientras el módulo anterior espera aprobación).
+`feature/modulo-3-tareas` se creó a partir de `feature/modulo-2-calendario` (calendario aún sin
+mergear a `main`). El push a GitHub ya funciona sin pedir token manualmente (credenciales
+almacenadas por el gestor de credenciales de Git).
 
 ---
 
@@ -197,4 +201,4 @@ Ninguna funcionalidad se da por terminada sin:
 
 ---
 
-Última actualización: 23 de septiembre de 2026.
+Última actualización: 23 de septiembre de 2026 (inicio de `feature/modulo-3-tareas`).
