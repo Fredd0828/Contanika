@@ -92,6 +92,7 @@
                     <th>Régimen</th>
                     <th>IVA</th>
                     <th>Municipio</th>
+                    <th>Municipios adicionales</th>
                     <th>Servicios</th>
                     <th>Responsable</th>
                     <th>Estado</th>
@@ -117,6 +118,11 @@
                     <td>{{ cliente.regimen_tributario|default:"—" }}</td>
                     <td>{% if cliente.responsable_iva %}Sí{% else %}No{% endif %}</td>
                     <td>{{ cliente.municipio_principal|default:"—" }}</td>
+                    <td>
+                        {% for municipio in cliente.municipios_adicionales.all %}
+                        <span class="chip-servicio">{{ municipio.municipio }}</span>
+                        {% empty %}—{% endfor %}
+                    </td>
                     <td>
                         {% for servicio in cliente.servicios.all %}
                         <span class="chip-servicio">{{ servicio.tipo_servicio.nombre_servicio }}</span>
