@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% load calendario_tags %}
+{% block titulo %}Calendario{% endblock %}
+
+{% block contenido %}
+<div class="panel">
+    <div class="ph">
+        <div class="ph-title">
+            <i class="bi bi-calendar2-check-fill"></i>
+            Calendario · {{ nombre_mes }} {{ fecha_base.year }}
+        </div>
+        <div class="d-flex gap-2 flex-wrap align-items-center">
+            <div class="btn-group" role="group" aria-label="Cambiar vista">
+                <a class="btn btn-sm {% if vista == 'dia' %}btn-primary{% else %}btn-outline-primary{% endif %}"
+                   href="?vista=dia&fecha={{ fecha_base|date:'Y-m-d' }}">Día</a>
+                <a class="btn btn-sm {% if vista == 'semana' %}btn-primary{% else %}btn-outline-primary{% endif %}"
+                   href="?vista=semana&fecha={{ fecha_base|date:'Y-m-d' }}">Semana</a>
+                <a class="btn btn-sm {% if vista == 'mes' %}btn-primary{% else %}btn-outline-primary{% endif %}"
+                   href="?vista=mes&fecha={{ fecha_base|date:'Y-m-d' }}">Mes</a>
+            </div>
+            <a class="ph-link" href="?vista={{ vista }}&fecha={{ anterior|date:'Y-m-d' }}">
+                <i class="bi bi-chevron-left"></i> Anterior
+            </a>
+            <a class="ph-link" href="?vista={{ vista }}&fecha={{ hoy|date:'Y-m-d' }}">Hoy</a>
+            <a class="ph-link" href="?vista={{ vista }}&fecha={{ siguiente|date:'Y-m-d' }}">
+                Siguiente <i class="bi bi-chevron-right"></i>
+            </a>
+            <a class="ph-btn" href="{% url 'calendario:lista' %}">
+                <i class="bi bi-list-ul"></i> Lista
+            </a>
+            {% if puede_editar %}
+            <a class="ph-btn" href="{% url 'calendario:crear_vencimiento' %}">
+                <i class="bi bi-plus-lg"></i> Vencimiento
+            </a>
+            {% endif %}
+            <a class="ph-btn" href="{% url 'calendario:crear_anotacion' %}">
+                <i class="bi bi-sticky"></i> Anotación
+            </a>
+            {% if es_administrador %}
+            <a class="ph-link" href="{% url 'calendario:cargar_dian' %}">
+                <i class="bi bi-cloud-upload"></i> Tabla DIAN
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <form method="get" class="filters mb-3">
+        <input type="hidden" name="vista" value="{{ vista }}">
+        <input type="hidden" name="fecha" value="{{ fecha_base|date:'Y-m-d' }}">
+        <div class="campo">
+            <label>{{ formulario_filtro.cliente.label }}</label>
+            {{ formulario_filtro.cliente }}
+        </div>
+        <div class="campo">
+            <label>{{ formulario_filtro.ambito.label }}</label>
+            {{ formulario_filtro.ambito }}
+        </div>
+        <div class="campo">
+            <label>{{ formulario_filtro.estado_presentacion.label }}</label>
+            {{ formulario_filtro.estado_presentacion }}
+        </div>
+        <div class="campo">
+            <label>{{ formulario_filtro.tipo_obligacion.label }}</label>
+            {{ formulario_filtro.tipo_obligacion }}
+        </div>
+        <div class="campo">
+            <label>{{ formulario_filtro.responsable.label }}</label>
+            {{ formulario_filtro.responsable }}
+        </div>
+        <button type="submit" class="ph-btn"><i class="bi bi-funnel"></i> Filtrar</button>
+        <a class="ph-link" href="?vista={{ vista }}&fecha={{ fecha_base|date:'Y-m-d' }}">Limpiar</a>
+    </form>
+
+    {% if vista == "mes" %}
+    <div class="cal-grid">
+        {% for dia in dias_semana %}
+        <div class="cal-head">{{ dia }}</div>
+        {% endfor %}
+        {% for semana in semanas %}
+            {% for dia in semana %}
+            <div class="cal-dia {% if dia.month != fecha_base.month %}cal-otro{% endif %} {% if dia == hoy %}cal-hoy{% endif %}">
+                <div class="cal-num">{{ dia.day }}</div>
+                {% for evento in eventos|eventos_del_dia:dia %}
+                    {% if evento.tipo == "vencimiento" %}
+                    <a href="{{ evento|url_evento }}" class="cal-ev {{ evento|clase_evento }}" title="{{ evento|titulo_evento }}">
+                        {{ evento|titulo_evento|truncatechars:28 }}
+                    </a>
+                    {% else %}
+                    <span class="cal-ev {{ evento|clase_evento }}" title="{{ evento.objeto.contenido }}">
+                        <i class="bi bi-sticky"></i> {{ evento|titulo_evento|truncatechars:25 }}
+                    </span>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            {% endfor %}
+        {% endfor %}
+    </div>
+
+    {% elif vista == "semana" %}
+    <div class="cal-grid cal-semana">
+        {% for dia in dias %}
+        <div class="cal-dia cal-dia-semana {% if dia == hoy %}cal-hoy{% endif %}">
+            <div class="cal-num">{{ dia|date:"D j" }}</div>
+            {% for evento in eventos|eventos_del_dia:dia %}
+                {% if evento.tipo == "vencimiento" %}
+                <a href="{{ evento|url_evento }}" class="cal-ev {{ evento|clase_evento }}" title="{{ evento|titulo_evento }}">
+                    {{ evento|titulo_evento|truncatechars:40 }}
+                </a>
+                {% else %}
+                <span class="cal-ev {{ evento|clase_evento }}" title="{{ evento.objeto.contenido }}">
+                    <i class="bi bi-sticky"></i> {{ evento|titulo_evento|truncatechars:37 }}
+                </span>
+                {% endif %}
+            {% empty %}
+                <span class="cal-vacio">Sin eventos</span>
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </div>
+
+    {% else %}
+    <div class="cal-dia-unico {% if fecha_base == hoy %}cal-hoy{% endif %}">
+        <div class="cal-num-grande">{{ fecha_base|date:"j" }}</div>
+        <div class="cal-fecha-completa">{{ fecha_base|date:"l, j \d\e F \d\e Y" }}</div>
+        {% for evento in eventos|eventos_del_dia:fecha_base %}
+            {% if evento.tipo == "vencimiento" %}
+            <a href="{{ evento|url_evento }}" class="cal-ev cal-ev-grande {{ evento|clase_evento }}">
+                {{ evento|titulo_evento }}
+            </a>
+            {% else %}
+            <span class="cal-ev cal-ev-grande {{ evento|clase_evento }}">
+                <i class="bi bi-sticky"></i> {{ evento.objeto.contenido }}
+            </span>
+            {% endif %}
+        {% empty %}
+            <p class="text-muted mt-3">No hay vencimientos ni anotaciones para este día.</p>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="cal-leyenda mt-3">
+        <span class="cal-ev ev-nacional ev-pendiente">Nacional</span>
+        <span class="cal-ev ev-distrital ev-pendiente">Distrital</span>
+        <span class="cal-ev ev-municipal ev-pendiente">Municipal</span>
+        <span class="cal-ev ev-presentada">Presentada</span>
+        <span class="cal-ev ev-anotacion"><i class="bi bi-sticky"></i> Anotación</span>
+    </div>
+</div>
+{% endblock %}

@@ -90,6 +90,12 @@
 
 <div class="row">
     <div class="col-12">
+        {% include "clientes/vencimientos_panel.html" with vencimientos=vencimientos puede_editar=puede_editar cliente=cliente %}
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
         {% include "clientes/credencial_tabla.html" with credenciales=cliente.credenciales.all puede_editar=puede_editar cliente=cliente %}
     </div>
 </div>

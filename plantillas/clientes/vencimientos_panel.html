@@ -1,0 +1,83 @@
+{% load calendario_tags %}
+{# Panel de vencimientos del cliente: se incluye en clientes/detalle.html #}
+<div class="panel">
+    <div class="ph">
+        <div class="ph-title"><i class="bi bi-calendar2-check"></i> Vencimientos del cliente</div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a class="ph-link" href="{% url 'calendario:lista' %}?cliente={{ cliente.pk }}">
+                <i class="bi bi-list-ul"></i> Ver en la lista
+            </a>
+            {% if puede_editar %}
+            <form method="post" action="{% url 'calendario:calcular_cliente' cliente.pk %}" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="ph-btn"
+                        onclick="return confirm('¿Calcular los vencimientos DIAN de este cliente?')">
+                    <i class="bi bi-arrow-repeat"></i> Calcular vencimientos DIAN
+                </button>
+            </form>
+            <a class="ph-btn" href="{% url 'calendario:crear_vencimiento' %}?cliente={{ cliente.pk }}">
+                <i class="bi bi-plus-lg"></i> Agregar vencimiento
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <table class="tbl">
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Obligación</th>
+                <th>Ámbito</th>
+                <th>Municipio</th>
+                <th>Estado</th>
+                <th>Validación</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for vencimiento in vencimientos %}
+            <tr>
+                <td>{{ vencimiento.fecha_vencimiento|date:"d/m/Y" }}</td>
+                <td>{{ vencimiento.tipo_obligacion }}</td>
+                <td><span class="badge-tipo bt-emp">{{ vencimiento.ambito }}</span></td>
+                <td>{{ vencimiento.municipio|default:"—" }}</td>
+                <td>
+                    {% if vencimiento.estado_presentacion == "Presentada" %}
+                    <span class="badge-est be-g">Presentada</span>
+                    {% elif vencimiento.estado_presentacion == "En progreso" %}
+                    <span class="badge-est be-w">En progreso</span>
+                    {% else %}
+                    <span class="badge-est be-r">Pendiente</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if vencimiento.es_automatico_dian %}
+                        {% if vencimiento.estado_validacion == "Validado" %}
+                        <span class="badge-est be-teal">Validado</span>
+                        {% else %}
+                        <span class="badge-est be-n">Pendiente de validar</span>
+                        {% endif %}
+                    {% else %}
+                    <span class="badge-est be-n">Manual</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a class="icon-btn" href="{% url 'calendario:detalle' vencimiento.pk %}" title="Ver detalle">
+                        <i class="bi bi-eye"></i>
+                    </a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" class="text-center text-muted py-4">
+                    El cliente no tiene vencimientos registrados.
+                    {% if puede_editar %}
+                    Use <strong>Calcular vencimientos DIAN</strong> para generarlos o
+                    <strong>Agregar vencimiento</strong> para registrar uno manual.
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

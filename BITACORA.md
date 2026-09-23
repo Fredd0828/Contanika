@@ -310,3 +310,140 @@ enmascarado, aviso de 90 días y control por rol.
 ### Pendientes del Módulo 1
 
 - Ninguno. Módulo 1 completado.
+
+---
+
+## Miércoles 23 de septiembre de 2026 — Módulo 2, bloque 1: calendario, tabla DIAN y cálculo de vencimientos
+
+**Objetivo del bloque:** dejar navegable el calendario con vistas día/semana/mes,
+la tabla de referencia DIAN 2026 cargada (manual y masiva) y el cálculo
+automático de vencimientos por cliente según NIT/cédula y régimen.
+
+### Trabajo realizado
+
+1. **Tabla de referencia DIAN 2026** (`aplicaciones/calendario/datos_dian_2026.py`):
+   440 registros oficiales extraídos del PDF del calendario tributario 2026
+   (IVA bimestral y cuatrimestral, retención mensual, renta personas jurídicas,
+   grandes contribuyentes, renta personas naturales y RST).
+2. **Comando de carga** `cargar_calendario_dian_2026`: idempotente, crea o
+   actualiza por obligación + grupo + período.
+3. **Reglas de grupo DIAN** (`servicios.calcular_grupo_nit`): empresas por
+   último dígito del NIT, personas naturales por los dos últimos dígitos de la
+   cédula; documentos extranjeros quedan para registro manual.
+4. **Obligaciones por régimen** (`servicios.obligaciones_por_cliente`):
+   régimen simple (cualquier variante del nombre) → RST; jurídica ordinaria →
+   renta PJ + retención (+ IVA si es responsable); natural → renta PN
+   (+ IVA y retención si es responsable).
+5. **Cálculo automático** (`generar_vencimientos_cliente` y masivo): crea
+   vencimientos nacionales "Pendiente de validar" sin duplicar; omite clientes
+   inactivos y extranjeros.
+6. **Calendario navegable** en vistas día/semana/mes con grilla renderizada en
+   el servidor (sin librerías JS pesadas), filtros desplegables, leyenda por
+   ámbito/estado y navegación entre períodos.
+7. **Listado de vencimientos** con filtros por fecha, cliente, ámbito, estado,
+   tipo y responsable, con paginación.
+8. **CRUD de vencimientos manuales** (distritales/municipales), cambio de
+   estado de presentación y validación de los automáticos DIAN.
+9. **Carga DIAN** manual (una fila) y masiva (Excel con plantilla descargable
+   y resumen de errores), exclusiva del Administrador.
+10. **Alertas por vencimiento** (días de anticipación y canal) y **anotaciones
+    libres** con visibilidad privada/equipo/rol/etiqueta.
+11. **Permisos**: Junior solo consulta vencimientos de sus clientes asignados
+    (lista, detalle y calendario); no crea, edita, valida ni configura alertas.
+12. **Integración**: rutas registradas, tarjeta del panel y menú lateral
+    activos para el Módulo 2; `AGENTS.md` creado con el contexto del proyecto.
+
+### Cómo verificarlo (entorno local)
+
+```bash
+cd /home/fredd/documentos/ubuntu/contanika/codigo
+source .venv/bin/activate
+python gestionar.py cargar_calendario_dian_2026
+python gestionar.py runserver
+```
+
+1. Entrar a `http://127.0.0.1:8000` e iniciar sesión.
+2. Clic en **Calendario** del menú lateral: vista mensual con vencimientos.
+3. Probar las vistas **Día/Semana/Mes**, la navegación y los filtros.
+4. **Lista** → botón **Calcular vencimientos DIAN** (crea los de los clientes).
+5. Abrir un vencimiento: cambiar estado, validar y agregar una alerta.
+6. **Tabla DIAN** (solo Administrador): carga manual y plantilla Excel.
+7. Ingresar como Contador Junior: solo ve vencimientos de sus clientes.
+
+### Resultado de las pruebas
+
+- 156 pruebas en total: **156 aprobadas** (86 nuevas del Módulo 2).
+- Cobertura total: **92 %**; módulo calendario: servicios 99 %, formularios
+  99 %, importación 98 %, selectores 92 %, vistas 89 %.
+- Pruebas de seguridad: acceso sin sesión, módulo inhabilitado (403), IDOR de
+  vencimientos ajenos (404), permisos por rol, CSRF y XSS en anotaciones.
+- Ruff (estilo y formato), bandit y pip-audit sin hallazgos.
+
+### Evidencias
+
+- `evidencias/02-calendario/` (HTML renderizado del calendario mes/semana/día,
+  lista de vencimientos y carga DIAN).
+- `scripts/bd/02_datos_iniciales.sql` actualizado con los 440 registros DIAN.
+
+### Pendientes del Módulo 2 (siguientes bloques)
+
+- Vencimientos originados en tareas del Kanban (cuando se construya el Módulo 3).
+- Envío real de alertas (management command `enviar_alertas` + cron, decisión T3).
+- Calendario individual por cliente desde el perfil del cliente (Módulo 1).
+
+---
+
+## Miércoles 23 de septiembre de 2026 — Módulo 2, bloque 2: legibilidad del calendario y vencimientos en el perfil del cliente
+
+**Objetivo del bloque:** mejorar la legibilidad visual del calendario (eventos
+más grandes y grilla más marcada) y llevar los vencimientos al perfil del
+cliente, donde se pueden ver, calcular y registrar.
+
+### Trabajo realizado
+
+1. **Rediseño visual del calendario** (`estaticos/css/contanika.css`):
+   - Eventos más grandes (11.5 px, mayor relleno y borde de 4 px) con sombra
+     suave y realce al pasar el mouse.
+   - Grilla con líneas más gruesas (separación y borde de 2 px), encabezados
+     de días en navy, celdas más altas (132 px) y día actual con marco teal
+     de 3 px; diseño responsive conservado.
+2. **Vencimientos en el perfil del cliente** (`clientes/vencimientos_panel.html`):
+   tabla con fecha, obligación, ámbito, municipio, estado de presentación y
+   validación, con acceso al detalle de cada vencimiento.
+3. **Acciones desde el perfil**: botón **Calcular vencimientos DIAN** (solo de
+   ese cliente, con aviso si es extranjero sin grupo calculable) y botón
+   **Agregar vencimiento** que abre el formulario con el cliente
+   preseleccionado (`?cliente=pk`).
+4. **Enlace "Ver en la lista"** con el filtro del cliente ya aplicado.
+5. El Contador Junior ve el panel solo con los vencimientos de sus clientes
+   asignados y sin botones de acción (mismo criterio del Módulo 1).
+
+### Cómo verificarlo (entorno local)
+
+1. Entrar a **Calendario**: los eventos se ven más grandes y la grilla más
+   marcada; probar las vistas día/semana/mes.
+2. Entrar a **Clientes** y abrir un cliente: aparece el panel
+   **Vencimientos del cliente** debajo de la ficha.
+3. Clic en **Calcular vencimientos DIAN**: se generan solo los de ese cliente.
+4. Clic en **Agregar vencimiento**: el formulario llega con el cliente elegido.
+5. Con un cliente extranjero (pasaporte/CE), el cálculo muestra el aviso de
+   registro manual.
+
+### Resultado de las pruebas
+
+- 161 pruebas en total: **161 aprobadas** (5 nuevas: panel en el perfil,
+  cálculo individual, cliente extranjero, Junior sin permiso y cliente
+  preseleccionado).
+- Cobertura total: **93 %**; `calendario/servicios.py` 99 %,
+  `calendario/vistas.py` 90 %.
+- Ruff (estilo y formato), bandit y pip-audit sin hallazgos.
+
+### Evidencias
+
+- `evidencias/02-calendario/calendario_mes.html` actualizado con el nuevo estilo.
+- `evidencias/02-calendario/perfil_cliente_vencimientos.html` (panel en la ficha).
+
+### Pendientes del Módulo 2
+
+- Vencimientos originados en tareas del Kanban (cuando se construya el Módulo 3).
+- Envío real de alertas (management command `enviar_alertas` + cron, decisión T3).

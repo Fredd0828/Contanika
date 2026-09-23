@@ -14,6 +14,7 @@ Usuario = get_user_model()
 # se agrega aquí su ruta para que la tarjeta del panel quede navegable.
 RUTAS_MODULOS = {
     Modulo.MOD01_CLIENTES: "clientes:lista",
+    Modulo.MOD02_CALENDARIO: "calendario:calendario",
 }
 
 

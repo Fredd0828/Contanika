@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block titulo %}Detalle del vencimiento{% endblock %}
+
+{% block contenido %}
+<div class="panel">
+    <div class="ph">
+        <div class="ph-title">
+            <i class="bi bi-calendar2-event"></i>
+            {{ vencimiento.tipo_obligacion }} · {{ vencimiento.cliente.nombre_razon_social }}
+        </div>
+        <div class="d-flex gap-2">
+            <a class="ph-link" href="{% url 'calendario:lista' %}">
+                <i class="bi bi-arrow-left"></i> Volver a la lista
+            </a>
+            {% if puede_editar %}
+            <a class="ph-btn" href="{% url 'calendario:editar_vencimiento' vencimiento.pk %}">
+                <i class="bi bi-pencil"></i> Editar
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-md-6">
+            <table class="tbl">
+                <tbody>
+                    <tr><th>Cliente</th><td>{{ vencimiento.cliente.nombre_razon_social }}</td></tr>
+                    <tr><th>Tipo de obligación</th><td>{{ vencimiento.tipo_obligacion }}</td></tr>
+                    <tr><th>Ámbito</th><td>{{ vencimiento.ambito }}</td></tr>
+                    <tr><th>Municipio</th><td>{{ vencimiento.municipio|default:"—" }}</td></tr>
+                    <tr><th>Fecha de vencimiento</th><td>{{ vencimiento.fecha_vencimiento|date:"d/m/Y" }}</td></tr>
+                    <tr><th>Responsable</th><td>{{ vencimiento.responsable.nombre|default:"Sin asignar" }}</td></tr>
+                    <tr><th>Estado de presentación</th><td>{{ vencimiento.estado_presentacion }}</td></tr>
+                    {% if vencimiento.es_automatico_dian %}
+                    <tr><th>Origen</th><td>Calculado desde la tabla DIAN</td></tr>
+                    <tr><th>Estado de validación</th><td>{{ vencimiento.estado_validacion|default:"—" }}</td></tr>
+                    {% elif vencimiento.tarea_id %}
+                    <tr><th>Origen</th><td>Tarea del tablero Kanban</td></tr>
+                    {% else %}
+                    <tr><th>Origen</th><td>Registro manual</td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+
+            {% if puede_editar %}
+            <div class="d-flex gap-2 mt-3 flex-wrap">
+                <form method="post" action="{% url 'calendario:cambiar_estado' vencimiento.pk %}">
+                    {% csrf_token %}
+                    <div class="d-flex gap-2 align-items-end">
+                        <div>
+                            <label class="form-label">Cambiar estado</label>
+                            {{ formulario_estado.estado_presentacion }}
+                        </div>
+                        <button type="submit" class="ph-btn"><i class="bi bi-check2"></i></button>
+                    </div>
+                </form>
+                {% if vencimiento.es_automatico_dian %}
+                <form method="post" action="{% url 'calendario:validar' vencimiento.pk %}" class="ms-auto">
+                    {% csrf_token %}
+                    {% if vencimiento.estado_validacion == "Validado" %}
+                    <button type="submit" name="accion" value="pendiente" class="ph-link">
+                        <i class="bi bi-arrow-counterclockwise"></i> Marcar pendiente de validar
+                    </button>
+                    {% else %}
+                    <button type="submit" name="accion" value="validar" class="ph-btn">
+                        <i class="bi bi-patch-check"></i> Validar vencimiento
+                    </button>
+                    {% endif %}
+                </form>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="col-md-6">
+            <div class="ph">
+                <div class="ph-title"><i class="bi bi-bell"></i> Alertas configuradas</div>
+            </div>
+            <table class="tbl">
+                <thead>
+                    <tr><th>Anticipación</th><th>Canal</th>{% if puede_editar %}<th></th>{% endif %}</tr>
+                </thead>
+                <tbody>
+                    {% for alerta in vencimiento.alertas.all %}
+                    <tr>
+                        <td>{{ alerta.dias_anticipacion }} días antes</td>
+                        <td>{{ alerta.canal }}</td>
+                        {% if puede_editar %}
+                        <td>
+                            <form method="post" action="{% url 'calendario:eliminar_alerta' alerta.pk %}"
+                                  onsubmit="return confirm('¿Eliminar esta alerta?')">
+                                {% csrf_token %}
+                                <button type="submit" class="icon-btn danger" title="Eliminar">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="3" class="text-muted">Sin alertas configuradas.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            {% if puede_editar %}
+            <form method="post" action="{% url 'calendario:crear_alerta' vencimiento.pk %}"
+                  class="d-flex gap-2 align-items-end mt-3">
+                {% csrf_token %}
+                <div>
+                    <label class="form-label">Días de anticipación</label>
+                    {{ formulario_alerta.dias_anticipacion }}
+                </div>
+                <div>
+                    <label class="form-label">Canal</label>
+                    {{ formulario_alerta.canal }}
+                </div>
+                <button type="submit" class="ph-btn"><i class="bi bi-plus-lg"></i> Agregar</button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

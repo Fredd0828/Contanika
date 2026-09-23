@@ -27,6 +27,8 @@ ignore = ["DJ001"]
 
 [tool.ruff.lint.per-file-ignores]
 "pruebas/**" = ["S101"]
+# Datos oficiales DIAN en formato tabular: las filas superan 110 caracteres.
+"aplicaciones/calendario/datos_dian_2026.py" = ["E501"]
 
 [tool.bandit]
 exclude_dirs = [".venv", "migrations", "pruebas"]

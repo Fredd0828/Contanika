@@ -98,6 +98,10 @@ class DetalleClienteView(ModuloHabilitadoMixin, DetailView):
     def get_context_data(self, **kwargs):
         contexto = super().get_context_data(**kwargs)
         contexto["puede_editar"] = self.request.user.rol.nombre_rol in ROLES_EDITAN
+        # Vencimientos del cliente visibles desde su perfil (Módulo 2).
+        from aplicaciones.calendario.selectores import vencimientos_por_cliente
+
+        contexto["vencimientos"] = vencimientos_por_cliente(self.request.user, self.object)
         return contexto
 
 
