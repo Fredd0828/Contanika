@@ -86,43 +86,20 @@
             {% empty %}<span class="text-muted">Sin municipios adicionales.</span>{% endfor %}
         </div>
 
-        <div class="panel">
-            <div class="ph">
-                <div class="ph-title"><i class="bi bi-key"></i> Credenciales y accesos a portales</div>
-                <span class="badge-est be-n">Próximo bloque</span>
-            </div>
-            {% if cliente.credenciales.all %}
-            <div class="table-responsive">
-                <table class="tbl">
-                    <thead>
-                        <tr><th>Concepto</th><th>Usuario</th><th>Clave</th><th>Última actualización</th><th></th></tr>
-                    </thead>
-                    <tbody>
-                        {% for credencial in cliente.credenciales.all %}
-                        <tr>
-                            <td>{{ credencial.concepto }}</td>
-                            <td>{{ credencial.usuario_acceso }}</td>
-                            <td>••••••••</td>
-                            <td>{{ credencial.fecha_ultima_actualizacion|date:"d/m/Y" }}</td>
-                            <td>
-                                {% if credencial.requiere_actualizacion %}
-                                <span class="badge-est be-w">Actualizar (más de 90 días)</span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% endif %}
-            <p class="text-muted mb-0 {% if cliente.credenciales.all %}mt-3{% endif %}">
-                La creación, edición y consulta con botón mostrar/ocultar se habilitará en el siguiente bloque del módulo.
-            </p>
-        </div>
+        {% include "clientes/credencial_tabla.html" with credenciales=cliente.credenciales.all puede_editar=puede_editar cliente=cliente %}
     </div>
 </div>
 
 {% if puede_editar %}
+<!-- Modal vacío para credenciales; el contenido se carga vía AJAX -->
+<div class="modal fade" id="modalCredencial" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <!-- Contenido cargado dinámicamente -->
+        </div>
+    </div>
+</div>
+
 <div class="modal fade" id="modalInactivar" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">

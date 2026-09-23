@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block titulo %}Reporte de credenciales - {{ cliente.nombre_razon_social }}{% endblock %}
+
+{% block contenido %}
+<div class="panel">
+    <div class="ph mb-0">
+        <div>
+            <div class="ph-title" style="font-size:18px">
+                <i class="bi bi-key"></i> Reporte de credenciales
+            </div>
+            <div class="ph-meta mt-1">
+                {{ cliente.nombre_razon_social }} ({{ cliente.nit_cedula }})
+            </div>
+        </div>
+        <div class="ph-actions">
+            <a class="ph-link" href="{% url 'clientes:detalle' cliente.pk %}"><i class="bi bi-arrow-left"></i> Volver al cliente</a>
+        </div>
+    </div>
+</div>
+
+<div class="panel">
+    <div class="table-responsive">
+        <table class="tbl">
+            <thead>
+                <tr>
+                    <th>Concepto</th>
+                    <th>Usuario</th>
+                    <th>Contraseña</th>
+                    <th>Última actualización</th>
+                    <th>Días sin actualizar</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for credencial in credenciales %}
+                <tr>
+                    <td>{{ credencial.concepto }}</td>
+                    <td>{{ credencial.usuario_acceso }}</td>
+                    <td>
+                        <div class="input-group" style="max-width: 200px;">
+                            <input type="password" class="form-control form-control-sm" value="{{ credencial.clave_plana }}" readonly id="rep-pass-{{ credencial.pk }}">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="togglePass(this)" title="Mostrar/ocultar">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                    </td>
+                    <td>{{ credencial.fecha_ultima_actualizacion|date:"d/m/Y H:i" }}</td>
+                    <td>{{ credencial.dias_sin_actualizacion }}</td>
+                    <td>
+                        {% if credencial.requiere_actualizacion %}
+                        <span class="badge-est be-w">
+                            <i class="bi bi-exclamation-triangle-fill"></i> Requiere actualización
+                        </span>
+                        {% else %}
+                        <span class="badge-est be-g">Actualizada</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">No hay credenciales registradas.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if credenciales %}
+    <div class="mt-3">
+        <small class="text-muted">
+            Total: {{ credenciales|length }} credencial{{ credenciales|length|pluralize }} ·
+            {% with alertas=credenciales|length %}
+            {{ alertas }} credenciales
+            {% endwith %}
+        </small>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    function togglePass(btn) {
+        const input = btn.parentElement.querySelector('input[type="password"], input[type="text"]');
+        const icon = btn.querySelector('i');
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.remove('bi-eye');
+            icon.classList.add('bi-eye-slash');
+        } else {
+            input.type = 'password';
+            icon.classList.remove('bi-eye-slash');
+            icon.classList.add('bi-eye');
+        }
+    }
+</script>
+{% endblock %}

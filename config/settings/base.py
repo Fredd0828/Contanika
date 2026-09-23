@@ -164,6 +164,11 @@ EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = config("CORREO_REMITENTE", default="Contanika <no-responder@contanika.co>")
 
 # ---------------------------------------------------------------
+# Cifrado de credenciales (Módulo 1)
+# ---------------------------------------------------------------
+CREDENCIAL_CLAVE_CIFRADO = config("CREDENCIAL_CLAVE_CIFRADO", default="")
+
+# ---------------------------------------------------------------
 # Django REST Framework: usado para los endpoints AJAX del sistema
 # ---------------------------------------------------------------
 REST_FRAMEWORK = {

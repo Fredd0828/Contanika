@@ -51,3 +51,28 @@ def inactivar_cliente(cliente):
     """
     cliente.inactivar()
     return cliente
+
+
+@transaction.atomic
+def guardar_credencial(formulario, cliente, usuario):
+    """
+    Guarda una credencial asociada a un cliente.
+
+    La contraseña se cifra automáticamente en el formulario.
+    Devuelve la credencial guardada.
+    """
+    credencial = formulario.save(commit=False)
+    credencial.cliente = cliente
+    credencial.save()
+    return credencial
+
+
+@transaction.atomic
+def eliminar_credencial(credencial):
+    """
+    Elimina una credencial de acceso.
+
+    La operación es irreversible.
+    """
+    credencial.delete()
+    return True

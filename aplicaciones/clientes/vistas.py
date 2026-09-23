@@ -10,17 +10,17 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.views.generic import CreateView, DetailView, ListView, UpdateView, View
 
 from aplicaciones.seguridad.models import Modulo, Rol
 from aplicaciones.seguridad.permisos import ModuloHabilitadoMixin, RolRequeridoMixin
 
-from .formularios import ClienteForm, ClienteMunicipioFormSet, ImportarClientesForm
+from .formularios import ClienteForm, ClienteMunicipioFormSet, CredencialForm, ImportarClientesForm
 from .importacion import generar_plantilla_clientes, importar_clientes
-from .models import Cliente
+from .models import Cliente, Credencial
 from .selectores import filtrar_clientes, opciones_filtro
-from .servicios import guardar_cliente, inactivar_cliente
+from .servicios import eliminar_credencial, guardar_cliente, guardar_credencial, inactivar_cliente
 
 Usuario = get_user_model()
 
@@ -198,4 +198,134 @@ class ImportarClientesView(ModuloHabilitadoMixin, RolRequeridoMixin, View):
             request,
             self.template_name,
             {"formulario": formulario, "resultado": resultado},
+        )
+
+
+class CredencialCrearView(ModuloHabilitadoMixin, RolRequeridoMixin, View):
+    """Crea una nueva credencial para un cliente."""
+
+    codigo_modulo = Modulo.MOD01_CLIENTES
+    roles_permitidos = ROLES_EDITAN
+
+    def _get_template(self, request):
+        is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
+        return "clientes/credencial_form_modal.html" if is_ajax else "clientes/credencial_form.html"
+
+    def get(self, request, pk_cliente):
+        cliente = get_object_or_404(Cliente, pk=pk_cliente)
+        if request.user.es_contador_junior and cliente.responsable != request.user:
+            return redirect("clientes:detalle", pk=cliente.pk)
+        formulario = CredencialForm()
+        return render(
+            request,
+            self._get_template(request),
+            {"formulario": formulario, "cliente": cliente, "accion": "crear"},
+        )
+
+    def post(self, request, pk_cliente):
+        cliente = get_object_or_404(Cliente, pk=pk_cliente)
+        if request.user.es_contador_junior and cliente.responsable != request.user:
+            return redirect("clientes:detalle", pk=cliente.pk)
+        formulario = CredencialForm(request.POST)
+        if formulario.is_valid():
+            guardar_credencial(formulario, cliente, request.user)
+            messages.success(request, "La credencial se creó correctamente.")
+            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                url = reverse("clientes:detalle", kwargs={"pk": cliente.pk})
+                return HttpResponse(
+                    f'<script>window.location.href = "{url}";</script>',
+                    content_type="text/html",
+                )
+            return redirect("clientes:detalle", pk=cliente.pk)
+        return render(
+            request,
+            self._get_template(request),
+            {"formulario": formulario, "cliente": cliente, "accion": "crear"},
+        )
+
+
+class CredencialEditarView(ModuloHabilitadoMixin, RolRequeridoMixin, View):
+    """Edita una credencial existente."""
+
+    codigo_modulo = Modulo.MOD01_CLIENTES
+    roles_permitidos = ROLES_EDITAN
+
+    def _get_template(self, request):
+        is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
+        return "clientes/credencial_form_modal.html" if is_ajax else "clientes/credencial_form.html"
+
+    def get(self, request, pk_cliente, pk):
+        credencial = get_object_or_404(Credencial, pk=pk, cliente_id=pk_cliente)
+        if request.user.es_contador_junior and credencial.cliente.responsable != request.user:
+            return redirect("clientes:detalle", pk=credencial.cliente.pk)
+        formulario = CredencialForm(instance=credencial)
+        return render(
+            request,
+            self._get_template(request),
+            {
+                "formulario": formulario,
+                "cliente": credencial.cliente,
+                "credencial": credencial,
+                "accion": "editar",
+            },
+        )
+
+    def post(self, request, pk_cliente, pk):
+        credencial = get_object_or_404(Credencial, pk=pk, cliente_id=pk_cliente)
+        if request.user.es_contador_junior and credencial.cliente.responsable != request.user:
+            return redirect("clientes:detalle", pk=credencial.cliente.pk)
+        formulario = CredencialForm(request.POST, instance=credencial)
+        if formulario.is_valid():
+            formulario.save()
+            messages.success(request, "La credencial se actualizó correctamente.")
+            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                url = reverse("clientes:detalle", kwargs={"pk": credencial.cliente.pk})
+                return HttpResponse(
+                    f'<script>window.location.href = "{url}";</script>',
+                    content_type="text/html",
+                )
+            return redirect("clientes:detalle", pk=credencial.cliente.pk)
+        return render(
+            request,
+            self._get_template(request),
+            {
+                "formulario": formulario,
+                "cliente": credencial.cliente,
+                "credencial": credencial,
+                "accion": "editar",
+            },
+        )
+
+
+class CredencialEliminarView(ModuloHabilitadoMixin, RolRequeridoMixin, View):
+    """Elimina una credencial de acceso."""
+
+    codigo_modulo = Modulo.MOD01_CLIENTES
+    roles_permitidos = ROLES_EDITAN
+
+    def post(self, request, pk_cliente, pk):
+        credencial = get_object_or_404(Credencial, pk=pk, cliente_id=pk_cliente)
+        if request.user.es_contador_junior and credencial.cliente.responsable != request.user:
+            return redirect("clientes:detalle", pk=credencial.cliente.pk)
+        eliminar_credencial(credencial)
+        messages.success(request, "La credencial se eliminó correctamente.")
+        return redirect("clientes:detalle", pk=credencial.cliente.pk)
+
+
+class ReporteCredencialesView(ModuloHabilitadoMixin, RolRequeridoMixin, View):
+    """Reporte de credenciales de un cliente (solo en pantalla, sin descarga)."""
+
+    codigo_modulo = Modulo.MOD01_CLIENTES
+    roles_permitidos = ROLES_EDITAN + (Rol.CONTADOR_JUNIOR,)
+    template_name = "clientes/reporte_credenciales.html"
+
+    def get(self, request, pk_cliente):
+        cliente = get_object_or_404(Cliente, pk=pk_cliente)
+        if request.user.es_contador_junior and cliente.responsable != request.user:
+            return redirect("clientes:detalle", pk=cliente.pk)
+        credenciales = cliente.credenciales.all().order_by("concepto")
+        return render(
+            request,
+            self.template_name,
+            {"cliente": cliente, "credenciales": credenciales},
         )

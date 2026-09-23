@@ -14,4 +14,25 @@ urlpatterns = [
     path("clientes/<int:pk>/", vistas.DetalleClienteView.as_view(), name="detalle"),
     path("clientes/<int:pk>/editar/", vistas.EditarClienteView.as_view(), name="editar"),
     path("clientes/<int:pk>/inactivar/", vistas.InactivarClienteView.as_view(), name="inactivar"),
+    # Credenciales
+    path(
+        "clientes/<int:pk_cliente>/credenciales/nueva/",
+        vistas.CredencialCrearView.as_view(),
+        name="credencial_crear",
+    ),
+    path(
+        "clientes/<int:pk_cliente>/credenciales/<int:pk>/editar/",
+        vistas.CredencialEditarView.as_view(),
+        name="credencial_editar",
+    ),
+    path(
+        "clientes/<int:pk_cliente>/credenciales/<int:pk>/eliminar/",
+        vistas.CredencialEliminarView.as_view(),
+        name="credencial_eliminar",
+    ),
+    path(
+        "clientes/<int:pk_cliente>/credenciales/reporte/",
+        vistas.ReporteCredencialesView.as_view(),
+        name="reporte_credenciales",
+    ),
 ]

@@ -6,7 +6,7 @@ from django.forms import inlineformset_factory
 
 from aplicaciones.comunes.formularios import FormularioBase, ModeloFormularioBase
 
-from .models import Cliente, ClienteMunicipio, TipoServicio
+from .models import Cliente, ClienteMunicipio, Credencial, TipoServicio
 
 Usuario = get_user_model()
 
@@ -144,3 +144,47 @@ class ImportarClientesForm(FormularioBase):
         if archivo.size > 5 * 1024 * 1024:
             raise forms.ValidationError("El archivo no debe superar los 5 MB.")
         return archivo
+
+
+class CredencialForm(ModeloFormularioBase):
+    """Formulario para credenciales de acceso a portales del cliente."""
+
+    clave = forms.CharField(
+        label="Contraseña",
+        widget=forms.PasswordInput(attrs={"placeholder": "Ingrese la contraseña"}),
+        required=True,
+        help_text="La contraseña se guardará cifrada y se mostrará enmascarada.",
+    )
+
+    class Meta:
+        model = Credencial
+        fields = ["concepto", "usuario_acceso"]
+        widgets = {
+            "concepto": forms.TextInput(
+                attrs={"placeholder": "Ej. DIAN, Secretaría de Hacienda, Firma electrónica"}
+            ),
+            "usuario_acceso": forms.TextInput(attrs={"placeholder": "Usuario o correo de acceso"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Si es edición, no requerimos la clave (se mantiene la actual si no se cambia)
+        if self.instance.pk:
+            self.fields["clave"].required = False
+            self.fields["clave"].help_text = "Deje en blanco para mantener la contraseña actual."
+
+    def clean_clave(self):
+        """Valida la contraseña."""
+        clave = self.cleaned_data.get("clave")
+        if not self.instance.pk and not clave:
+            raise forms.ValidationError("La contraseña es obligatoria para credenciales nuevas.")
+        return clave
+
+    def save(self, commit=True):
+        credencial = super().save(commit=False)
+        clave = self.cleaned_data.get("clave")
+        if clave:
+            credencial.establecer_clave(clave)
+        if commit:
+            credencial.save()
+        return credencial

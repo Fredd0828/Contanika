@@ -1,0 +1,168 @@
+{% load static %}
+<div class="panel">
+    <div class="ph d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div class="ph-title"><i class="bi bi-key"></i> Credenciales y accesos a portales</div>
+        {% if puede_editar %}
+        <button type="button" class="ph-btn" data-bs-toggle="modal" data-bs-target="#modalCredencial"
+                data-url="{% url 'clientes:credencial_crear' cliente.pk %}">
+            <i class="bi bi-plus-lg"></i> Agregar credencial
+        </button>
+        {% endif %}
+    </div>
+
+    {% if credenciales %}
+    <div class="table-responsive">
+        <table class="tbl">
+            <thead>
+                <tr>
+                    <th>Concepto</th>
+                    <th>Usuario</th>
+                    <th>Contraseña</th>
+                    <th>Última actualización</th>
+                    <th>Estado</th>
+                    {% if puede_editar %}
+                    <th class="text-end">Acciones</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for credencial in credenciales %}
+                <tr>
+                    <td>{{ credencial.concepto }}</td>
+                    <td>{{ credencial.usuario_acceso }}</td>
+                    <td>
+                        <div class="input-group" style="max-width: 200px;">
+                            <input type="password" class="form-control form-control-sm" value="{{ credencial.clave_plana }}" readonly id="pass-{{ credencial.pk }}">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="togglePass(this)" title="Mostrar/ocultar">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                    </td>
+                    <td>{{ credencial.fecha_ultima_actualizacion|date:"d/m/Y H:i" }}</td>
+                    <td>
+                        {% if credencial.requiere_actualizacion %}
+                        <span class="badge-est be-w">
+                            <i class="bi bi-exclamation-triangle-fill"></i> {{ credencial.dias_sin_actualizacion }} días sin actualizar
+                        </span>
+                        {% else %}
+                        <span class="badge-est be-g">Actualizada</span>
+                        {% endif %}
+                    </td>
+                    {% if puede_editar %}
+                    <td class="text-end">
+                        <button type="button" class="icon-btn" data-bs-toggle="modal" data-bs-target="#modalCredencial" 
+                                data-url="{% url 'clientes:credencial_editar' cliente.pk credencial.pk %}"
+                                title="Editar">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button type="button" class="icon-btn danger" 
+                                data-bs-toggle="modal" data-bs-target="#modalEliminarCredencial"
+                                data-url="{% url 'clientes:credencial_eliminar' cliente.pk credencial.pk %}"
+                                data-concepto="{{ credencial.concepto }}"
+                                title="Eliminar">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="text-muted mb-0">No hay credenciales registradas para este cliente.</p>
+    {% endif %}
+
+    {% if puede_editar %}
+    <div class="modal fade" id="modalEliminarCredencial" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Eliminar credencial</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    ¿Está seguro de eliminar la credencial <strong id="eliminarCredencialConcepto"></strong>?<br>
+                    <span class="text-danger">Esta acción no se puede deshacer.</span>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <form id="formEliminarCredencial" method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">Sí, eliminar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    // Toggle password visibility
+    function togglePass(btn) {
+        const input = btn.parentElement.querySelector('input[type="password"], input[type="text"]');
+        const icon = btn.querySelector('i');
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.remove('bi-eye');
+            icon.classList.add('bi-eye-slash');
+        } else {
+            input.type = 'password';
+            icon.classList.remove('bi-eye-slash');
+            icon.classList.add('bi-eye');
+        }
+    }
+
+    // Handle credential modal loading via data-url
+    document.addEventListener('DOMContentLoaded', function() {
+        const modalCredencial = document.getElementById('modalCredencial');
+        if (modalCredencial) {
+            modalCredencial.addEventListener('show.bs.modal', function(event) {
+                const button = event.relatedTarget;
+                if (button && button.dataset.url) {
+                    const modalContent = modalCredencial.querySelector('.modal-content');
+                    modalContent.innerHTML = '<div class="modal-body text-center"><div class="spinner-border text-teal" role="status"></div><p class="mt-2 text-muted">Cargando...</p></div>';
+                    fetch(button.dataset.url, {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Error cargando el formulario');
+                        }
+                        return response.text();
+                    })
+                    .then(html => {
+                        modalContent.innerHTML = html;
+                        modalCredencial.querySelectorAll('.input-group button').forEach(btn => {
+                            btn.onclick = function() { togglePass(this); };
+                        });
+                    })
+                    .catch(error => {
+                        modalContent.innerHTML = '<div class="modal-body"><div class="alert alert-danger">No se pudo cargar el formulario. Intente de nuevo.</div></div>';
+                        console.error('Error cargando credencial:', error);
+                    });
+                }
+            });
+
+            // Limpiar modal al cerrarse para evitar contenido viejo
+            modalCredencial.addEventListener('hidden.bs.modal', function() {
+                modalCredencial.querySelector('.modal-content').innerHTML = '';
+            });
+        }
+
+        // Handle delete confirmation
+        const modalEliminar = document.getElementById('modalEliminarCredencial');
+        if (modalEliminar) {
+            modalEliminar.addEventListener('show.bs.modal', function(event) {
+                const button = event.relatedTarget;
+                if (button) {
+                    const concepto = button.dataset.concepto;
+                    const url = button.dataset.url;
+                    document.getElementById('eliminarCredencialConcepto').textContent = concepto;
+                    document.getElementById('formEliminarCredencial').action = url;
+                }
+            });
+        }
+    });
+</script>

@@ -6,10 +6,20 @@ de tipos de servicio, la relación entre clientes y servicios y las
 credenciales de acceso a portales que se guardan en el perfil del cliente.
 """
 
+from cryptography.fernet import Fernet
+from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
 DIAS_AVISO_CREDENCIAL = 90
+
+
+def _get_fernet():
+    """Retorna una instancia de Fernet con la clave configurada."""
+    clave = getattr(settings, "CREDENCIAL_CLAVE_CIFRADO", None)
+    if not clave:
+        raise ValueError("CREDENCIAL_CLAVE_CIFRADO no está configurada en settings")
+    return Fernet(clave.encode() if isinstance(clave, str) else clave)
 
 
 class Cliente(models.Model):
@@ -194,3 +204,39 @@ class Credencial(models.Model):
     def requiere_actualizacion(self):
         """Indica si la credencial lleva más de 90 días sin actualizarse."""
         return self.dias_sin_actualizacion > DIAS_AVISO_CREDENCIAL
+
+    def establecer_clave(self, clave_plana: str) -> None:
+        """
+        Cifra y guarda la clave plana en `clave_cifrada`.
+
+        Args:
+            clave_plana: Contraseña en texto plano a cifrar.
+        """
+        fernet = _get_fernet()
+        self.clave_cifrada = fernet.encrypt(clave_plana.encode()).decode()
+
+    def obtener_clave(self) -> str:
+        """
+        Descifra y retorna la clave en texto plano.
+
+        Returns:
+            Contraseña descifrada.
+
+        Raises:
+            ValueError: Si la clave no se puede descifrar.
+        """
+        fernet = _get_fernet()
+        return fernet.decrypt(self.clave_cifrada.encode()).decode()
+
+    @property
+    def clave_plana(self) -> str:
+        """
+        Propiedad de solo lectura para acceder a la clave descifrada.
+
+        Útil en templates y serializadores donde se necesita la clave
+        temporalmente (ej. mostrar/ocultar en UI).
+
+        Returns:
+            Contraseña en texto plano.
+        """
+        return self.obtener_clave()
