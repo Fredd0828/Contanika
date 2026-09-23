@@ -29,13 +29,22 @@ PREFIJO_MUNICIPIOS = "municipios"
 
 
 class ListaClientesView(ModuloHabilitadoMixin, ListView):
-    """Listado de clientes con filtros desplegables y paginación."""
+    """Listado de clientes con filtros desplegables y paginación configurable."""
 
     codigo_modulo = Modulo.MOD01_CLIENTES
     model = Cliente
     template_name = "clientes/lista.html"
     context_object_name = "clientes"
-    paginate_by = 20
+    OPCIONES_POR_PAGINA = (10, 25, 50)
+    POR_PAGINA_DEFAULT = 25
+
+    def get_paginate_by(self, queryset):
+        """Permite al usuario elegir cuántos registros ver por página."""
+        try:
+            valor = int(self.request.GET.get("por_pagina", self.POR_PAGINA_DEFAULT))
+            return valor if valor in self.OPCIONES_POR_PAGINA else self.POR_PAGINA_DEFAULT
+        except ValueError:
+            return self.POR_PAGINA_DEFAULT
 
     def get_queryset(self):
         parametros = self.request.GET
@@ -59,6 +68,8 @@ class ListaClientesView(ModuloHabilitadoMixin, ListView):
         contexto["filtros"] = self.request.GET
         contexto["responsables"] = Usuario.objects.filter(estado=Usuario.ACTIVO).order_by("nombre")
         contexto["puede_editar"] = self.request.user.rol.nombre_rol in ROLES_EDITAN
+        contexto["por_pagina"] = self.get_paginate_by(self.get_queryset())
+        contexto["opciones_por_pagina"] = self.OPCIONES_POR_PAGINA
         parametros = self.request.GET.copy()
         parametros.pop("page", None)
         contexto["querystring"] = parametros.urlencode()

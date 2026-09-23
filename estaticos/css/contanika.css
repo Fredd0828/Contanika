@@ -841,6 +841,30 @@ a {
     }
 }
 
+.pagination .page-link {
+    color: var(--teal);
+    border-color: var(--border);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.pagination .page-link:hover {
+    background: var(--teal);
+    color: #fff;
+    border-color: var(--teal);
+}
+
+.pagination .page-item.active .page-link {
+    background: var(--teal);
+    border-color: var(--teal);
+    color: #fff;
+}
+
+.pagination .page-item.disabled .page-link {
+    color: var(--muted);
+    background: var(--card2);
+}
+
 @media (max-width: 576px) {
     .kpi-strip,
     .grid-tarjetas {

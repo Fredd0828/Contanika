@@ -17,6 +17,7 @@
     </div>
 
     <form method="get" class="filters mb-3">
+        <input type="hidden" name="por_pagina" value="{{ por_pagina }}">
         <div class="campo">
             <label for="f-ciudad">Ciudad</label>
             <input type="text" id="f-ciudad" name="ciudad" value="{{ filtros.ciudad|default:'' }}" list="f-lista-ciudades" placeholder="Escriba para buscar...">
@@ -141,16 +142,49 @@
 </div>
 
 {% if is_paginated %}
-<nav aria-label="Paginación de clientes">
-    <ul class="pagination pagination-sm mb-0">
-        {% if page_obj.has_previous %}
-        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if querystring %}&{{ querystring }}{% endif %}">Anterior</a></li>
-        {% endif %}
-        <li class="page-item disabled"><span class="page-link">Página {{ page_obj.number }} de {{ paginator.num_pages }}</span></li>
-        {% if page_obj.has_next %}
-        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if querystring %}&{{ querystring }}{% endif %}">Siguiente</a></li>
-        {% endif %}
-    </ul>
-</nav>
+<div class="panel mt-3">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <form method="get" class="d-flex align-items-center gap-2">
+            {% for clave, valor in filtros.items %}
+                {% if clave != "por_pagina" and clave != "page" %}
+                <input type="hidden" name="{{ clave }}" value="{{ valor }}">
+                {% endif %}
+            {% endfor %}
+            <label for="por-pagina" class="text-muted small mb-0">Mostrar:</label>
+            <select id="por-pagina" name="por_pagina" class="dd" onchange="this.form.submit()">
+                {% for opcion in opciones_por_pagina %}
+                <option value="{{ opcion }}" {% if por_pagina == opcion %}selected{% endif %}>{{ opcion }}</option>
+                {% endfor %}
+            </select>
+            <span class="text-muted small">registros por página</span>
+        </form>
+
+        <nav aria-label="Paginación de clientes">
+            <ul class="pagination pagination-sm mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}&por_pagina={{ por_pagina }}{% if querystring %}&{{ querystring }}{% endif %}">Anterior</a>
+                </li>
+                {% endif %}
+
+                {% for num in paginator.page_range %}
+                    {% if num == page_obj.number %}
+                    <li class="page-item active" aria-current="page"><span class="page-link">{{ num }}</span></li>
+                    {% elif num > page_obj.number|add:-3 and num < page_obj.number|add:3 %}
+                    <li class="page-item"><a class="page-link" href="?page={{ num }}&por_pagina={{ por_pagina }}{% if querystring %}&{{ querystring }}{% endif %}">{{ num }}</a></li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}&por_pagina={{ por_pagina }}{% if querystring %}&{{ querystring }}{% endif %}">Siguiente</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+
+        <span class="text-muted small">Página {{ page_obj.number }} de {{ paginator.num_pages }} · {{ paginator.count }} registro(s)</span>
+    </div>
+</div>
 {% endif %}
 {% endblock %}
