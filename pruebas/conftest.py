@@ -9,6 +9,13 @@ from aplicaciones.seguridad.models import Modulo, Rol
 Usuario = get_user_model()
 
 CLAVE_PRUEBAS = "ClaveSegura123"
+CLAVE_CIFRADO_PRUEBAS = "tl0BjzeE61CqzeDjKd8FH6Qs8ayUmd4AumYKFngCh8o="
+
+
+@pytest.fixture(autouse=True)
+def configurar_clave_cifrado(settings):
+    """Fija la clave de cifrado de credenciales para que las pruebas no dependan del .env."""
+    settings.CREDENCIAL_CLAVE_CIFRADO = CLAVE_CIFRADO_PRUEBAS
 
 
 @pytest.fixture

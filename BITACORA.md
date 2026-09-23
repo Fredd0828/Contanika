@@ -255,8 +255,58 @@ Excel con validación fila por fila (RQF013).
 1. Plantilla de Excel descargada.
 2. Pantalla de importación con el resumen de importados y errores.
 
-### Pendientes del Módulo 1 (siguiente bloque)
+---
 
-- Credenciales y accesos a portales: registrar, editar, mostrar/ocultar la
-  clave, enmascarado, cifrado y aviso de más de 90 días sin actualizar.
-- Reporte de credenciales (solo en pantalla) y control del Contador Junior.
+## Martes 22 de septiembre de 2026 — Módulo 1, bloque 3: credenciales y accesos a portales
+
+**Objetivo del bloque:** completar la gestión de credenciales de acceso a
+portales del cliente (DIAN, Hacienda, firma electrónica, etc.) con cifrado,
+enmascarado, aviso de 90 días y control por rol.
+
+### Trabajo realizado
+
+1. **CRUD de credenciales** desde el detalle del cliente: crear, editar y
+   eliminar credenciales mediante modal AJAX.
+2. **Cifrado/descifrado** con Fernet: la contraseña se guarda cifrada en
+   `clave_cifrada` y solo se descifra temporalmente al mostrarla en pantalla.
+3. **Enmascarado y botón mostrar/ocultar**: la contraseña se muestra en un
+   campo tipo `password` con un botón para revelarla u ocultarla.
+4. **Aviso de 90 días**: credenciales con más de 90 días sin actualizar
+   muestran advertencia visual en la tabla y en el reporte.
+5. **Control por rol**: Administrador y Contador Senior gestionan credenciales;
+   el Contador Junior solo puede ver las de los clientes que tiene asignados.
+6. **Reporte de credenciales** en pantalla (sin descarga), accesible desde el
+   detalle del cliente.
+7. **Configuración robusta**: `.env.example` documenta la variable
+   `CREDENCIAL_CLAVE_CIFRADO` y las pruebas usan una clave fija independiente
+   del entorno.
+8. **Ajuste de paginación del listado**: el default pasó de 25 a 10 clientes
+   por página.
+
+### Cómo verificarlo (entorno local)
+
+1. Entrar a **Clientes**, abrir un cliente y desplazarse al panel
+   **Credenciales y accesos a portales**.
+2. Clic en **Agregar credencial**, guardar y verla enmascarada en la tabla.
+3. Clic en el ojo para revelar la contraseña.
+4. Clic en **Ver reporte** para abrir el reporte de credenciales.
+5. Probar con una credencial cuya `fecha_ultima_actualizacion` tenga más de
+   90 días para ver el aviso.
+6. Ingresar como Contador Junior: solo debe ver credenciales de sus clientes
+   asignados y no debe tener botones de agregar/editar/eliminar.
+
+### Resultado de las pruebas
+
+- 70 pruebas en total: **70 aprobadas** (1 nueva de paginación).
+- Cobertura: **91 %**. Ruff, bandit y pip-audit sin hallazgos.
+
+### Evidencias a capturar (carpeta `evidencias/01-clientes/`)
+
+1. Detalle del cliente con credenciales enmascaradas.
+2. Modal de creación/edición de credencial.
+3. Reporte de credenciales con aviso de 90 días.
+4. Vista del Contador Junior sin botones de edición.
+
+### Pendientes del Módulo 1
+
+- Ninguno. Módulo 1 completado.

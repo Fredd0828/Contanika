@@ -36,7 +36,7 @@ class ListaClientesView(ModuloHabilitadoMixin, ListView):
     template_name = "clientes/lista.html"
     context_object_name = "clientes"
     OPCIONES_POR_PAGINA = (10, 25, 50)
-    POR_PAGINA_DEFAULT = 25
+    POR_PAGINA_DEFAULT = 10
 
     def get_paginate_by(self, queryset):
         """Permite al usuario elegir cuántos registros ver por página."""
@@ -335,8 +335,9 @@ class ReporteCredencialesView(ModuloHabilitadoMixin, RolRequeridoMixin, View):
         if request.user.es_contador_junior and cliente.responsable != request.user:
             return redirect("clientes:detalle", pk=cliente.pk)
         credenciales = cliente.credenciales.all().order_by("concepto")
+        alertas = sum(1 for c in credenciales if c.requiere_actualizacion)
         return render(
             request,
             self.template_name,
-            {"cliente": cliente, "credenciales": credenciales},
+            {"cliente": cliente, "credenciales": credenciales, "alertas": alertas},
         )

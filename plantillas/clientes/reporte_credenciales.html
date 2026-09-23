@@ -70,9 +70,7 @@
     <div class="mt-3">
         <small class="text-muted">
             Total: {{ credenciales|length }} credencial{{ credenciales|length|pluralize }} ·
-            {% with alertas=credenciales|length %}
-            {{ alertas }} credenciales
-            {% endwith %}
+            {{ alertas }} requieren actualización
         </small>
     </div>
     {% endif %}

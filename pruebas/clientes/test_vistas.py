@@ -161,3 +161,20 @@ def test_csrf_protege_la_creacion(usuario_senior):
     cliente_csrf.force_login(usuario_senior)
     respuesta = cliente_csrf.post(reverse("clientes:crear"), _datos_cliente())
     assert respuesta.status_code == 403
+
+
+def test_paginacion_default_10_registros(client, usuario_administrador):
+    """El listado muestra 10 clientes por pagina por defecto."""
+    for indice in range(12):
+        Cliente.objects.create(
+            nombre_razon_social=f"Cliente Paginado {indice}",
+            nit_cedula=f"{900000000 + indice}",
+            tipo_documento=Cliente.NIT,
+            tipo_persona=Cliente.JURIDICA,
+            responsable=usuario_administrador,
+        )
+    client.force_login(usuario_administrador)
+    respuesta = client.get(reverse("clientes:lista"))
+    assert respuesta.status_code == 200
+    assert len(respuesta.context["clientes"]) == 10
+    assert respuesta.context["is_paginated"] is True

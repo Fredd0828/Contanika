@@ -2,12 +2,17 @@
 <div class="panel">
     <div class="ph d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div class="ph-title"><i class="bi bi-key"></i> Credenciales y accesos a portales</div>
-        {% if puede_editar %}
-        <button type="button" class="ph-btn" data-bs-toggle="modal" data-bs-target="#modalCredencial"
-                data-url="{% url 'clientes:credencial_crear' cliente.pk %}">
-            <i class="bi bi-plus-lg"></i> Agregar credencial
-        </button>
-        {% endif %}
+        <div class="d-flex gap-2">
+            <a class="ph-link" href="{% url 'clientes:reporte_credenciales' cliente.pk %}">
+                <i class="bi bi-list-check"></i> Ver reporte
+            </a>
+            {% if puede_editar %}
+            <button type="button" class="ph-btn" data-bs-toggle="modal" data-bs-target="#modalCredencial"
+                    data-url="{% url 'clientes:credencial_crear' cliente.pk %}">
+                <i class="bi bi-plus-lg"></i> Agregar credencial
+            </button>
+            {% endif %}
+        </div>
     </div>
 
     {% if credenciales %}
