@@ -1,0 +1,115 @@
+{% load static %}
+<div class="modal-header">
+    <div>
+        <h5 class="modal-title mb-0">{{ tarea.titulo }}</h5>
+        <div class="text-muted small">{{ tarea.cliente.nombre_razon_social }}</div>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+</div>
+<div class="modal-body">
+    <div class="row g-3 mb-3 align-items-end">
+        <div class="col-auto">
+            <form method="post" action="{% url 'tareas:cambiar_estado' tarea.pk %}" class="d-flex gap-2 align-items-end">
+                {% csrf_token %}
+                <div>
+                    <label class="form-label">Estado</label>
+                    {{ formulario_estado.estado }}
+                </div>
+                <button type="submit" class="btn btn-outline-primary"><i class="bi bi-check2"></i> Cambiar</button>
+            </form>
+        </div>
+        <div class="col-auto text-muted small">
+            Prioridad: <span class="kb-prio kb-prio-{{ tarea.prioridad|lower }}">{{ tarea.prioridad }}</span>
+            · Responsable: {{ tarea.responsable.nombre|default:"Sin asignar" }}
+        </div>
+    </div>
+
+    {% if puede_editar %}
+    <form method="post" action="{% url 'tareas:editar' tarea.pk %}" class="mb-4">
+        {% csrf_token %}
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label for="{{ formulario.cliente.id_for_label }}" class="form-label">{{ formulario.cliente.label }}</label>
+                {{ formulario.cliente }}
+            </div>
+            <div class="col-md-6">
+                <label for="{{ formulario.titulo.id_for_label }}" class="form-label">{{ formulario.titulo.label }}</label>
+                {{ formulario.titulo }}
+            </div>
+            <div class="col-md-6">
+                <label for="{{ formulario.tipo_tarea.id_for_label }}" class="form-label">{{ formulario.tipo_tarea.label }}</label>
+                {{ formulario.tipo_tarea }}
+            </div>
+            <div class="col-md-6">
+                <label for="{{ formulario.responsable.id_for_label }}" class="form-label">{{ formulario.responsable.label }}</label>
+                {{ formulario.responsable }}
+            </div>
+            <div class="col-md-6">
+                <label for="{{ formulario.prioridad.id_for_label }}" class="form-label">{{ formulario.prioridad.label }}</label>
+                {{ formulario.prioridad }}
+            </div>
+            <div class="col-md-6">
+                <label for="{{ formulario.fecha_vencimiento.id_for_label }}" class="form-label">{{ formulario.fecha_vencimiento.label }}</label>
+                {{ formulario.fecha_vencimiento }}
+            </div>
+            <div class="col-12">
+                <label for="{{ formulario.descripcion.id_for_label }}" class="form-label">{{ formulario.descripcion.label }}</label>
+                {{ formulario.descripcion }}
+            </div>
+            <div class="col-12 form-check">
+                {{ formulario.mostrar_en_calendario }}
+                <label for="{{ formulario.mostrar_en_calendario.id_for_label }}" class="form-check-label">
+                    {{ formulario.mostrar_en_calendario.label }}
+                </label>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm mt-3"><i class="bi bi-save"></i> Guardar cambios</button>
+    </form>
+    {% else %}
+    <p class="mb-4">{{ tarea.descripcion|default:"Sin descripción." }}</p>
+    {% endif %}
+
+    <div class="sec-lbl">Observaciones de avance</div>
+    {% for observacion in tarea.observaciones.all %}
+    <p class="small mb-2"><strong>{{ observacion.usuario.nombre }}</strong>
+        <span class="text-muted">· {{ observacion.fecha|date:"d/m/Y H:i" }}</span><br>
+        {{ observacion.contenido }}
+    </p>
+    {% empty %}
+    <p class="text-muted small">Sin observaciones registradas.</p>
+    {% endfor %}
+    <form method="post" action="{% url 'tareas:agregar_observacion' tarea.pk %}" class="d-flex gap-2 align-items-end mb-4">
+        {% csrf_token %}
+        <div class="flex-grow-1">
+            {{ formulario_observacion.contenido }}
+        </div>
+        <button type="submit" class="btn btn-outline-primary"><i class="bi bi-plus-lg"></i></button>
+    </form>
+
+    <div class="sec-lbl">Historial</div>
+    <div class="tl">
+        {% for cambio in tarea.historial.all %}
+        <div class="tl-item">
+            <div class="tl-dot"></div>
+            <div class="tl-date">{{ cambio.fecha_cambio|date:"d M, H:i" }} · {{ cambio.usuario.nombre }}</div>
+            <div class="tl-desc">Movió la tarjeta de {{ cambio.estado_anterior }} a {{ cambio.estado_nuevo }}</div>
+        </div>
+        {% empty %}
+        <p class="text-muted small">Sin cambios de estado registrados.</p>
+        {% endfor %}
+    </div>
+
+    <a class="ph-link mt-3 d-inline-flex" href="{% url 'clientes:detalle' tarea.cliente_id %}">
+        <i class="bi bi-folder2-open"></i> Ver expediente completo del cliente
+    </a>
+</div>
+<div class="modal-footer">
+    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
+    {% if puede_editar %}
+    <form method="post" action="{% url 'tareas:eliminar' tarea.pk %}"
+          onsubmit="return confirm('¿Eliminar esta tarea? Esta acción no se puede deshacer.')">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline-danger"><i class="bi bi-trash"></i> Eliminar</button>
+    </form>
+    {% endif %}
+</div>

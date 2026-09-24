@@ -447,3 +447,94 @@ cliente, donde se pueden ver, calcular y registrar.
 
 - Vencimientos originados en tareas del Kanban (cuando se construya el Módulo 3).
 - Envío real de alertas (management command `enviar_alertas` + cron, decisión T3).
+
+---
+
+## Miércoles 23 de septiembre de 2026 — Módulo 3, bloque 1: tablero Kanban, historial, observaciones y calendario
+
+**Objetivo del bloque:** dejar navegable el tablero de tareas (CU y HU007-009,
+041, 052): tarjetas por cliente con historial de cambios y observaciones de
+avance, permisos por rol, notificación al responsable e integración con el
+Módulo 2 (vencimientos originados en tareas marcadas para el calendario).
+
+### Trabajo realizado
+
+1. **Tablero Kanban** (`plantillas/tareas/tablero.html`): columnas Por hacer /
+   En progreso / En revisión / Terminado, tarjetas ordenadas por prioridad y
+   fecha más próxima, arrastrar y soltar para cambiar de estado (con reversión
+   automática si el servidor rechaza el cambio) y filtros desplegables por
+   cliente, responsable, prioridad y tipo de tarea (selección abierta).
+2. **Tarjeta expandida** (modal AJAX, con página completa como respaldo sin
+   JavaScript): edición completa para Administrador y Contador Senior; el
+   Contador Junior solo cambia el estado y agrega observaciones de sus propias
+   tareas. Incluye historial de cambios (usuario y fecha), observaciones de
+   avance y acceso directo al expediente del cliente (Módulo 1).
+3. **Permisos (especificación del Módulo 3)**: Administrador y Contador Senior
+   crean, editan y eliminan cualquier tarea; el Contador Junior únicamente
+   actualiza el estado y las observaciones de las tareas asignadas a él (IDOR
+   probado: 404 al intentar acceder a tareas ajenas por URL directa).
+4. **Notificación al responsable al cambiar de estado**: sin tabla nueva en el
+   diccionario de datos (decisión de sesión); se calcula a partir de
+   `historial_tarea` (cambios de los últimos 7 días hechos por otra persona) y
+   se expone en un endpoint AJAX (`tareas:notificaciones`) que alimenta la
+   campana de notificaciones del tablero.
+5. **Integración con el Calendario (Módulo 2)**: casilla "mostrar en
+   calendario" al crear o editar la tarea; si está activa, se crea o actualiza
+   un `Vencimiento` con `tarea` asociada (misma fecha, cliente y responsable);
+   se elimina si se desmarca o la tarea se borra. El estado de presentación
+   sigue el estado de la tarea (Terminado → Presentada). El calendario ahora
+   distingue el origen (tributario / tarea) con un nuevo filtro "Origen",
+   color propio en la grilla y leyenda, y un enlace "Ver tarea" en el detalle
+   del vencimiento en vez de la edición manual. No se modificó el modelo de
+   datos de ninguno de los dos módulos (el campo `tarea` en `Vencimiento` ya
+   existía desde el Módulo 2).
+6. **Integración**: rutas registradas, tarjeta del panel principal y menú
+   lateral activos para el Módulo 3.
+
+### Cómo verificarlo (entorno local)
+
+```bash
+cd /home/fredd/documentos/ubuntu/contanika/codigo
+source .venv/bin/activate
+python gestionar.py runserver
+```
+
+1. Entrar a **Tareas** en el menú lateral: tablero con las cuatro columnas.
+2. **Nueva tarea**: crear una tarjeta con cliente, título, responsable,
+   prioridad y fecha de vencimiento; marcar "Mostrar también en el Calendario"
+   y verificar que aparece en **Calendario** con el color de "Tarea" y el
+   filtro de Origen.
+3. Arrastrar una tarjeta a otra columna: el cambio se guarda solo y el
+   historial de la tarjeta lo registra.
+4. Abrir una tarjeta, agregar una observación y revisar el historial.
+5. Clic en **Ver expediente completo del cliente** desde la tarjeta.
+6. Ingresar como Contador Junior: solo ve sus tareas asignadas, no tiene
+   botones de crear/editar/eliminar y solo puede cambiar el estado y comentar
+   sus propias tarjetas (una URL directa a una tarea ajena da 404).
+7. Revisar la campana de notificaciones tras cambiar el estado de una tarea
+   asignada a otro usuario (con esa sesión).
+
+### Resultado de las pruebas
+
+- 212 pruebas en total: **212 aprobadas** (53 nuevas del Módulo 3, más los
+  ajustes de filtro "Origen" del Módulo 2).
+- Cobertura total: **92 %**; módulo tareas: formularios y servicios 100 %,
+  modelos 97 %, selectores 94 %, vistas 82 %.
+- Pruebas de seguridad: acceso sin sesión, módulo inhabilitado (403), permisos
+  por rol (403 para el Junior en crear/editar/eliminar), IDOR de tareas ajenas
+  (404 en detalle, cambiar estado y observaciones), CSRF y XSS en el título de
+  la tarjeta.
+- Ruff (estilo y formato), bandit y pip-audit sin hallazgos.
+
+### Evidencias
+
+- `evidencias/03-tareas/` (tablero Kanban, tarjeta expandida con historial,
+  vista del Contador Junior, integración con el calendario).
+
+### Pendientes del Módulo 3 (siguientes bloques)
+
+- Notificación por correo/WhatsApp al cambiar de estado (por ahora solo
+  notificación interna calculada desde el historial; el envío real queda con
+  la decisión T3 de alertas automáticas).
+- Reporte de tareas (individual o total) del Módulo 10.
+- Panel de tareas del cliente en su ficha (Módulo 1), como el de vencimientos.

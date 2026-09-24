@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+{% block titulo %}Tareas{% endblock %}
+
+{% block contenido %}
+<div class="panel">
+    <div class="ph">
+        <div class="ph-title"><i class="bi bi-kanban-fill"></i> Tablero de tareas</div>
+        <div class="ph-actions">
+            <div class="dropdown">
+                <button class="ph-link position-relative" type="button" id="btnNotificaciones"
+                        data-bs-toggle="dropdown" aria-expanded="false" data-url="{% url 'tareas:notificaciones' %}">
+                    <i class="bi bi-bell"></i> Notificaciones
+                    <span class="badge rounded-pill bg-danger d-none" id="badgeNotificaciones" style="font-size:9px">0</span>
+                </button>
+                <div class="dropdown-menu dropdown-menu-end p-2" style="min-width:300px;max-height:340px;overflow-y:auto" id="listaNotificaciones">
+                    <p class="text-muted small mb-0 px-2">Sin notificaciones recientes.</p>
+                </div>
+            </div>
+            {% if puede_editar %}
+            <button type="button" class="ph-btn" data-bs-toggle="modal" data-bs-target="#modalTarea"
+                    data-url="{% url 'tareas:crear' %}">
+                <i class="bi bi-plus-lg"></i> Nueva tarea
+            </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <form method="get" class="filters mb-3">
+        <div class="campo">
+            <label>{{ formulario_filtro.cliente.label }}</label>
+            {{ formulario_filtro.cliente }}
+        </div>
+        <div class="campo">
+            <label>{{ formulario_filtro.responsable.label }}</label>
+            {{ formulario_filtro.responsable }}
+        </div>
+        <div class="campo">
+            <label>{{ formulario_filtro.prioridad.label }}</label>
+            {{ formulario_filtro.prioridad }}
+        </div>
+        <div class="campo">
+            <label>{{ formulario_filtro.tipo_tarea.label }}</label>
+            {{ formulario_filtro.tipo_tarea }}
+        </div>
+        <button type="submit" class="ph-btn"><i class="bi bi-funnel"></i> Filtrar</button>
+        <a class="ph-link" href="{% url 'tareas:tablero' %}">Limpiar</a>
+        <span class="ph-meta ms-auto">Arrastra las tarjetas para cambiar su estado</span>
+    </form>
+
+    <div class="kb-board" id="kbBoard">
+        {% for estado, etiqueta, tareas_estado in tablero %}
+        <div class="kb-col" data-estado="{{ estado }}">
+            <div class="kb-col-h">{{ etiqueta }} <span class="kb-count">{{ tareas_estado|length }}</span></div>
+            {% for tarea in tareas_estado %}
+            <div class="kb-card" draggable="true" data-pk="{{ tarea.pk }}"
+                 data-bs-toggle="modal" data-bs-target="#modalTarea"
+                 data-url="{% url 'tareas:detalle' tarea.pk %}">
+                <div class="kb-cli">{{ tarea.cliente.nombre_razon_social }}</div>
+                <div class="kb-title">{{ tarea.titulo }}</div>
+                <div class="kb-meta">
+                    <span class="kb-prio kb-prio-{{ tarea.prioridad|lower }}">{{ tarea.prioridad }}</span>
+                    <span class="kb-resp">{{ tarea.responsable.nombre|default:"Sin asignar" }}</span>
+                </div>
+                {% if tarea.mostrar_en_calendario %}
+                <div class="kb-cal-tag">
+                    <i class="bi bi-calendar2-check"></i> En calendario
+                    {% if tarea.fecha_vencimiento %}· {{ tarea.fecha_vencimiento|date:"d M" }}{% endif %}
+                </div>
+                {% endif %}
+            </div>
+            {% empty %}
+            <p class="kb-vacio">Sin tareas</p>
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<datalist id="lista-tipos-tarea">
+    {% for tipo in opciones.tipos_tarea %}<option value="{{ tipo }}"></option>{% endfor %}
+</datalist>
+
+<!-- Modal vacío; el contenido (crear o detalle de tarea) se carga vía AJAX -->
+<div class="modal fade" id="modalTarea" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content"></div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    function getCookie(nombre) {
+        const valor = document.cookie.split('; ').find((fila) => fila.startsWith(nombre + '='));
+        return valor ? decodeURIComponent(valor.split('=')[1]) : '';
+    }
+    const csrftoken = getCookie('csrftoken');
+
+    /* ══ Carga del modal (crear o detalle) vía AJAX ══ */
+    const modalTarea = document.getElementById('modalTarea');
+    if (modalTarea) {
+        modalTarea.addEventListener('show.bs.modal', function (event) {
+            const boton = event.relatedTarget;
+            if (!boton || !boton.dataset.url) return;
+            const contenido = modalTarea.querySelector('.modal-content');
+            contenido.innerHTML = '<div class="modal-body text-center"><div class="spinner-border text-teal" role="status"></div><p class="mt-2 text-muted">Cargando...</p></div>';
+            fetch(boton.dataset.url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then((respuesta) => {
+                    if (!respuesta.ok) throw new Error('Error cargando la tarea');
+                    return respuesta.text();
+                })
+                .then((html) => { contenido.innerHTML = html; })
+                .catch(() => {
+                    contenido.innerHTML = '<div class="modal-body"><div class="alert alert-danger">No se pudo cargar la tarea. Intente de nuevo.</div></div>';
+                });
+        });
+        modalTarea.addEventListener('hidden.bs.modal', function () {
+            modalTarea.querySelector('.modal-content').innerHTML = '';
+        });
+    }
+
+    /* ══ Kanban: arrastrar y soltar para cambiar de estado ══ */
+    let tarjetaArrastrada = null;
+    let columnaOrigen = null;
+
+    document.querySelectorAll('.kb-card').forEach((tarjeta) => {
+        tarjeta.addEventListener('dragstart', function () {
+            tarjetaArrastrada = tarjeta;
+            columnaOrigen = tarjeta.closest('.kb-col');
+            tarjeta.classList.add('dragging');
+        });
+        tarjeta.addEventListener('dragend', function () {
+            tarjeta.classList.remove('dragging');
+        });
+    });
+
+    function actualizarContador(columna) {
+        const contador = columna.querySelector('.kb-count');
+        if (contador) contador.textContent = columna.querySelectorAll('.kb-card').length;
+        const vacio = columna.querySelector('.kb-vacio');
+        if (vacio) vacio.remove();
+        if (!columna.querySelector('.kb-card')) {
+            const p = document.createElement('p');
+            p.className = 'kb-vacio';
+            p.textContent = 'Sin tareas';
+            columna.appendChild(p);
+        }
+    }
+
+    /* ══ Colapsar columnas con más de 5 tarjetas, con barra "Ver más" ══ */
+    const LIMITE_TARJETAS_VISIBLES = 5;
+
+    function actualizarColapso(columna) {
+        const tarjetas = Array.from(columna.querySelectorAll('.kb-card'));
+        let barra = columna.querySelector('.kb-ver-mas');
+
+        if (tarjetas.length <= LIMITE_TARJETAS_VISIBLES) {
+            tarjetas.forEach((tarjeta) => tarjeta.classList.remove('kb-card-oculta'));
+            if (barra) barra.remove();
+            return;
+        }
+
+        const expandida = columna.classList.contains('kb-expandida');
+        tarjetas.forEach((tarjeta, indice) => {
+            tarjeta.classList.toggle('kb-card-oculta', !expandida && indice >= LIMITE_TARJETAS_VISIBLES);
+        });
+
+        if (!barra) {
+            barra = document.createElement('button');
+            barra.type = 'button';
+            barra.className = 'kb-ver-mas';
+            barra.addEventListener('click', function () {
+                columna.classList.toggle('kb-expandida');
+                actualizarColapso(columna);
+            });
+        }
+        columna.appendChild(barra);
+
+        const restantes = tarjetas.length - LIMITE_TARJETAS_VISIBLES;
+        barra.innerHTML = expandida
+            ? '<i class="bi bi-chevron-up"></i> Ver menos'
+            : '<i class="bi bi-chevron-down"></i> Ver ' + restantes + ' más';
+    }
+
+    document.querySelectorAll('.kb-col').forEach(actualizarColapso);
+
+    document.querySelectorAll('.kb-col').forEach((columna) => {
+        columna.addEventListener('dragover', function (evento) {
+            evento.preventDefault();
+            columna.classList.add('dragover');
+        });
+        columna.addEventListener('dragleave', function () {
+            columna.classList.remove('dragover');
+        });
+        columna.addEventListener('drop', function (evento) {
+            evento.preventDefault();
+            columna.classList.remove('dragover');
+            if (!tarjetaArrastrada || columna === columnaOrigen) return;
+
+            const vacio = columna.querySelector('.kb-vacio');
+            if (vacio) vacio.remove();
+            columna.appendChild(tarjetaArrastrada);
+            actualizarContador(columna);
+            actualizarContador(columnaOrigen);
+            actualizarColapso(columna);
+            actualizarColapso(columnaOrigen);
+
+            const pk = tarjetaArrastrada.dataset.pk;
+            const nuevoEstado = columna.dataset.estado;
+            const url = "{% url 'tareas:cambiar_estado' 0 %}".replace('0', pk);
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': csrftoken,
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'estado=' + encodeURIComponent(nuevoEstado),
+            })
+                .then((respuesta) => respuesta.json())
+                .then((datos) => {
+                    if (!datos.ok) throw new Error(datos.error || 'No se pudo cambiar el estado.');
+                })
+                .catch((error) => {
+                    columnaOrigen.appendChild(tarjetaArrastrada);
+                    actualizarContador(columna);
+                    actualizarContador(columnaOrigen);
+                    actualizarColapso(columna);
+                    actualizarColapso(columnaOrigen);
+                    alert(error.message || 'No se pudo cambiar el estado de la tarea.');
+                });
+        });
+    });
+
+    /* ══ Notificaciones: cambios de estado recientes en tareas asignadas ══ */
+    const btnNotificaciones = document.getElementById('btnNotificaciones');
+    const badge = document.getElementById('badgeNotificaciones');
+    const lista = document.getElementById('listaNotificaciones');
+
+    function cargarNotificaciones() {
+        if (!btnNotificaciones) return;
+        fetch(btnNotificaciones.dataset.url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then((respuesta) => respuesta.json())
+            .then((datos) => {
+                if (datos.total > 0) {
+                    badge.textContent = datos.total;
+                    badge.classList.remove('d-none');
+                } else {
+                    badge.classList.add('d-none');
+                }
+                if (!datos.notificaciones.length) {
+                    lista.innerHTML = '<p class="text-muted small mb-0 px-2">Sin notificaciones recientes.</p>';
+                    return;
+                }
+                lista.innerHTML = datos.notificaciones.map(function (n) {
+                    return '<a class="dropdown-item small py-2" href="' + n.url + '">' +
+                        '<strong>' + n.usuario + '</strong> movió «' + n.titulo + '» de ' + n.estado_anterior +
+                        ' a ' + n.estado_nuevo + '<br><span class="text-muted">' + n.cliente + '</span></a>';
+                }).join('<div class="dropdown-divider"></div>');
+            })
+            .catch(() => {});
+    }
+    cargarNotificaciones();
+    setInterval(cargarNotificaciones, 60000);
+});
+</script>
+{% endblock %}

@@ -25,11 +25,14 @@ def eventos_del_dia(eventos, fecha):
 
 @register.filter
 def clase_evento(evento):
-    """Clase CSS del evento según su tipo, ámbito y estado."""
+    """Clase CSS del evento según su tipo, origen (tributario/tarea) y estado."""
     if evento["tipo"] == "anotacion":
         return "ev-anotacion"
     vencimiento = evento["objeto"]
-    clases = [COLORES_AMBITO.get(vencimiento.ambito, "ev-nacional")]
+    if vencimiento.tarea_id:
+        clases = ["ev-tarea"]
+    else:
+        clases = [COLORES_AMBITO.get(vencimiento.ambito, "ev-nacional")]
     clases.append(COLORES_ESTADO.get(vencimiento.estado_presentacion, "ev-pendiente"))
     return " ".join(clases)
 
@@ -50,4 +53,5 @@ def titulo_evento(evento):
     if evento["tipo"] == "anotacion":
         return evento["objeto"].contenido[:40]
     vencimiento = evento["objeto"]
-    return f"{vencimiento.cliente.nombre_razon_social} · {vencimiento.tipo_obligacion}"
+    prefijo = "Tarea: " if vencimiento.tarea_id else ""
+    return f"{prefijo}{vencimiento.cliente.nombre_razon_social} · {vencimiento.tipo_obligacion}"

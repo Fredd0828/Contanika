@@ -100,6 +100,22 @@
     </div>
 
     <div class="panel mb-3">
+        <div class="ph"><div class="ph-title"><i class="bi bi-calendar2-check"></i> Obligaciones tributarias y vencimientos que le aplican</div></div>
+        <div class="row">
+            {% for casilla in formulario.obligaciones_tributarias %}
+            <div class="col-md-4">
+                <div class="form-check">
+                    {{ casilla.tag }}
+                    <label class="form-check-label" for="{{ casilla.id_for_label }}">{{ casilla.choice_label }}</label>
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-muted mb-0">No hay obligaciones registradas en el catálogo. Pídale al Administrador que las cargue.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="panel mb-3">
         <div class="ph"><div class="ph-title"><i class="bi bi-geo-alt"></i> Municipios adicionales (multi-ICA)</div></div>
         {{ formset_municipios.management_form }}
         <div id="filas-municipios">

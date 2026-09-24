@@ -517,6 +517,13 @@ a {
     color: var(--muted);
 }
 
+.ph-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
 .ph-btn {
     background: var(--teal);
     color: #fff;
@@ -881,6 +888,42 @@ a {
 }
 
 /* ══════════ CALENDARIO (Módulo 2) ══════════ */
+.cal-seccion {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 0;
+    border-top: 1px solid var(--border);
+}
+
+.cal-seccion-filtros {
+    align-items: flex-start;
+}
+
+.cal-seccion-etiqueta {
+    flex: 0 0 64px;
+    font-family: "Montserrat", sans-serif;
+    font-weight: 700;
+    font-size: 10.5px;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding-top: 3px;
+}
+
+.cal-nav-group,
+.cal-actions-group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.cal-filtros {
+    margin-bottom: 0;
+}
+
 .cal-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
@@ -978,18 +1021,23 @@ a.cal-ev:hover {
 }
 
 .ev-nacional {
-    background: #e0f0f2;
+    background: #c9e7ec;
     border-left: 4px solid var(--teal);
 }
 
 .ev-distrital {
-    background: #fff3e0;
+    background: #ffddab;
     border-left: 4px solid var(--orange);
 }
 
 .ev-municipal {
-    background: #f3e8fd;
+    background: #e5d1fa;
     border-left: 4px solid #7b4bb7;
+}
+
+.ev-tarea {
+    background: #f7cfcf;
+    border-left: 4px solid var(--red);
 }
 
 .ev-pendiente {
@@ -1003,14 +1051,14 @@ a.cal-ev:hover {
 }
 
 .ev-presentada {
-    background: #eaf7f3;
+    background: #bfead9;
     border-left: 4px solid var(--green);
     text-decoration: line-through;
     opacity: 0.75;
 }
 
 .ev-anotacion {
-    background: var(--cream);
+    background: #ffdca0;
     border-left: 4px solid var(--brown);
 }
 
@@ -1080,5 +1128,225 @@ a.cal-ev:hover {
         width: 22px;
         height: 22px;
         font-size: 11px;
+    }
+}
+
+/* ══════════ TABLERO KANBAN (MÓDULO 3) ══════════ */
+.kb-board {
+    display: flex;
+    gap: 14px;
+    overflow-x: auto;
+    padding-bottom: 6px;
+}
+
+.kb-col {
+    flex: 1;
+    min-width: 250px;
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 400px;
+}
+
+.kb-col.dragover {
+    background: #e0f0f2;
+}
+
+.kb-col-h {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: "Montserrat", sans-serif;
+    font-weight: 700;
+    font-size: 11.5px;
+    color: var(--dim);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.kb-count {
+    background: var(--border2);
+    color: var(--dim);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 7px;
+    border-radius: 10px;
+}
+
+.kb-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 10px 12px;
+    box-shadow: 0 1px 2px rgba(0, 21, 36, 0.05);
+    cursor: grab;
+}
+
+.kb-card.dragging {
+    opacity: 0.35;
+}
+
+.kb-cli {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--teal);
+}
+
+.kb-title {
+    font-size: 12.5px;
+    color: var(--text);
+    font-weight: 600;
+    margin-top: 2px;
+}
+
+.kb-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 9px;
+    gap: 6px;
+}
+
+.kb-prio {
+    font-size: 9.5px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 20px;
+    white-space: nowrap;
+}
+
+.kb-prio-alta {
+    background: #fdeaea;
+    color: var(--red);
+}
+
+.kb-prio-media {
+    background: #fff3e0;
+    color: var(--orange);
+}
+
+.kb-prio-baja {
+    background: #eaf7f3;
+    color: var(--green);
+}
+
+.kb-resp {
+    font-size: 10px;
+    color: var(--muted);
+    text-align: right;
+}
+
+.kb-cal-tag {
+    font-size: 9px;
+    color: var(--teal);
+    margin-top: 7px;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    font-weight: 600;
+}
+
+.kb-vacio {
+    font-size: 11px;
+    color: var(--muted);
+    text-align: center;
+    padding: 10px 0;
+}
+
+.kb-card-oculta {
+    display: none;
+}
+
+.kb-ver-mas {
+    width: 100%;
+    background: var(--card);
+    border: 1px dashed var(--border2);
+    border-radius: 8px;
+    color: var(--teal);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 7px 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+
+.kb-ver-mas:hover {
+    background: #e0f0f2;
+    border-color: var(--teal);
+}
+
+/* ══════════ LÍNEA DE TIEMPO (HISTORIAL) ══════════ */
+.sec-lbl {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 9px;
+}
+
+.tl {
+    position: relative;
+    padding-left: 26px;
+}
+
+.tl::before {
+    content: "";
+    position: absolute;
+    left: 6px;
+    top: 4px;
+    bottom: 4px;
+    width: 2px;
+    background: var(--border);
+}
+
+.tl-item {
+    position: relative;
+    padding-bottom: 16px;
+}
+
+.tl-item:last-child {
+    padding-bottom: 0;
+}
+
+.tl-dot {
+    position: absolute;
+    left: -26px;
+    top: 2px;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: var(--teal);
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 1px var(--border2);
+}
+
+.tl-date {
+    font-size: 10.5px;
+    color: var(--muted);
+    font-weight: 700;
+}
+
+.tl-desc {
+    font-size: 12px;
+    color: var(--dim);
+    margin-top: 2px;
+}
+
+@media (max-width: 768px) {
+    .kb-board {
+        overflow-x: visible;
+        flex-direction: column;
+    }
+
+    .kb-col {
+        min-width: 0;
     }
 }

@@ -176,8 +176,19 @@ Ninguna funcionalidad se da por terminada sin:
   registro con cliente preseleccionado (`?cliente=pk`).
 
 ### Módulo 3 — Tareas
-- Kanban con historial de estados.
-- Campo `mostrar_en_calendario` para reflejar vencimientos en Módulo 2.
+- Kanban (Por hacer/En progreso/En revisión/Terminado) con historial de
+  cambios (`historial_tarea`) y observaciones de avance (`observacion_tarea`).
+- Permisos: Administrador y Contador Senior gestionan cualquier tarea; el
+  Contador Junior solo cambia el estado y comenta las tareas asignadas a él.
+- Campo `mostrar_en_calendario`: sincroniza un `Vencimiento` (Módulo 2) con
+  `tarea` asociado; se actualiza o elimina automáticamente al editar la tarea
+  (`aplicaciones/tareas/servicios.sincronizar_vencimiento`).
+- Notificaciones: no hay tabla `notificacion` en el diccionario de datos
+  (decisión de sesión, Módulo 3 bloque 1); se calculan a partir de
+  `historial_tarea` (cambios de los últimos 7 días hechos por otra persona),
+  sin leído/no leído persistente. Si se requiere en el futuro un badge con
+  estado leído/no leído confiable, evaluar agregar una tabla `notificacion`
+  (pasaría de 36 a 37 tablas; requeriría actualizar el numeral 2.5 del Word).
 
 ### Módulos 4–10
 - Ver `PLAN_TRABAJO.md` y `md/Contanika_Especificaciones_Módulos.md`.
@@ -201,4 +212,5 @@ Ninguna funcionalidad se da por terminada sin:
 
 ---
 
-Última actualización: 23 de septiembre de 2026 (inicio de `feature/modulo-3-tareas`).
+Última actualización: 23 de septiembre de 2026 (Módulo 3, bloque 1: tablero
+Kanban navegable).

@@ -4,12 +4,16 @@
 
 {% block contenido %}
 <div class="panel">
-    <div class="ph">
+    <div class="ph mb-0">
         <div class="ph-title">
             <i class="bi bi-calendar2-check-fill"></i>
             Calendario · {{ nombre_mes }} {{ fecha_base.year }}
         </div>
-        <div class="d-flex gap-2 flex-wrap align-items-center">
+    </div>
+
+    <div class="cal-seccion">
+        <span class="cal-seccion-etiqueta">Vista</span>
+        <div class="cal-nav-group">
             <div class="btn-group" role="group" aria-label="Cambiar vista">
                 <a class="btn btn-sm {% if vista == 'dia' %}btn-primary{% else %}btn-outline-primary{% endif %}"
                    href="?vista=dia&fecha={{ fecha_base|date:'Y-m-d' }}">Día</a>
@@ -25,6 +29,12 @@
             <a class="ph-link" href="?vista={{ vista }}&fecha={{ siguiente|date:'Y-m-d' }}">
                 Siguiente <i class="bi bi-chevron-right"></i>
             </a>
+        </div>
+    </div>
+
+    <div class="cal-seccion">
+        <span class="cal-seccion-etiqueta">Acciones</span>
+        <div class="cal-actions-group">
             <a class="ph-btn" href="{% url 'calendario:lista' %}">
                 <i class="bi bi-list-ul"></i> Lista
             </a>
@@ -44,32 +54,39 @@
         </div>
     </div>
 
-    <form method="get" class="filters mb-3">
-        <input type="hidden" name="vista" value="{{ vista }}">
-        <input type="hidden" name="fecha" value="{{ fecha_base|date:'Y-m-d' }}">
-        <div class="campo">
-            <label>{{ formulario_filtro.cliente.label }}</label>
-            {{ formulario_filtro.cliente }}
-        </div>
-        <div class="campo">
-            <label>{{ formulario_filtro.ambito.label }}</label>
-            {{ formulario_filtro.ambito }}
-        </div>
-        <div class="campo">
-            <label>{{ formulario_filtro.estado_presentacion.label }}</label>
-            {{ formulario_filtro.estado_presentacion }}
-        </div>
-        <div class="campo">
-            <label>{{ formulario_filtro.tipo_obligacion.label }}</label>
-            {{ formulario_filtro.tipo_obligacion }}
-        </div>
-        <div class="campo">
-            <label>{{ formulario_filtro.responsable.label }}</label>
-            {{ formulario_filtro.responsable }}
-        </div>
-        <button type="submit" class="ph-btn"><i class="bi bi-funnel"></i> Filtrar</button>
-        <a class="ph-link" href="?vista={{ vista }}&fecha={{ fecha_base|date:'Y-m-d' }}">Limpiar</a>
-    </form>
+    <div class="cal-seccion cal-seccion-filtros">
+        <span class="cal-seccion-etiqueta">Filtros</span>
+        <form method="get" class="filters cal-filtros">
+            <input type="hidden" name="vista" value="{{ vista }}">
+            <input type="hidden" name="fecha" value="{{ fecha_base|date:'Y-m-d' }}">
+            <div class="campo">
+                <label>{{ formulario_filtro.cliente.label }}</label>
+                {{ formulario_filtro.cliente }}
+            </div>
+            <div class="campo">
+                <label>{{ formulario_filtro.ambito.label }}</label>
+                {{ formulario_filtro.ambito }}
+            </div>
+            <div class="campo">
+                <label>{{ formulario_filtro.estado_presentacion.label }}</label>
+                {{ formulario_filtro.estado_presentacion }}
+            </div>
+            <div class="campo">
+                <label>{{ formulario_filtro.tipo_obligacion.label }}</label>
+                {{ formulario_filtro.tipo_obligacion }}
+            </div>
+            <div class="campo">
+                <label>{{ formulario_filtro.responsable.label }}</label>
+                {{ formulario_filtro.responsable }}
+            </div>
+            <div class="campo">
+                <label>{{ formulario_filtro.origen.label }}</label>
+                {{ formulario_filtro.origen }}
+            </div>
+            <button type="submit" class="ph-btn"><i class="bi bi-funnel"></i> Filtrar</button>
+            <a class="ph-link" href="?vista={{ vista }}&fecha={{ fecha_base|date:'Y-m-d' }}">Limpiar</a>
+        </form>
+    </div>
 
     {% if vista == "mes" %}
     <div class="cal-grid">
@@ -142,6 +159,7 @@
         <span class="cal-ev ev-nacional ev-pendiente">Nacional</span>
         <span class="cal-ev ev-distrital ev-pendiente">Distrital</span>
         <span class="cal-ev ev-municipal ev-pendiente">Municipal</span>
+        <span class="cal-ev ev-tarea ev-pendiente"><i class="bi bi-kanban-fill"></i> Tarea</span>
         <span class="cal-ev ev-presentada">Presentada</span>
         <span class="cal-ev ev-anotacion"><i class="bi bi-sticky"></i> Anotación</span>
     </div>

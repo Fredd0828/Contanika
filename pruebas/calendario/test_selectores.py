@@ -1,6 +1,6 @@
 """Pruebas de las consultas del módulo 2: visibilidad por rol y filtros."""
 
-from datetime import date
+from datetime import date, timedelta
 
 import pytest
 
@@ -13,6 +13,8 @@ from aplicaciones.calendario.selectores import (
     anotaciones_visibles,
     filtrar_vencimientos,
     opciones_filtro_calendario,
+    vencimientos_proximos,
+    vencimientos_vencidos,
     vencimientos_visibles,
 )
 
@@ -145,3 +147,78 @@ def test_opciones_filtro_combina_fuentes(cliente):
     opciones = opciones_filtro_calendario()
     assert "ICA municipal" in opciones["tipos_obligacion"]
     assert len(opciones["ambitos"]) == 3
+
+
+def test_opciones_filtro_incluye_catalogo_de_obligaciones(cliente):
+    """Una obligación del catálogo (Módulo 1) se sugiere aunque no tenga vencimientos ni tabla DIAN."""
+    from aplicaciones.clientes.models import ObligacionTributaria
+
+    ObligacionTributaria.objects.get_or_create(
+        nombre="Exógena nacional", defaults={"ambito": ObligacionTributaria.NACIONAL}
+    )
+    opciones = opciones_filtro_calendario()
+    assert "Exógena nacional" in opciones["tipos_obligacion"]
+
+
+# ---------------------------------------------------------------------------
+# Próximos y vencidos
+# ---------------------------------------------------------------------------
+
+
+def test_vencimientos_proximos_incluye_hoy_y_futuros(usuario_administrador, cliente):
+    hoy = date.today()
+    pasado = Vencimiento.objects.create(
+        cliente=cliente, tipo_obligacion="IVA bimestral", fecha_vencimiento=hoy - timedelta(days=1)
+    )
+    de_hoy = Vencimiento.objects.create(
+        cliente=cliente, tipo_obligacion="IVA bimestral", fecha_vencimiento=hoy
+    )
+    futuro = Vencimiento.objects.create(
+        cliente=cliente, tipo_obligacion="IVA bimestral", fecha_vencimiento=hoy + timedelta(days=5)
+    )
+
+    resultado = list(vencimientos_proximos(usuario_administrador))
+
+    assert pasado not in resultado
+    assert resultado == [de_hoy, futuro]
+
+
+def test_vencimientos_vencidos_excluye_presentados(usuario_administrador, cliente):
+    hoy = date.today()
+    pendiente = Vencimiento.objects.create(
+        cliente=cliente,
+        tipo_obligacion="IVA bimestral",
+        fecha_vencimiento=hoy - timedelta(days=3),
+        estado_presentacion=Vencimiento.PENDIENTE,
+    )
+    Vencimiento.objects.create(
+        cliente=cliente,
+        tipo_obligacion="Retención en la fuente",
+        fecha_vencimiento=hoy - timedelta(days=2),
+        estado_presentacion=Vencimiento.PRESENTADA,
+    )
+    Vencimiento.objects.create(cliente=cliente, tipo_obligacion="IVA bimestral", fecha_vencimiento=hoy)
+
+    resultado = list(vencimientos_vencidos(usuario_administrador))
+
+    assert resultado == [pendiente]
+
+
+def test_vencimientos_proximos_limita_a_diez(usuario_administrador, cliente):
+    hoy = date.today()
+    for i in range(12):
+        Vencimiento.objects.create(
+            cliente=cliente, tipo_obligacion="IVA bimestral", fecha_vencimiento=hoy + timedelta(days=i)
+        )
+
+    assert len(list(vencimientos_proximos(usuario_administrador))) == 10
+
+
+def test_vencimientos_proximos_respeta_visibilidad_junior(usuario_junior, cliente, cliente_junior):
+    hoy = date.today()
+    Vencimiento.objects.create(cliente=cliente, tipo_obligacion="IVA bimestral", fecha_vencimiento=hoy)
+    del_junior = Vencimiento.objects.create(
+        cliente=cliente_junior, tipo_obligacion="IVA bimestral", fecha_vencimiento=hoy
+    )
+
+    assert list(vencimientos_proximos(usuario_junior)) == [del_junior]

@@ -192,6 +192,11 @@ class FiltroCalendarioForm(FormularioBase):
         label="Responsable",
         empty_label="Todos los responsables",
     )
+    origen = forms.ChoiceField(
+        choices=[("", "Todos los orígenes"), ("tributaria", "Tributaria"), ("tarea", "Tarea")],
+        required=False,
+        label="Origen",
+    )
 
     def __init__(self, *args, usuario=None, opciones=None, **kwargs):
         super().__init__(*args, **kwargs)

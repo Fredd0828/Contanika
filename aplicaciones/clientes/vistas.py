@@ -7,7 +7,6 @@ asignados. Todas las vistas exigen sesión y el módulo habilitado (RQF031).
 """
 
 from django.contrib import messages
-from django.contrib.auth import get_user_model
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
@@ -21,8 +20,6 @@ from .importacion import generar_plantilla_clientes, importar_clientes
 from .models import Cliente, Credencial
 from .selectores import filtrar_clientes, opciones_filtro
 from .servicios import eliminar_credencial, guardar_cliente, guardar_credencial, inactivar_cliente
-
-Usuario = get_user_model()
 
 ROLES_EDITAN = (Rol.ADMINISTRADOR, Rol.CONTADOR_SENIOR)
 PREFIJO_MUNICIPIOS = "municipios"
@@ -49,12 +46,10 @@ class ListaClientesView(ModuloHabilitadoMixin, ListView):
     def get_queryset(self):
         parametros = self.request.GET
         consulta = filtrar_clientes(
-            ciudad=parametros.get("ciudad") or None,
-            municipio=parametros.get("municipio") or None,
+            busqueda=parametros.get("busqueda") or None,
+            nit=parametros.get("nit") or None,
             regimen_tributario=parametros.get("regimen_tributario") or None,
-            tipo_persona=parametros.get("tipo_persona") or None,
-            tipo_documento=parametros.get("tipo_documento") or None,
-            responsable=parametros.get("responsable") or None,
+            responsable_iva=parametros.get("responsable_iva") or None,
             estado=parametros.get("estado") or None,
         )
         # El Contador Junior solo consulta los clientes asignados a él.
@@ -66,7 +61,6 @@ class ListaClientesView(ModuloHabilitadoMixin, ListView):
         contexto = super().get_context_data(**kwargs)
         contexto["opciones"] = opciones_filtro()
         contexto["filtros"] = self.request.GET
-        contexto["responsables"] = Usuario.objects.filter(estado=Usuario.ACTIVO).order_by("nombre")
         contexto["puede_editar"] = self.request.user.rol.nombre_rol in ROLES_EDITAN
         contexto["por_pagina"] = self.get_paginate_by(self.get_queryset())
         contexto["opciones_por_pagina"] = self.OPCIONES_POR_PAGINA

@@ -66,44 +66,34 @@ def test_grupo_nit_sin_digitos_no_es_calculable(usuario_administrador):
 # ---------------------------------------------------------------------------
 
 
-def test_obligaciones_juridica_ordinaria_con_iva(cliente):
-    """Jurídica ordinaria responsable de IVA: renta PJ, retención e IVA."""
+def test_obligaciones_por_cliente_devuelve_las_marcadas_explicitamente(cliente):
+    """Las obligaciones ya no se adivinan: son las marcadas en el perfil del cliente."""
     obligaciones = obligaciones_por_cliente(cliente)
     assert "Renta personas jurídicas" in obligaciones
     assert "Retención en la fuente" in obligaciones
     assert "IVA bimestral" in obligaciones
 
 
-def test_obligaciones_juridica_ordinaria_sin_iva(cliente):
-    """Sin responsabilidad de IVA no se genera la obligación de IVA."""
-    cliente.responsable_iva = False
-    obligaciones = obligaciones_por_cliente(cliente)
-    assert "IVA bimestral" not in obligaciones
+def test_obligaciones_por_cliente_vacio_sin_seleccion(cliente_extranjero):
+    """Un cliente sin obligaciones marcadas no devuelve ninguna."""
+    assert obligaciones_por_cliente(cliente_extranjero) == []
 
 
-def test_obligaciones_regimen_simple(cliente):
-    """Régimen simple (cualquier variante del nombre) genera obligaciones RST."""
-    cliente.regimen_tributario = "Régimen simple de tributación"
-    assert obligaciones_por_cliente(cliente) == [
-        "RST anticipo bimestral",
-        "RST consolidada anual",
-    ]
-    cliente.regimen_tributario = "Régimen simplificado"
-    assert obligaciones_por_cliente(cliente) == [
-        "RST anticipo bimestral",
-        "RST consolidada anual",
-    ]
+def test_obligaciones_por_cliente_incluye_exogena_si_se_marca(cliente):
+    """Obligaciones que no se pueden inferir por texto, como exógena, se pueden marcar."""
+    from aplicaciones.clientes.models import ClienteObligacion, ObligacionTributaria
+
+    exogena, _ = ObligacionTributaria.objects.get_or_create(
+        nombre="Exógena distrital", defaults={"ambito": ObligacionTributaria.DISTRITAL}
+    )
+    ClienteObligacion.objects.create(cliente=cliente, obligacion_tributaria=exogena)
+
+    assert "Exógena distrital" in obligaciones_por_cliente(cliente)
 
 
 def test_obligaciones_persona_natural(cliente_natural):
-    """Persona natural: renta PN; con IVA agrega IVA y retención."""
+    """Persona natural: solo la obligación explícitamente marcada en su perfil."""
     assert obligaciones_por_cliente(cliente_natural) == ["Renta personas naturales"]
-    cliente_natural.responsable_iva = True
-    assert obligaciones_por_cliente(cliente_natural) == [
-        "Renta personas naturales",
-        "IVA bimestral",
-        "Retención en la fuente",
-    ]
 
 
 # ---------------------------------------------------------------------------
@@ -131,8 +121,29 @@ def test_generar_vencimientos_no_duplica(cliente, usuario_administrador, referen
     resumen = generar_vencimientos_cliente(cliente, usuario_administrador)
 
     assert resumen["creados"] == 0
+    assert resumen["actualizados"] == 0
     assert resumen["omitidos"] == 1
     assert Vencimiento.objects.filter(cliente=cliente).count() == 1
+
+
+def test_generar_vencimientos_actualiza_fecha_corregida_sin_duplicar(
+    cliente, usuario_administrador, referencia_dian
+):
+    """Si el Administrador corrige la fecha en la tabla DIAN, recalcular actualiza (no duplica)."""
+    generar_vencimientos_cliente(cliente, usuario_administrador)
+    assert Vencimiento.objects.filter(cliente=cliente).count() == 1
+
+    referencia_dian.fecha_vencimiento = date(2026, 3, 24)
+    referencia_dian.save(update_fields=["fecha_vencimiento"])
+
+    resumen = generar_vencimientos_cliente(cliente, usuario_administrador)
+
+    assert resumen["creados"] == 0
+    assert resumen["actualizados"] == 1
+    assert Vencimiento.objects.filter(cliente=cliente).count() == 1
+    vencimiento = Vencimiento.objects.get(cliente=cliente)
+    assert vencimiento.fecha_vencimiento == date(2026, 3, 24)
+    assert vencimiento.estado_validacion == Vencimiento.PENDIENTE_VALIDAR
 
 
 def test_generar_vencimientos_sin_grupo_no_crea(cliente_extranjero, usuario_administrador):
@@ -141,7 +152,19 @@ def test_generar_vencimientos_sin_grupo_no_crea(cliente_extranjero, usuario_admi
 
     assert resumen["sin_grupo"] is True
     assert resumen["creados"] == 0
+    assert resumen["sin_referencia"] == []
     assert Vencimiento.objects.filter(cliente=cliente_extranjero).count() == 0
+
+
+def test_generar_vencimientos_reporta_obligaciones_sin_referencia(
+    cliente, usuario_administrador, referencia_dian
+):
+    """Las obligaciones marcadas que no tienen ninguna fila en la tabla DIAN se reportan aparte."""
+    resumen = generar_vencimientos_cliente(cliente, usuario_administrador)
+
+    assert "Renta personas jurídicas" in resumen["sin_referencia"]
+    assert "Retención en la fuente" in resumen["sin_referencia"]
+    assert "IVA bimestral" not in resumen["sin_referencia"]
 
 
 def test_generar_vencimientos_persona_natural_usa_dos_digitos(cliente_natural, usuario_administrador):
@@ -169,6 +192,7 @@ def test_generar_vencimientos_masivo_solo_activos(
     assert resumen["clientes"] == 1
     assert Vencimiento.objects.filter(cliente=cliente).count() == 1
     assert Vencimiento.objects.filter(cliente=cliente_natural).count() == 0
+    assert "Renta personas jurídicas" in resumen["sin_referencia"]
 
 
 # ---------------------------------------------------------------------------

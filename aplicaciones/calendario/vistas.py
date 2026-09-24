@@ -38,6 +38,8 @@ from .selectores import (
     anotaciones_visibles,
     filtrar_vencimientos,
     opciones_filtro_calendario,
+    vencimientos_proximos,
+    vencimientos_vencidos,
 )
 from .servicios import (
     cambiar_estado_presentacion,
@@ -112,6 +114,7 @@ class CalendarioView(ModuloHabilitadoMixin, View):
             "estado_presentacion": request.GET.get("estado_presentacion") or None,
             "tipo_obligacion": request.GET.get("tipo_obligacion") or None,
             "responsable": request.GET.get("responsable") or None,
+            "origen": request.GET.get("origen") or None,
         }
 
         vencimientos = filtrar_vencimientos(
@@ -170,6 +173,17 @@ class ListaVencimientosView(ModuloHabilitadoMixin, ListView):
     template_name = "calendario/lista.html"
     context_object_name = "vencimientos"
     paginate_by = 25
+    PARAMETROS_LISTADO_COMPLETO = (
+        "desde",
+        "hasta",
+        "cliente",
+        "ambito",
+        "estado_presentacion",
+        "tipo_obligacion",
+        "responsable",
+        "origen",
+        "page",
+    )
 
     def get_queryset(self):
         parametros = self.request.GET
@@ -182,6 +196,7 @@ class ListaVencimientosView(ModuloHabilitadoMixin, ListView):
             estado_presentacion=parametros.get("estado_presentacion") or None,
             tipo_obligacion=parametros.get("tipo_obligacion") or None,
             responsable=parametros.get("responsable") or None,
+            origen=parametros.get("origen") or None,
         )
 
     def get_context_data(self, **kwargs):
@@ -192,6 +207,13 @@ class ListaVencimientosView(ModuloHabilitadoMixin, ListView):
             opciones=opciones_filtro_calendario(),
         )
         contexto["puede_editar"] = self.request.user.rol.nombre_rol in ROLES_EDITAN
+        contexto["proximos"] = vencimientos_proximos(self.request.user)
+        contexto["vencidos"] = vencimientos_vencidos(self.request.user)
+        contexto["hoy"] = date.today()
+        contexto["ayer"] = date.today() - timedelta(days=1)
+        contexto["mostrar_completo"] = any(
+            self.request.GET.get(parametro) for parametro in self.PARAMETROS_LISTADO_COMPLETO
+        )
         parametros = self.request.GET.copy()
         parametros.pop("page", None)
         contexto["querystring"] = parametros.urlencode()
@@ -343,9 +365,18 @@ class GenerarVencimientosView(ModuloHabilitadoMixin, RolRequeridoMixin, View):
             request,
             f"Cálculo completado: {resumen['clientes']} clientes, "
             f"{resumen['creados']} vencimientos creados, "
-            f"{resumen['omitidos']} ya existían, "
+            f"{resumen['actualizados']} actualizados, "
+            f"{resumen['omitidos']} sin cambios, "
             f"{resumen['sin_grupo']} clientes sin grupo calculable.",
         )
+        if resumen["sin_referencia"]:
+            messages.warning(
+                request,
+                "Estas obligaciones no generaron ningún vencimiento porque no tienen "
+                "fechas cargadas en la tabla DIAN: "
+                + ", ".join(resumen["sin_referencia"])
+                + ". Cárguelas en Calendario → Cargar tabla DIAN.",
+            )
         return redirect("calendario:lista")
 
 
@@ -370,7 +401,16 @@ class CalcularVencimientosClienteView(ModuloHabilitadoMixin, RolRequeridoMixin, 
             messages.success(
                 request,
                 f"Cálculo completado: {resumen['creados']} vencimientos creados, "
-                f"{resumen['omitidos']} ya existían.",
+                f"{resumen['actualizados']} actualizados, "
+                f"{resumen['omitidos']} sin cambios.",
+            )
+        if resumen["sin_referencia"]:
+            messages.warning(
+                request,
+                "Estas obligaciones no generaron vencimiento porque no tienen fechas "
+                "cargadas en la tabla DIAN: "
+                + ", ".join(resumen["sin_referencia"])
+                + ". Cárguelas en Calendario → Cargar tabla DIAN.",
             )
         return redirect("clientes:detalle", pk=cliente.pk)
 

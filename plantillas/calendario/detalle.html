@@ -12,7 +12,11 @@
             <a class="ph-link" href="{% url 'calendario:lista' %}">
                 <i class="bi bi-arrow-left"></i> Volver a la lista
             </a>
-            {% if puede_editar %}
+            {% if vencimiento.tarea_id %}
+            <a class="ph-btn" href="{% url 'tareas:detalle' vencimiento.tarea_id %}">
+                <i class="bi bi-kanban-fill"></i> Ver tarea
+            </a>
+            {% elif puede_editar %}
             <a class="ph-btn" href="{% url 'calendario:editar_vencimiento' vencimiento.pk %}">
                 <i class="bi bi-pencil"></i> Editar
             </a>
@@ -42,7 +46,12 @@
                 </tbody>
             </table>
 
-            {% if puede_editar %}
+            {% if vencimiento.tarea_id %}
+            <p class="text-muted small mt-3">
+                Este vencimiento se generó desde una tarea del tablero Kanban: la fecha y el
+                estado se actualizan automáticamente al editar la tarea.
+            </p>
+            {% elif puede_editar %}
             <div class="d-flex gap-2 mt-3 flex-wrap">
                 <form method="post" action="{% url 'calendario:cambiar_estado' vencimiento.pk %}">
                     {% csrf_token %}

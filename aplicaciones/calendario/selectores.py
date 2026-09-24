@@ -6,6 +6,7 @@ detalle del cliente y el futuro reporte de vencimientos (Módulo 10).
 """
 
 from django.db.models import Q
+from django.utils import timezone
 
 from .models import (
     AnotacionCalendario,
@@ -13,6 +14,8 @@ from .models import (
     TablaReferenciaDian,
     Vencimiento,
 )
+
+LIMITE_RESUMEN = 10
 
 
 def vencimientos_visibles(usuario):
@@ -22,7 +25,9 @@ def vencimientos_visibles(usuario):
     El Contador Junior solo ve los vencimientos de los clientes que tiene
     asignados; los demás roles ven todos.
     """
-    consulta = Vencimiento.objects.select_related("cliente", "responsable").prefetch_related("alertas")
+    consulta = Vencimiento.objects.select_related("cliente", "responsable", "tarea").prefetch_related(
+        "alertas"
+    )
     if usuario.es_contador_junior:
         consulta = consulta.filter(cliente__responsable=usuario)
     return consulta
@@ -37,12 +42,15 @@ def filtrar_vencimientos(
     estado_presentacion=None,
     tipo_obligacion=None,
     responsable=None,
+    origen=None,
 ):
     """
     Aplica los filtros desplegables del calendario y del listado.
 
     Todos los filtros son opcionales; la consulta base ya respeta la
-    visibilidad por rol (Junior solo sus clientes asignados).
+    visibilidad por rol (Junior solo sus clientes asignados). `origen`
+    distingue los vencimientos tributarios de los generados por una tarea
+    del Kanban marcada con "mostrar en calendario" (Módulo 3).
     """
     consulta = vencimientos_visibles(usuario)
     if fecha_inicio:
@@ -59,6 +67,10 @@ def filtrar_vencimientos(
         consulta = consulta.filter(tipo_obligacion=tipo_obligacion)
     if responsable:
         consulta = consulta.filter(responsable_id=responsable)
+    if origen == "tarea":
+        consulta = consulta.filter(tarea__isnull=False)
+    elif origen == "tributaria":
+        consulta = consulta.filter(tarea__isnull=True)
     return consulta
 
 
@@ -70,6 +82,27 @@ def vencimientos_por_cliente(usuario, cliente):
     la consulta devuelve vacío y la vista responderá 404.
     """
     return filtrar_vencimientos(usuario, cliente=cliente.pk)
+
+
+def vencimientos_proximos(usuario, limite=LIMITE_RESUMEN):
+    """Próximos vencimientos y los del día de hoy, del más cercano al más lejano."""
+    hoy = timezone.localdate()
+    return (
+        vencimientos_visibles(usuario)
+        .filter(fecha_vencimiento__gte=hoy)
+        .order_by("fecha_vencimiento")[:limite]
+    )
+
+
+def vencimientos_vencidos(usuario, limite=LIMITE_RESUMEN):
+    """Vencimientos ya pasados y aún no presentados, del más antiguo al más reciente."""
+    hoy = timezone.localdate()
+    return (
+        vencimientos_visibles(usuario)
+        .filter(fecha_vencimiento__lt=hoy)
+        .exclude(estado_presentacion=Vencimiento.PRESENTADA)
+        .order_by("fecha_vencimiento")[:limite]
+    )
 
 
 def anotaciones_visibles(usuario, fecha_inicio=None, fecha_fin=None):
@@ -101,14 +134,20 @@ def opciones_filtro_calendario():
     Valores para llenar los filtros desplegables del calendario y del listado.
 
     El tipo de obligación es una selección abierta: se sugieren los valores ya
-    registrados en vencimientos y en la tabla de referencia DIAN, pero el
-    usuario puede escribir uno nuevo.
+    registrados en vencimientos y en la tabla de referencia DIAN, más el
+    catálogo de obligaciones tributarias del Módulo 1 (para que una
+    obligación recién agregada al catálogo, como "Exógena nacional", ya
+    aparezca sugerida aunque todavía no tenga ningún vencimiento ni
+    referencia DIAN cargada), pero el usuario puede escribir uno nuevo.
     """
+    from aplicaciones.clientes.models import ObligacionTributaria
+
     tipos_vencimiento = Vencimiento.objects.values_list("tipo_obligacion", flat=True).distinct()
     tipos_dian = TablaReferenciaDian.objects.values_list("tipo_obligacion", flat=True).distinct()
+    tipos_catalogo = ObligacionTributaria.objects.values_list("nombre", flat=True)
 
     return {
-        "tipos_obligacion": sorted(set(tipos_vencimiento) | set(tipos_dian)),
+        "tipos_obligacion": sorted(set(tipos_vencimiento) | set(tipos_dian) | set(tipos_catalogo)),
         "ambitos": Vencimiento.OPCIONES_AMBITO,
         "estados_presentacion": Vencimiento.OPCIONES_ESTADO_PRESENTACION,
         "estados_validacion": Vencimiento.OPCIONES_ESTADO_VALIDACION,

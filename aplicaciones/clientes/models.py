@@ -165,6 +165,59 @@ class ClienteServicio(models.Model):
         return f"{self.cliente.nombre_razon_social} - {self.tipo_servicio.nombre_servicio}"
 
 
+class ObligacionTributaria(models.Model):
+    """Catálogo de obligaciones/vencimientos tributarios que pueden aplicarle a un cliente."""
+
+    NACIONAL = "Nacional"
+    DISTRITAL = "Distrital"
+    MUNICIPAL = "Municipal"
+    OPCIONES_AMBITO = [(NACIONAL, NACIONAL), (DISTRITAL, DISTRITAL), (MUNICIPAL, MUNICIPAL)]
+
+    id_obligacion = models.AutoField(primary_key=True)
+    nombre = models.CharField(max_length=60, unique=True)
+    ambito = models.CharField(max_length=20, choices=OPCIONES_AMBITO, default=NACIONAL)
+
+    class Meta:
+        db_table = "obligacion_tributaria"
+        verbose_name = "obligación tributaria"
+        verbose_name_plural = "obligaciones tributarias"
+        ordering = ["nombre"]
+
+    def __str__(self):
+        return self.nombre
+
+
+class ClienteObligacion(models.Model):
+    """Obligación tributaria que le aplica a un cliente en particular."""
+
+    id_cliente_obligacion = models.AutoField(primary_key=True)
+    cliente = models.ForeignKey(
+        Cliente,
+        on_delete=models.CASCADE,
+        db_column="id_cliente",
+        related_name="obligaciones",
+    )
+    obligacion_tributaria = models.ForeignKey(
+        ObligacionTributaria,
+        on_delete=models.PROTECT,
+        db_column="id_obligacion",
+        related_name="clientes",
+    )
+
+    class Meta:
+        db_table = "cliente_obligacion"
+        verbose_name = "obligación del cliente"
+        verbose_name_plural = "obligaciones del cliente"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["cliente", "obligacion_tributaria"], name="unico_cliente_obligacion"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.cliente.nombre_razon_social} - {self.obligacion_tributaria.nombre}"
+
+
 class Credencial(models.Model):
     """
     Credencial de acceso a un portal del cliente (DIAN, Hacienda, etc.).

@@ -114,6 +114,23 @@ def test_lista_con_filtros(client, usuario_administrador, vencimiento, vencimien
     assert resultados == [vencimiento_junior]
 
 
+def test_lista_sin_parametros_muestra_pestana_resumen(client, usuario_administrador):
+    """Sin filtros en la URL, la pestaña activa es el resumen (no el listado completo)."""
+    client.force_login(usuario_administrador)
+    respuesta = client.get(reverse("calendario:lista"))
+    assert respuesta.context["mostrar_completo"] is False
+
+
+@pytest.mark.parametrize("parametro,valor", [("cliente", "1"), ("desde", "2026-01-01")])
+def test_lista_con_parametro_de_filtro_muestra_pestana_completa(
+    client, usuario_administrador, parametro, valor
+):
+    """Cualquier parámetro de filtro o paginación activa la pestaña 'Todos los vencimientos'."""
+    client.force_login(usuario_administrador)
+    respuesta = client.get(reverse("calendario:lista"), {parametro: valor})
+    assert respuesta.context["mostrar_completo"] is True
+
+
 # ---------------------------------------------------------------------------
 # Detalle y acciones del vencimiento
 # ---------------------------------------------------------------------------

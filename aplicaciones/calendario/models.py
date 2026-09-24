@@ -82,6 +82,11 @@ class Vencimiento(models.Model):
     ambito = models.CharField(max_length=20, choices=OPCIONES_AMBITO, default=NACIONAL)
     municipio = models.CharField(max_length=60, blank=True)
     fecha_vencimiento = models.DateField()
+    # Solo se llena en los vencimientos nacionales automáticos (copiado de
+    # TablaReferenciaDian.periodo_gravable), para poder recalcular sin
+    # duplicar cuando el Administrador corrige una fecha y vuelve a cargar
+    # la tabla DIAN. Vacío en vencimientos manuales o generados por tarea.
+    periodo_gravable = models.CharField(max_length=10, blank=True, default="")
     responsable = models.ForeignKey(
         "seguridad.Usuario",
         on_delete=models.SET_NULL,

@@ -3,7 +3,7 @@
 import pytest
 from django.contrib.auth import get_user_model
 
-from aplicaciones.clientes.models import Cliente
+from aplicaciones.clientes.models import Cliente, ClienteObligacion, ObligacionTributaria
 from aplicaciones.seguridad.models import Modulo, Rol
 
 Usuario = get_user_model()
@@ -79,9 +79,17 @@ def modulo_tareas(db):
     )
 
 
+def _asignar_obligaciones(cliente, *nombres):
+    """Marca en el cliente las obligaciones tributarias indicadas por nombre."""
+    for nombre in nombres:
+        obligacion, _ = ObligacionTributaria.objects.get_or_create(nombre=nombre)
+        ClienteObligacion.objects.get_or_create(cliente=cliente, obligacion_tributaria=obligacion)
+    return cliente
+
+
 @pytest.fixture
 def cliente(usuario_administrador):
-    return Cliente.objects.create(
+    cliente = Cliente.objects.create(
         nombre_razon_social="Comercializadora La Rebaja SAS",
         nit_cedula="900123456",
         tipo_documento=Cliente.NIT,
@@ -94,12 +102,15 @@ def cliente(usuario_administrador):
         correo_cliente="gerencia@larebaja.co",
         responsable=usuario_administrador,
     )
+    return _asignar_obligaciones(
+        cliente, "Renta personas jurídicas", "Retención en la fuente", "IVA bimestral"
+    )
 
 
 @pytest.fixture
 def cliente_natural(usuario_administrador):
     """Persona natural con cédula: el grupo DIAN usa los dos últimos dígitos."""
-    return Cliente.objects.create(
+    cliente = Cliente.objects.create(
         nombre_razon_social="Juan Pablo Méndez",
         nit_cedula="1032456789",
         tipo_documento=Cliente.CC,
@@ -108,6 +119,7 @@ def cliente_natural(usuario_administrador):
         responsable_iva=False,
         responsable=usuario_administrador,
     )
+    return _asignar_obligaciones(cliente, "Renta personas naturales")
 
 
 @pytest.fixture

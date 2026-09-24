@@ -20,10 +20,6 @@ from .models import (
 # Tipos de documento con cálculo automático de grupo DIAN.
 DOCUMENTOS_CON_CALCULO = (Cliente.NIT, Cliente.CC)
 
-# Obligaciones que aplican según el régimen tributario del cliente.
-REGIMEN_SIMPLE = "Régimen simple de tributación"
-REGIMEN_ORDINARIO = "Régimen ordinario"
-
 
 def calcular_grupo_nit(cliente):
     """
@@ -52,39 +48,22 @@ def calcular_grupo_nit(cliente):
 
 def obligaciones_por_cliente(cliente):
     """
-    Determina las obligaciones nacionales DIAN que aplican al cliente.
+    Devuelve las obligaciones tributarias que el usuario marcó para el cliente.
 
-    Reglas según régimen tributario y responsabilidad de IVA:
-
-    - Régimen simple: "RST anticipo bimestral" y "RST consolidada anual".
-    - Régimen ordinario jurídico: "Renta personas jurídicas" y
-      "Retención en la fuente"; si es responsable de IVA, "IVA bimestral".
-    - Régimen ordinario natural: "Renta personas naturales"; si es
-      responsable de IVA, "IVA bimestral" y "Retención en la fuente".
-    - Otros regímenes: solo IVA bimestral si es responsable de IVA.
+    Las obligaciones ya no se adivinan por régimen tributario ni por
+    responsabilidad de IVA: se eligen explícitamente en el perfil del
+    cliente (Módulo 1), lo que permite marcar cosas como "Exógena nacional"
+    o "Exógena distrital" que no se pueden inferir de un texto libre.
 
     Args:
         cliente: instancia de Cliente.
 
     Returns:
-        list[str]: tipos de obligación que le corresponden al cliente. La
+        list[str]: tipos de obligación marcados para el cliente. La
             generación de vencimientos solo crea las que existan en la tabla
             de referencia DIAN cargada por el Administrador.
     """
-    regimen = (cliente.regimen_tributario or "").strip().lower()
-
-    if "simple" in regimen or "simplif" in regimen:
-        return ["RST anticipo bimestral", "RST consolidada anual"]
-    if cliente.tipo_persona == Cliente.JURIDICA:
-        obligaciones = ["Renta personas jurídicas", "Retención en la fuente"]
-        if cliente.responsable_iva:
-            obligaciones.append("IVA bimestral")
-        return obligaciones
-
-    obligaciones = ["Renta personas naturales"]
-    if cliente.responsable_iva:
-        obligaciones += ["IVA bimestral", "Retención en la fuente"]
-    return obligaciones
+    return list(cliente.obligaciones.values_list("obligacion_tributaria__nombre", flat=True))
 
 
 @transaction.atomic
@@ -103,33 +82,61 @@ def generar_vencimientos_cliente(cliente, usuario):
             el cliente no tiene uno asignado).
 
     Returns:
-        dict: resumen con cantidad de vencimientos creados y omitidos.
+        dict: resumen con cantidad de vencimientos creados, actualizados
+            (la fecha cambió porque el Administrador corrigió la tabla DIAN
+            y se recalculó) y omitidos (sin cambios), y `sin_referencia` con
+            las obligaciones marcadas en el cliente que no generaron nada
+            porque la tabla DIAN no tiene ninguna fecha cargada para ellas
+            (p. ej. una obligación recién agregada al catálogo que el
+            Administrador todavía no cargó).
     """
+    obligaciones = obligaciones_por_cliente(cliente)
     grupo = calcular_grupo_nit(cliente)
-    resumen = {"creados": 0, "omitidos": 0, "sin_grupo": grupo is None}
+    resumen = {
+        "creados": 0,
+        "actualizados": 0,
+        "omitidos": 0,
+        "sin_grupo": grupo is None,
+        "sin_referencia": [],
+    }
     if grupo is None:
         return resumen
 
+    tipos_con_referencia = set(
+        TablaReferenciaDian.objects.filter(tipo_obligacion__in=obligaciones)
+        .values_list("tipo_obligacion", flat=True)
+        .distinct()
+    )
+    resumen["sin_referencia"] = [
+        obligacion for obligacion in obligaciones if obligacion not in tipos_con_referencia
+    ]
+
     responsable = cliente.responsable or usuario
     referencias = TablaReferenciaDian.objects.filter(
-        tipo_obligacion__in=obligaciones_por_cliente(cliente),
+        tipo_obligacion__in=obligaciones,
         grupo_nit=grupo,
     )
 
     for referencia in referencias:
-        _, creado = Vencimiento.objects.get_or_create(
+        vencimiento, creado = Vencimiento.objects.get_or_create(
             cliente=cliente,
             tipo_obligacion=referencia.tipo_obligacion,
             ambito=Vencimiento.NACIONAL,
-            fecha_vencimiento=referencia.fecha_vencimiento,
+            periodo_gravable=referencia.periodo_gravable,
             tarea=None,
             defaults={
+                "fecha_vencimiento": referencia.fecha_vencimiento,
                 "responsable": responsable,
                 "estado_validacion": Vencimiento.PENDIENTE_VALIDAR,
             },
         )
         if creado:
             resumen["creados"] += 1
+        elif vencimiento.fecha_vencimiento != referencia.fecha_vencimiento:
+            vencimiento.fecha_vencimiento = referencia.fecha_vencimiento
+            vencimiento.estado_validacion = Vencimiento.PENDIENTE_VALIDAR
+            vencimiento.save(update_fields=["fecha_vencimiento", "estado_validacion"])
+            resumen["actualizados"] += 1
         else:
             resumen["omitidos"] += 1
     return resumen
@@ -145,19 +152,33 @@ def generar_vencimientos_masivo(usuario, solo_activos=True):
         solo_activos: si es True, omite clientes inactivos.
 
     Returns:
-        dict: totales de clientes procesados, vencimientos creados y omitidos.
+        dict: totales de clientes procesados, vencimientos creados,
+            actualizados (fecha corregida al recalcular) y omitidos, y
+            `sin_referencia` con el conjunto (sin duplicados) de
+            obligaciones que no generaron nada en ningún cliente por falta
+            de fechas cargadas en la tabla DIAN.
     """
     clientes = Cliente.objects.all()
     if solo_activos:
         clientes = clientes.filter(estado=Cliente.ACTIVO)
 
-    total = {"clientes": 0, "creados": 0, "omitidos": 0, "sin_grupo": 0}
+    total = {
+        "clientes": 0,
+        "creados": 0,
+        "actualizados": 0,
+        "omitidos": 0,
+        "sin_grupo": 0,
+        "sin_referencia": set(),
+    }
     for cliente in clientes:
         resumen = generar_vencimientos_cliente(cliente, usuario)
         total["clientes"] += 1
         total["creados"] += resumen["creados"]
+        total["actualizados"] += resumen["actualizados"]
         total["omitidos"] += resumen["omitidos"]
         total["sin_grupo"] += 1 if resumen["sin_grupo"] else 0
+        total["sin_referencia"].update(resumen["sin_referencia"])
+    total["sin_referencia"] = sorted(total["sin_referencia"])
     return total
 
 
