@@ -130,7 +130,8 @@ class Usuario(AbstractBaseUser):
     telefono = models.CharField(max_length=20, blank=True)
     foto_url = models.URLField(max_length=255, blank=True)
     password = models.CharField(max_length=255, db_column="password_hash")
-    firma_url = models.URLField(max_length=255, blank=True)
+    firma = models.ImageField(upload_to="firmas/", blank=True)
+    identificacion = models.CharField(max_length=20, blank=True)
     numero_tarjeta_profesional = models.CharField(max_length=30, blank=True)
     rol = models.ForeignKey(
         Rol,

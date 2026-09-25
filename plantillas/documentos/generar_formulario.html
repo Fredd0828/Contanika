@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block titulo %}Generar documento{% endblock %}
+
+{% block contenido %}
+<div class="panel">
+    <div class="ph mb-0">
+        <div class="ph-title" style="font-size:18px"><i class="bi bi-file-earmark-plus"></i> Generar documento</div>
+        <a class="ph-link" href="{% url 'documentos:historico' %}"><i class="bi bi-arrow-left"></i> Volver al histórico</a>
+    </div>
+</div>
+
+<form method="post" novalidate>
+    {% csrf_token %}
+
+    {% if formulario.non_field_errors %}
+    <div class="alert alert-danger">{{ formulario.non_field_errors }}</div>
+    {% endif %}
+
+    <div class="panel mb-3">
+        <div class="ph"><div class="ph-title"><i class="bi bi-card-list"></i> Datos del documento</div></div>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label" for="{{ formulario.cliente.id_for_label }}">{{ formulario.cliente.label }} *</label>
+                {{ formulario.cliente }}
+                {% if formulario.cliente.errors %}<div class="text-danger small">{{ formulario.cliente.errors }}</div>{% endif %}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="{{ formulario.plantilla.id_for_label }}">{{ formulario.plantilla.label }} *</label>
+                {{ formulario.plantilla }}
+                {% if formulario.plantilla.errors %}<div class="text-danger small">{{ formulario.plantilla.errors }}</div>{% endif %}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="{{ formulario.periodo.id_for_label }}">{{ formulario.periodo.label }} *</label>
+                {{ formulario.periodo }}
+                {% if formulario.periodo.errors %}<div class="text-danger small">{{ formulario.periodo.errors }}</div>{% endif %}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="{{ formulario.usuario_firmante.id_for_label }}">{{ formulario.usuario_firmante.label }} *</label>
+                {{ formulario.usuario_firmante }}
+                {% if formulario.usuario_firmante.errors %}<div class="text-danger small">{{ formulario.usuario_firmante.errors }}</div>{% endif %}
+                <div class="form-text">
+                    ¿No aparece su nombre? <a href="{% url 'documentos:mi_firma' %}">Cargue su firma</a> primero.
+                </div>
+            </div>
+            <div class="col-12">
+                <label class="form-label" for="{{ formulario.descripcion.id_for_label }}">{{ formulario.descripcion.label }}</label>
+                {{ formulario.descripcion }}
+            </div>
+        </div>
+    </div>
+
+    <div id="campos-dinamicos">
+        {% include "documentos/_campos_dinamicos.html" %}
+    </div>
+
+    <div class="d-flex gap-2">
+        <button type="submit" class="ph-btn"><i class="bi bi-eye"></i> Previsualizar</button>
+        <a class="btn btn-outline-secondary" href="{% url 'documentos:historico' %}">Cancelar</a>
+    </div>
+</form>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const selectorPlantilla = document.getElementById("{{ formulario.plantilla.id_for_label }}");
+    const contenedorCampos = document.getElementById("campos-dinamicos");
+
+    function inicializarFilasRepetibles() {
+        const boton = document.getElementById("agregar-fila-repetible");
+        const filas = document.getElementById("filas-repetibles");
+        const plantillaFila = document.getElementById("plantilla-fila-repetible");
+        const total = contenedorCampos.querySelector('input[id$="-TOTAL_FORMS"]');
+        if (boton && filas && plantillaFila && total) {
+            boton.addEventListener("click", function () {
+                const indice = parseInt(total.value, 10);
+                filas.insertAdjacentHTML("beforeend", plantillaFila.innerHTML.replace(/__prefix__/g, indice));
+                total.value = indice + 1;
+            });
+        }
+    }
+
+    if (selectorPlantilla && contenedorCampos) {
+        selectorPlantilla.addEventListener("change", function () {
+            const id = this.value;
+            if (!id) {
+                contenedorCampos.innerHTML = "";
+                return;
+            }
+            fetch("{% url 'documentos:campos_plantilla' %}?plantilla=" + encodeURIComponent(id), {
+                headers: { "X-Requested-With": "XMLHttpRequest" },
+            })
+                .then((respuesta) => respuesta.text())
+                .then((html) => {
+                    contenedorCampos.innerHTML = html;
+                    inicializarFilasRepetibles();
+                });
+        });
+    }
+
+    inicializarFilasRepetibles();
+});
+</script>
+{% endblock %}

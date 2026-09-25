@@ -96,6 +96,10 @@ class DetalleClienteView(ModuloHabilitadoMixin, DetailView):
         from aplicaciones.calendario.selectores import vencimientos_por_cliente
 
         contexto["vencimientos"] = vencimientos_por_cliente(self.request.user, self.object)
+        # Documentos generados para el cliente, visibles desde su perfil (Módulo 4).
+        from aplicaciones.documentos.selectores import documentos_del_cliente
+
+        contexto["documentos"] = documentos_del_cliente(self.request.user, self.object)
         return contexto
 
 

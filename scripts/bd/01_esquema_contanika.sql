@@ -565,10 +565,11 @@ CREATE TABLE public.documento (
     id_documento integer NOT NULL,
     fecha_generacion timestamp with time zone NOT NULL,
     descripcion text NOT NULL,
-    archivo_url character varying(255) NOT NULL,
     id_cliente integer NOT NULL,
     id_plantilla integer NOT NULL,
-    id_usuario_generador integer NOT NULL
+    id_usuario_generador integer NOT NULL,
+    archivo character varying(255) NOT NULL,
+    periodo character varying(60) NOT NULL
 );
 
 
@@ -1024,13 +1025,14 @@ CREATE TABLE public.usuario (
     telefono character varying(20) NOT NULL,
     foto_url character varying(255) NOT NULL,
     password_hash character varying(255) NOT NULL,
-    firma_url character varying(255) NOT NULL,
     numero_tarjeta_profesional character varying(30) NOT NULL,
     estado character varying(15) NOT NULL,
     fecha_creacion timestamp with time zone NOT NULL,
     is_staff boolean NOT NULL,
     is_superuser boolean NOT NULL,
-    id_rol integer NOT NULL
+    id_rol integer NOT NULL,
+    firma character varying(100) NOT NULL,
+    identificacion character varying(20) NOT NULL
 );
 
 

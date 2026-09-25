@@ -538,3 +538,121 @@ python gestionar.py runserver
   la decisión T3 de alertas automáticas).
 - Reporte de tareas (individual o total) del Módulo 10.
 - Panel de tareas del cliente en su ficha (Módulo 1), como el de vencimientos.
+
+---
+
+## Jueves 24 de septiembre de 2026 — Módulo 4, bloque 1: expedición de documentos y certificados
+
+**Objetivo del bloque:** dejar navegable el Módulo 4 (HU010-012, 042): catálogo
+de las 6 plantillas base con texto y campos reales, gestión de plantillas
+(Administrador), panel de generación con campos dinámicos por tipo de
+documento (simples y repetibles), firma del contador y generación real del
+PDF con ReportLab, histórico filtrable y descarga individual.
+
+### Trabajo realizado
+
+1. **Modelos**: `Documento.archivo_url` (URLField sin uso real) se cambió a
+   `archivo` (`FileField`) y se agregó `periodo`; `Usuario.firma_url` se
+   cambió a `firma` (`ImageField`) y se agregó `identificacion`, para poder
+   cumplir el requisito de "cargar la imagen de firma" — ningún modelo del
+   proyecto usaba hasta ahora un campo de archivo real, todos eran `URLField`
+   sin mecanismo de subida (mismo diagnóstico que el plan pendiente de
+   adjuntos en Expediente, Módulo 9, que sigue sin construirse).
+2. **Catálogo de plantillas**: las 6 plantillas base (ya existían solo con el
+   nombre) se completaron con texto predeterminado (sintaxis de plantillas de
+   Django, con marcadores `{{ cliente }}`, `{{ periodo }}`, etc.) y sus campos
+   propios simples o repetibles (por ejemplo, nombre y porcentaje de cada
+   accionista en el certificado de composición accionaria), sembrados de forma
+   idempotente por `cargar_datos_iniciales` (el texto solo se fija al crear la
+   plantilla, para no pisar ediciones del Administrador en corridas futuras).
+   Gestión de plantillas (crear, editar texto y campos) solo para
+   Administrador.
+3. **Firma del contador**: vista "Mi firma" (Administrador y Contador Senior)
+   para cargar o reemplazar la imagen de firma, identificación y tarjeta
+   profesional; el panel de generación permite elegir cuál firma guardada usar
+   entre los usuarios que ya la tienen cargada.
+4. **Panel de generación** en dos pasos: el formulario común (cliente,
+   plantilla, período, descripción, firma) se combina con los campos propios
+   de la plantilla elegida, cargados por AJAX sin recargar la página; las
+   filas repetibles se agregan o quitan con JavaScript sencillo (mismo
+   espíritu que los municipios adicionales del Módulo 1). Los datos validados
+   se guardan en la sesión para la previsualización; al confirmar se
+   re-validan contra las consultas visibles del usuario (nunca se confía en
+   ids sueltos) y se genera el `Documento` con sus valores, detalles y el PDF,
+   todo en una transacción.
+5. **PDF con ReportLab** (Platypus): encabezado del despacho, cuerpo del
+   certificado ya interpolado (con el mismo escape de Django usado en la
+   previsualización, para que ningún valor capturado pueda inyectar marcado),
+   bloque de firma con la imagen, nombre, identificación y tarjeta profesional
+   del contador elegido.
+6. **Histórico y panel del cliente**: listado filtrable por tipo de documento
+   y rango de fechas, descarga individual del PDF (excepción expresa a la
+   regla de centralización de descargas: el certificado individual sí se
+   descarga desde aquí, por los tres roles), eliminación solo para
+   Administrador o Contador Senior. Nueva pestaña "Documentos" en la ficha del
+   cliente con los últimos documentos generados.
+7. **Integración**: rutas registradas, `config/urls.py` ahora sirve `media/`
+   en desarrollo (faltaba, necesario para servir firmas y PDFs reales), menú
+   lateral y tarjeta del panel principal activos para el Módulo 4.
+
+### Cómo verificarlo (entorno local)
+
+```bash
+cd /home/fredd/documentos/ubuntu/contanika/codigo
+source .venv/bin/activate
+python gestionar.py runserver
+```
+
+1. Entrar a **Documentos** en el menú lateral: histórico vacío.
+2. Como Administrador, entrar a **Gestión de plantillas**: las 6 base ya
+   tienen texto predeterminado; editar el texto de una; crear una plantilla
+   nueva (la séptima, aún sin definir en el spec) con un campo propio.
+3. **Mi firma**: cargar una imagen, identificación y tarjeta profesional.
+4. Desde la ficha de un cliente → pestaña **Documentos** → "Generar
+   documento": elegir "Certificado de composición accionaria", ver que el
+   formulario cambia por AJAX a sus campos propios, agregar dos accionistas
+   sin recargar la página, previsualizar (texto ya interpolado) y confirmar:
+   el PDF se genera y el detalle del documento queda disponible.
+5. Descargar el PDF y confirmar encabezado, cuerpo y bloque de firma.
+6. Filtrar el histórico por tipo de documento y por rango de fechas.
+7. Como Contador Junior: solo genera/ve documentos de sus clientes asignados
+   (404 en URL directa a un documento ajeno); sin acceso a Gestión de
+   plantillas ni Mi firma (403); sin botón eliminar. Como Contador Senior, sí
+   puede eliminar un documento generado por otro usuario.
+
+### Resultado de las pruebas
+
+- 278 pruebas en total: **278 aprobadas** (56 nuevas del Módulo 4).
+- Cobertura total: **92 %**; módulo documentos: formularios y selectores
+  100 %, modelos 99 %, servicios 95 %, vistas 80 %.
+- Pruebas de seguridad: acceso sin sesión, módulo inhabilitado (403), permisos
+  por rol (403 para Junior en plantillas/mi firma/eliminar, para Senior en
+  plantillas), IDOR de documentos ajenos (404 en detalle y descarga), CSRF y
+  XSS en la descripción del documento (verificado también en vivo contra el
+  servidor de desarrollo, no solo en pruebas automatizadas).
+- Ruff (estilo y formato) y bandit sin hallazgos — una excepción justificada
+  (`# nosec`) en `documentos/selectores.py::renderizar_texto`: el `mark_safe`
+  solo envuelve texto que ya pasó por el autoescape de Django, con el texto
+  literal editable únicamente por el Administrador.
+- pip-audit sin vulnerabilidades.
+- Verificación adicional en vivo (no solo pruebas automatizadas): contra el
+  servidor de desarrollo ya corriendo, con sesión real de Administrador, se
+  ejecutó el flujo completo por HTTP (login, subir firma, generar el
+  certificado de composición accionaria con dos accionistas, previsualizar
+  con intento de XSS en la descripción, confirmar, descargar el PDF real
+  —1 página, cabeceras `Content-Type`/`Content-Disposition` correctas— y
+  confirmar la pestaña Documentos en la ficha del cliente). No se usó un
+  navegador real (sin acceso interactivo en este entorno); si se requiere
+  evidencia visual para el documento Word, conviene repetir el flujo en un
+  navegador y capturar las pantallas.
+
+### Pendientes del Módulo 4 (siguientes bloques)
+
+- Séptima plantilla: nombre, campos y texto predeterminado (spec explícito:
+  "falta definir", no se inventó en este bloque).
+- Reporte específico no aplica (no está en el alcance del Módulo 10 según el
+  spec vigente); confirmar si eso sigue así al cerrar el Módulo 10.
+- `ConfiguracionDespacho.membrete_url` sigue sin usarse (el PDF imprime el
+  nombre y ciudad del despacho como texto, no como imagen) — evaluar si vale
+  la pena resolverlo junto con el plan pendiente de adjuntos (Módulo 9), que
+  tiene el mismo diagnóstico de "URLField sin mecanismo de subida real".

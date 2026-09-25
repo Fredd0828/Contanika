@@ -19,7 +19,7 @@ class PlantillaAdmin(admin.ModelAdmin):
 
 @admin.register(Documento)
 class DocumentoAdmin(admin.ModelAdmin):
-    list_display = ["plantilla", "cliente", "usuario_generador", "fecha_generacion"]
+    list_display = ["plantilla", "cliente", "periodo", "archivo", "usuario_generador", "fecha_generacion"]
     list_filter = ["plantilla"]
     search_fields = ["cliente__nombre_razon_social", "descripcion"]
 

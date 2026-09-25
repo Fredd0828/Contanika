@@ -16,6 +16,7 @@ RUTAS_MODULOS = {
     Modulo.MOD01_CLIENTES: "clientes:lista",
     Modulo.MOD02_CALENDARIO: "calendario:calendario",
     Modulo.MOD03_TAREAS: "tareas:tablero",
+    Modulo.MOD04_DOCUMENTOS: "documentos:historico",
 }
 
 

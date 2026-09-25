@@ -44,6 +44,11 @@
             <i class="bi bi-key"></i> Credenciales
         </button>
     </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-documentos-btn" data-bs-toggle="tab" data-bs-target="#tab-documentos" type="button" role="tab" aria-controls="tab-documentos" aria-selected="false">
+            <i class="bi bi-file-earmark-text-fill"></i> Documentos
+        </button>
+    </li>
 </ul>
 
 <div class="tab-content" id="tabsClienteContenido">
@@ -115,6 +120,10 @@
 
     <div class="tab-pane fade" id="tab-credenciales" role="tabpanel" aria-labelledby="tab-credenciales-btn">
         {% include "clientes/credencial_tabla.html" with credenciales=cliente.credenciales.all puede_editar=puede_editar cliente=cliente %}
+    </div>
+
+    <div class="tab-pane fade" id="tab-documentos" role="tabpanel" aria-labelledby="tab-documentos-btn">
+        {% include "clientes/documentos_panel.html" with documentos=documentos cliente=cliente %}
     </div>
 </div>
 

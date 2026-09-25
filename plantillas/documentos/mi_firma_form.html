@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block titulo %}Mi firma{% endblock %}
+
+{% block contenido %}
+<div class="panel">
+    <div class="ph mb-0">
+        <div class="ph-title" style="font-size:18px"><i class="bi bi-pen"></i> Mi firma</div>
+        <a class="ph-link" href="{% url 'documentos:generar' %}"><i class="bi bi-arrow-left"></i> Volver</a>
+    </div>
+</div>
+
+<div class="panel">
+    <p class="text-muted">
+        Esta firma, su identificación y su tarjeta profesional se incorporan a los
+        documentos que genere seleccionándolo a usted como firmante.
+    </p>
+    {% if user.firma %}
+    <img src="{{ user.firma.url }}" alt="Firma actual" style="max-height:80px" class="mb-3">
+    {% endif %}
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label" for="{{ formulario.firma.id_for_label }}">{{ formulario.firma.label }}</label>
+                {{ formulario.firma }}
+                {% if formulario.firma.errors %}<div class="text-danger small">{{ formulario.firma.errors }}</div>{% endif %}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="{{ formulario.identificacion.id_for_label }}">{{ formulario.identificacion.label }}</label>
+                {{ formulario.identificacion }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="{{ formulario.numero_tarjeta_profesional.id_for_label }}">{{ formulario.numero_tarjeta_profesional.label }}</label>
+                {{ formulario.numero_tarjeta_profesional }}
+            </div>
+        </div>
+        <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="ph-btn"><i class="bi bi-save"></i> Guardar</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

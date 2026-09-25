@@ -79,6 +79,14 @@ def modulo_tareas(db):
     )
 
 
+@pytest.fixture
+def modulo_documentos(db):
+    return Modulo.objects.create(
+        codigo_modulo=Modulo.MOD04_DOCUMENTOS,
+        nombre_modulo="Expedición de documentos y certificados",
+    )
+
+
 def _asignar_obligaciones(cliente, *nombres):
     """Marca en el cliente las obligaciones tributarias indicadas por nombre."""
     for nombre in nombres:

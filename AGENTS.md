@@ -19,12 +19,12 @@ Contexto técnico y convenciones de trabajo para agentes de código que colabore
 | Calidad | `bash scripts/calidad.sh` |
 | Credenciales dev | `paula@befrec.co` / `Contanika2026*` |
 | Repositorio | https://github.com/fredd0828/Contanika |
-| Rama de trabajo | `feature/modulo-3-tareas` |
+| Rama de trabajo | `feature/modulo-4-documentos` |
 | Rama principal | `main` |
 
 **Nota Git:** una rama por módulo, creada a partir de la última rama de trabajo (no siempre desde
 `main`, para no perder de la vista lo ya construido mientras el módulo anterior espera aprobación).
-`feature/modulo-3-tareas` se creó a partir de `feature/modulo-2-calendario` (calendario aún sin
+`feature/modulo-4-documentos` se creó a partir de `feature/modulo-3-tareas` (tareas aún sin
 mergear a `main`). El push a GitHub ya funciona sin pedir token manualmente (credenciales
 almacenadas por el gestor de credenciales de Git).
 
@@ -190,7 +190,29 @@ Ninguna funcionalidad se da por terminada sin:
   estado leído/no leído confiable, evaluar agregar una tabla `notificacion`
   (pasaría de 36 a 37 tablas; requeriría actualizar el numeral 2.5 del Word).
 
-### Módulos 4–10
+### Módulo 4 — Documentos y certificados
+- 6 plantillas base sembradas por `cargar_datos_iniciales` (texto predeterminado
+  con sintaxis de plantillas de Django + `CampoPlantilla` simples/repetibles);
+  el texto solo se fija al crear la plantilla, nunca se pisa en corridas
+  posteriores del comando (para no perder ediciones del Administrador).
+- `Documento.archivo` (`FileField`) y `Usuario.firma` (`ImageField`) — primer
+  uso real de subida de archivos en el proyecto; hasta el Módulo 3 todo campo
+  "tipo archivo" (`foto_url`, `firma_url`, `membrete_url`, `Adjunto.archivo_url`)
+  era un `URLField` sin mecanismo de subida. `config/urls.py` ahora sirve
+  `media/` en `DEBUG` (antes no estaba configurado, no hacía falta hasta ahora).
+- Generación en dos pasos (`GenerarDocumentoView` → `ConfirmarDocumentoView`):
+  los datos validados del formulario dinámico (campos simples y filas
+  repetibles por plantilla) se guardan en `request.session`, no en campos
+  ocultos; se re-validan contra las consultas visibles del usuario antes de
+  generar el PDF.
+- Firma del contador: campo `firma`/`identificacion`/`numero_tarjeta_profesional`
+  ya existían en `Usuario` (pensados para este módulo) pero no había forma de
+  cargarlos; se agregó una vista mínima "Mi firma" dentro de `documentos`
+  (Administrador y Contador Senior) en vez de construir el Módulo 8 completo.
+- `ConfiguracionDespacho.membrete_url` sigue sin usarse; el PDF imprime el
+  encabezado del despacho como texto, no como imagen.
+
+### Módulos 5–10
 - Ver `PLAN_TRABAJO.md` y `md/Contanika_Especificaciones_Módulos.md`.
 
 ---
@@ -212,5 +234,5 @@ Ninguna funcionalidad se da por terminada sin:
 
 ---
 
-Última actualización: 23 de septiembre de 2026 (Módulo 3, bloque 1: tablero
-Kanban navegable).
+Última actualización: 24 de septiembre de 2026 (Módulo 4, bloque 1: expedición
+de documentos y certificados navegable).

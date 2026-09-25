@@ -87,8 +87,9 @@ class Documento(models.Model):
         related_name="documentos_generados",
     )
     fecha_generacion = models.DateTimeField(auto_now_add=True)
+    periodo = models.CharField(max_length=60, blank=True)
     descripcion = models.TextField(blank=True)
-    archivo_url = models.URLField(max_length=255, blank=True)
+    archivo = models.FileField(upload_to="documentos/%Y/%m/", max_length=255, blank=True)
 
     class Meta:
         db_table = "documento"

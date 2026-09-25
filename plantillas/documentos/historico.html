@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block titulo %}Documentos{% endblock %}
+
+{% block contenido %}
+<div class="panel">
+    <div class="ph">
+        <div class="ph-title"><i class="bi bi-file-earmark-text-fill"></i> Histórico de documentos</div>
+        <div class="ph-actions">
+            <span class="ph-meta">{% if is_paginated %}{{ page_obj.paginator.count }}{% else %}{{ documentos|length }}{% endif %} registro(s)</span>
+            <a class="ph-link" href="{% url 'documentos:mi_firma' %}"><i class="bi bi-pen"></i> Mi firma</a>
+            {% if puede_eliminar %}
+            <a class="ph-link" href="{% url 'documentos:plantillas' %}"><i class="bi bi-file-earmark-ruled"></i> Gestión de plantillas</a>
+            {% endif %}
+            <a class="ph-btn" href="{% url 'documentos:generar' %}"><i class="bi bi-plus-lg"></i> Generar documento</a>
+        </div>
+    </div>
+
+    <form method="get" class="filters mb-3">
+        <div class="campo">
+            <label for="{{ formulario_filtro.plantilla.id_for_label }}">{{ formulario_filtro.plantilla.label }}</label>
+            {{ formulario_filtro.plantilla }}
+        </div>
+        <div class="campo">
+            <label for="{{ formulario_filtro.desde.id_for_label }}">{{ formulario_filtro.desde.label }}</label>
+            {{ formulario_filtro.desde }}
+        </div>
+        <div class="campo">
+            <label for="{{ formulario_filtro.hasta.id_for_label }}">{{ formulario_filtro.hasta.label }}</label>
+            {{ formulario_filtro.hasta }}
+        </div>
+        <div class="campo">
+            <button type="submit" class="ph-btn"><i class="bi bi-funnel"></i> Filtrar</button>
+        </div>
+        <div class="campo">
+            <a class="ph-link" href="{% url 'documentos:historico' %}">Limpiar</a>
+        </div>
+    </form>
+
+    <div class="table-responsive">
+        <table class="tbl">
+            <thead>
+                <tr>
+                    <th>Cliente</th>
+                    <th>Tipo de documento</th>
+                    <th>Período</th>
+                    <th>Fecha de generación</th>
+                    <th>Descripción</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for documento in documentos %}
+                <tr>
+                    <td><a href="{% url 'documentos:detalle' documento.pk %}">{{ documento.cliente.nombre_razon_social }}</a></td>
+                    <td>{{ documento.plantilla.nombre_plantilla }}</td>
+                    <td>{{ documento.periodo|default:"—" }}</td>
+                    <td>{{ documento.fecha_generacion|date:"d/m/Y H:i" }}</td>
+                    <td>{{ documento.descripcion|default:"—"|truncatechars:60 }}</td>
+                    <td class="text-end">
+                        <a class="icon-btn" href="{% url 'documentos:detalle' documento.pk %}" title="Ver detalle">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                        <a class="icon-btn" href="{% url 'documentos:descargar' documento.pk %}" title="Descargar PDF">
+                            <i class="bi bi-download"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">No hay documentos generados que cumplan los filtros.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if is_paginated %}
+<div class="panel mt-3">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <nav aria-label="Paginación de documentos">
+            <ul class="pagination pagination-sm mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a></li>
+                {% endif %}
+                <li class="page-item active" aria-current="page"><span class="page-link">{{ page_obj.number }}</span></li>
+                {% if page_obj.has_next %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Siguiente</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+        <span class="text-muted small">Página {{ page_obj.number }} de {{ paginator.num_pages }} · {{ paginator.count }} registro(s)</span>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
