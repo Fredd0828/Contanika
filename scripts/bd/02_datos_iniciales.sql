@@ -84,6 +84,15 @@ COPY public.concepto_facturable (id_concepto, nombre_concepto, valor_sugerido) F
 
 
 --
+-- Data for Name: configuracion_cobro; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.configuracion_cobro (id_configuracion_cobro, cobro_automatico_activo, dia_generacion, dias_plazo_pago, canal_cobro, recordatorios_activos, dias_antes_vencimiento, frecuencia_mora_dias, canal_recordatorio, ultima_ejecucion, id_cuenta_bancaria, id_metodo_pago) FROM stdin;
+1	f	1	10	Correo	f	3	7	Correo	\N	\N	\N
+\.
+
+
+--
 -- Data for Name: configuracion_despacho; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -689,6 +698,13 @@ SELECT pg_catalog.setval('public.campo_plantilla_id_campo_seq', 22, true);
 --
 
 SELECT pg_catalog.setval('public.concepto_facturable_id_concepto_seq', 5, true);
+
+
+--
+-- Name: configuracion_cobro_id_configuracion_cobro_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.configuracion_cobro_id_configuracion_cobro_seq', 1, true);
 
 
 --

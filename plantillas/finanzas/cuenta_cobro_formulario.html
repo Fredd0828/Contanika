@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+
+{% block titulo %}Generar cuenta de cobro{% endblock %}
+
+{% block contenido %}
+<div class="panel">
+    <div class="ph mb-0">
+        <div class="ph-title" style="font-size:18px"><i class="bi bi-receipt"></i> Generar cuenta de cobro</div>
+        <a class="ph-link" href="{% if cliente %}{% url 'clientes:detalle' cliente.pk %}#tab-honorarios{% else %}{% url 'finanzas:historico' %}{% endif %}">
+            <i class="bi bi-arrow-left"></i> Volver
+        </a>
+    </div>
+</div>
+
+<form method="post" novalidate id="form-cuenta-cobro">
+    {% csrf_token %}
+
+    {% if formulario.non_field_errors %}
+    <div class="alert alert-danger">{{ formulario.non_field_errors }}</div>
+    {% endif %}
+    {% if formset.non_form_errors %}
+    <div class="alert alert-danger">{{ formset.non_form_errors }}</div>
+    {% endif %}
+
+    <div class="panel mb-3">
+        <div class="ph"><div class="ph-title"><i class="bi bi-person-vcard"></i> Cliente y período</div></div>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label" for="{{ formulario.cliente.id_for_label }}">Cliente *</label>
+                {{ formulario.cliente }}
+                <div class="form-text">Al elegir el cliente se sugieren el valor y las líneas según su honorario y sus servicios.</div>
+                {% if formulario.cliente.errors %}<div class="text-danger small">{{ formulario.cliente.errors }}</div>{% endif %}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="{{ formulario.periodo_facturado.id_for_label }}">{{ formulario.periodo_facturado.label }} *</label>
+                {{ formulario.periodo_facturado }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="{{ formulario.fecha_inicio_periodo.id_for_label }}">{{ formulario.fecha_inicio_periodo.label }} *</label>
+                {{ formulario.fecha_inicio_periodo }}
+                {% if formulario.fecha_inicio_periodo.errors %}<div class="text-danger small">{{ formulario.fecha_inicio_periodo.errors }}</div>{% endif %}
+            </div>
+            <div class="col-md-3" id="campo-fin-periodo">
+                <label class="form-label" for="{{ formulario.fecha_fin_periodo.id_for_label }}">{{ formulario.fecha_fin_periodo.label }} *</label>
+                {{ formulario.fecha_fin_periodo }}
+                {% if formulario.fecha_fin_periodo.errors %}<div class="text-danger small">{{ formulario.fecha_fin_periodo.errors }}</div>{% endif %}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="{{ formulario.valor_total.id_for_label }}">{{ formulario.valor_total.label }} *</label>
+                {{ formulario.valor_total }}
+                {% if formulario.valor_total.errors %}<div class="text-danger small">{{ formulario.valor_total.errors }}</div>{% endif %}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="{{ formulario.fecha_vencimiento_pago.id_for_label }}">{{ formulario.fecha_vencimiento_pago.label }} *</label>
+                {{ formulario.fecha_vencimiento_pago }}
+                {% if formulario.fecha_vencimiento_pago.errors %}<div class="text-danger small">{{ formulario.fecha_vencimiento_pago.errors }}</div>{% endif %}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="{{ formulario.cuenta_bancaria.id_for_label }}">{{ formulario.cuenta_bancaria.label }}</label>
+                {{ formulario.cuenta_bancaria }}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="{{ formulario.metodo_pago.id_for_label }}">{{ formulario.metodo_pago.label }}</label>
+                {{ formulario.metodo_pago }}
+            </div>
+        </div>
+    </div>
+
+    <div class="panel mb-3">
+        <div class="ph">
+            <div class="ph-title"><i class="bi bi-list-check"></i> Descripción del servicio</div>
+            <span class="ph-meta">Suma de líneas: <strong id="suma-lineas">$ 0</strong></span>
+        </div>
+        <p class="text-muted small">
+            Elija un concepto del catálogo o escriba el texto libre. El valor por línea es opcional; si
+            lo indica, la suma debe ser igual al valor total. Use las flechas para cambiar el orden.
+        </p>
+        {{ formset.management_form }}
+        <div id="filas-lineas">
+            {% for fila in formset %}
+            <div class="row g-2 align-items-center mb-2 fila-linea">
+                <div class="col-md-3">{{ fila.concepto }}</div>
+                <div class="col-md-5">
+                    {{ fila.descripcion_linea }}
+                    {% if fila.descripcion_linea.errors %}<div class="text-danger small">{{ fila.descripcion_linea.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-2">
+                    {{ fila.valor_linea }}
+                    {% if fila.valor_linea.errors %}<div class="text-danger small">{{ fila.valor_linea.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-2 text-nowrap">
+                    <button type="button" class="icon-btn subir-linea" title="Subir"><i class="bi bi-arrow-up"></i></button>
+                    <button type="button" class="icon-btn bajar-linea" title="Bajar"><i class="bi bi-arrow-down"></i></button>
+                    <button type="button" class="icon-btn quitar-linea" title="Quitar"><i class="bi bi-x-lg"></i></button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <button type="button" class="ph-link mt-2" id="agregar-linea"><i class="bi bi-plus-lg"></i> Agregar línea</button>
+    </div>
+
+    <div class="d-flex gap-2">
+        <button type="submit" class="ph-btn"><i class="bi bi-file-earmark-pdf"></i> Generar cuenta de cobro</button>
+        <a class="btn btn-outline-secondary" href="{% url 'finanzas:historico' %}">Cancelar</a>
+    </div>
+</form>
+
+<template id="plantilla-linea">
+    <div class="row g-2 align-items-center mb-2 fila-linea">
+        <div class="col-md-3">{{ formset.empty_form.concepto }}</div>
+        <div class="col-md-5">{{ formset.empty_form.descripcion_linea }}</div>
+        <div class="col-md-2">{{ formset.empty_form.valor_linea }}</div>
+        <div class="col-md-2 text-nowrap">
+            <button type="button" class="icon-btn subir-linea" title="Subir"><i class="bi bi-arrow-up"></i></button>
+            <button type="button" class="icon-btn bajar-linea" title="Bajar"><i class="bi bi-arrow-down"></i></button>
+            <button type="button" class="icon-btn quitar-linea" title="Quitar"><i class="bi bi-x-lg"></i></button>
+        </div>
+    </div>
+</template>
+
+{{ conceptos_json|json_script:"conceptos-json" }}
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const contenedor = document.getElementById("filas-lineas");
+    const total = document.getElementById("id_lineas-TOTAL_FORMS");
+    const plantilla = document.getElementById("plantilla-linea").innerHTML;
+    const conceptos = JSON.parse(document.getElementById("conceptos-json").textContent || "{}");
+    const periodo = document.getElementById("{{ formulario.periodo_facturado.id_for_label }}");
+    const campoFin = document.getElementById("campo-fin-periodo");
+    const cliente = document.getElementById("{{ formulario.cliente.id_for_label }}");
+
+    // Al cambiar el cliente se recarga la página con sus sugerencias (honorario y servicios).
+    cliente.addEventListener("change", function () {
+        const url = new URL(window.location.href);
+        url.search = cliente.value ? "?cliente=" + encodeURIComponent(cliente.value) : "";
+        window.location.href = url.toString();
+    });
+
+    // La fecha final solo se pide en el período personalizado; en los demás se calcula.
+    function mostrarFinPeriodo() {
+        campoFin.style.display = periodo.value === "Personalizado" ? "" : "none";
+    }
+    periodo.addEventListener("change", mostrarFinPeriodo);
+    mostrarFinPeriodo();
+
+    function formatoPesos(valor) {
+        return "$ " + Math.round(valor).toLocaleString("es-CO");
+    }
+
+    function actualizarSuma() {
+        let suma = 0;
+        contenedor.querySelectorAll('input[name$="-valor_linea"]').forEach(function (campo) {
+            suma += parseFloat(campo.value) || 0;
+        });
+        document.getElementById("suma-lineas").textContent = formatoPesos(suma);
+    }
+
+    // Renumera los nombres de los campos según el orden visual, para que el
+    // orden en que se guardan las líneas sea el que ve el usuario.
+    function renumerar() {
+        const filas = contenedor.querySelectorAll(".fila-linea");
+        filas.forEach(function (fila, indice) {
+            fila.querySelectorAll("input, select").forEach(function (campo) {
+                campo.name = campo.name.replace(/lineas-(\d+|__prefix__)-/, "lineas-" + indice + "-");
+                campo.id = campo.id.replace(/lineas-(\d+|__prefix__)-/, "lineas-" + indice + "-");
+            });
+        });
+        total.value = filas.length;
+        actualizarSuma();
+    }
+
+    document.getElementById("agregar-linea").addEventListener("click", function () {
+        contenedor.insertAdjacentHTML("beforeend", plantilla);
+        renumerar();
+    });
+
+    contenedor.addEventListener("click", function (evento) {
+        const boton = evento.target.closest("button");
+        if (!boton) return;
+        const fila = boton.closest(".fila-linea");
+        if (boton.classList.contains("quitar-linea")) {
+            fila.remove();
+        } else if (boton.classList.contains("subir-linea") && fila.previousElementSibling) {
+            contenedor.insertBefore(fila, fila.previousElementSibling);
+        } else if (boton.classList.contains("bajar-linea") && fila.nextElementSibling) {
+            contenedor.insertBefore(fila.nextElementSibling, fila);
+        }
+        renumerar();
+    });
+
+    // Elegir un concepto del catálogo completa la descripción y el valor sugerido si están vacíos.
+    contenedor.addEventListener("change", function (evento) {
+        if (!evento.target.name || !evento.target.name.endsWith("-concepto")) return;
+        const concepto = conceptos[evento.target.value];
+        if (!concepto) return;
+        const fila = evento.target.closest(".fila-linea");
+        const descripcion = fila.querySelector('input[name$="-descripcion_linea"]');
+        const valor = fila.querySelector('input[name$="-valor_linea"]');
+        if (!descripcion.value) descripcion.value = concepto.nombre;
+        if (!valor.value && concepto.valor) valor.value = concepto.valor;
+        actualizarSuma();
+    });
+    contenedor.addEventListener("input", actualizarSuma);
+    actualizarSuma();
+});
+</script>
+{% endblock %}

@@ -28,6 +28,15 @@ class Honorario(models.Model):
     )
     tipo = models.CharField(max_length=20, choices=OPCIONES_TIPO, default=FIJO_MENSUAL)
     monto = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    usuario_actualizacion = models.ForeignKey(
+        "seguridad.Usuario",
+        on_delete=models.SET_NULL,
+        db_column="id_usuario_actualizacion",
+        related_name="honorarios_actualizados",
+        null=True,
+        blank=True,
+    )
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = "honorario"
@@ -36,6 +45,42 @@ class Honorario(models.Model):
 
     def __str__(self):
         return f"{self.cliente.nombre_razon_social}: ${self.monto} ({self.tipo})"
+
+
+class HonorarioServicio(models.Model):
+    """
+    Monto del honorario por cada tipo de servicio del cliente (HU044).
+
+    Solo aplica cuando el honorario es "Por servicio"; el monto total del
+    honorario es la suma de estas líneas.
+    """
+
+    id_honorario_servicio = models.AutoField(primary_key=True)
+    honorario = models.ForeignKey(
+        Honorario,
+        on_delete=models.CASCADE,
+        db_column="id_honorario",
+        related_name="servicios",
+    )
+    tipo_servicio = models.ForeignKey(
+        "clientes.TipoServicio",
+        on_delete=models.PROTECT,
+        db_column="id_tipo_servicio",
+        related_name="honorarios",
+    )
+    monto = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+
+    class Meta:
+        db_table = "honorario_servicio"
+        verbose_name = "honorario por servicio"
+        verbose_name_plural = "honorarios por servicio"
+        ordering = ["tipo_servicio__nombre_servicio"]
+        constraints = [
+            models.UniqueConstraint(fields=["honorario", "tipo_servicio"], name="unico_honorario_servicio"),
+        ]
+
+    def __str__(self):
+        return f"{self.tipo_servicio}: ${self.monto}"
 
 
 class ConceptoFacturable(models.Model):
@@ -140,6 +185,8 @@ class CuentaCobro(models.Model):
         blank=True,
     )
     periodo_facturado = models.CharField(max_length=20, choices=OPCIONES_PERIODO, default=MENSUAL)
+    fecha_inicio_periodo = models.DateField(null=True, blank=True)
+    fecha_fin_periodo = models.DateField(null=True, blank=True)
     valor_total = models.DecimalField(max_digits=12, decimal_places=2)
     cuenta_bancaria = models.ForeignKey(
         CuentaBancaria,
@@ -160,7 +207,7 @@ class CuentaCobro(models.Model):
     fecha_vencimiento_pago = models.DateField()
     estado_envio = models.CharField(max_length=20, choices=OPCIONES_ESTADO_ENVIO, default=PENDIENTE)
     estado_pago = models.CharField(max_length=20, choices=OPCIONES_ESTADO_PAGO, default=PAGO_PENDIENTE)
-    archivo_url = models.URLField(max_length=255, blank=True)
+    archivo = models.FileField(upload_to="cuentas_cobro/%Y/%m/", blank=True)
     fecha_generacion = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -268,3 +315,132 @@ class Abono(models.Model):
 
     def __str__(self):
         return f"Abono ${self.monto} a cuenta {self.cuenta_cobro_id}"
+
+
+# ---------------------------------------------------------------------------
+# Envíos y programación (ampliación de alcance del Módulo 6)
+# ---------------------------------------------------------------------------
+
+CORREO = "Correo"
+WHATSAPP = "WhatsApp"
+AMBOS = "Ambos"
+OPCIONES_CANAL_ENVIO = [(CORREO, CORREO), (WHATSAPP, WHATSAPP), (AMBOS, "Correo y WhatsApp")]
+
+
+class ConfiguracionCobro(models.Model):
+    """
+    Parámetros del proceso automático de cobro (una sola fila): generación
+    mensual de cuentas de cobro y recordatorios automáticos de pago. Los
+    ejecuta el comando `procesar_cobros` (cron) o el botón "Ejecutar ahora".
+    """
+
+    id_configuracion_cobro = models.AutoField(primary_key=True)
+    cobro_automatico_activo = models.BooleanField(default=False)
+    dia_generacion = models.PositiveSmallIntegerField(default=1)
+    dias_plazo_pago = models.PositiveSmallIntegerField(default=10)
+    canal_cobro = models.CharField(max_length=10, choices=OPCIONES_CANAL_ENVIO, default=CORREO)
+    cuenta_bancaria = models.ForeignKey(
+        CuentaBancaria,
+        on_delete=models.SET_NULL,
+        db_column="id_cuenta_bancaria",
+        related_name="+",
+        null=True,
+        blank=True,
+    )
+    metodo_pago = models.ForeignKey(
+        MetodoPago,
+        on_delete=models.SET_NULL,
+        db_column="id_metodo_pago",
+        related_name="+",
+        null=True,
+        blank=True,
+    )
+    recordatorios_activos = models.BooleanField(default=False)
+    dias_antes_vencimiento = models.PositiveSmallIntegerField(default=3)
+    frecuencia_mora_dias = models.PositiveSmallIntegerField(default=7)
+    canal_recordatorio = models.CharField(max_length=10, choices=OPCIONES_CANAL_ENVIO, default=CORREO)
+    ultima_ejecucion = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "configuracion_cobro"
+        verbose_name = "configuración de cobro"
+        verbose_name_plural = "configuración de cobro"
+
+    def __str__(self):
+        return "Configuración del cobro automático"
+
+    @classmethod
+    def obtener(cls):
+        """Devuelve la única fila de configuración, creándola con valores por defecto."""
+        configuracion, _ = cls.objects.get_or_create(pk=1)
+        return configuracion
+
+
+class EnvioProgramado(models.Model):
+    """
+    Envío de una cuenta de cobro o de un recordatorio de pago programado para
+    una fecha y hora. Los de correo se envían solos al llegar la hora; los de
+    WhatsApp pasan a la bandeja de pendientes, porque el enlace `wa.me` exige
+    que una persona pulse "Enviar".
+    """
+
+    CUENTA_COBRO = "Cuenta de cobro"
+    RECORDATORIO = "Recordatorio"
+    OPCIONES_TIPO = [(CUENTA_COBRO, CUENTA_COBRO), (RECORDATORIO, RECORDATORIO)]
+
+    OPCIONES_CANAL = [(CORREO, CORREO), (WHATSAPP, WHATSAPP)]
+
+    PROGRAMADO = "Programado"
+    ENVIADO = "Enviado"
+    FALLIDO = "Fallido"
+    PENDIENTE_WHATSAPP = "Pendiente WhatsApp"
+    CANCELADO = "Cancelado"
+    OPCIONES_ESTADO = [
+        (PROGRAMADO, PROGRAMADO),
+        (ENVIADO, ENVIADO),
+        (FALLIDO, FALLIDO),
+        (PENDIENTE_WHATSAPP, PENDIENTE_WHATSAPP),
+        (CANCELADO, CANCELADO),
+    ]
+
+    id_envio_programado = models.AutoField(primary_key=True)
+    cuenta_cobro = models.ForeignKey(
+        CuentaCobro,
+        on_delete=models.CASCADE,
+        db_column="id_cuenta_cobro",
+        related_name="envios_programados",
+    )
+    tipo = models.CharField(max_length=20, choices=OPCIONES_TIPO, default=CUENTA_COBRO)
+    canal = models.CharField(max_length=10, choices=OPCIONES_CANAL, default=CORREO)
+    fecha_programada = models.DateTimeField()
+    estado = models.CharField(max_length=20, choices=OPCIONES_ESTADO, default=PROGRAMADO)
+    usuario = models.ForeignKey(
+        "seguridad.Usuario",
+        on_delete=models.SET_NULL,
+        db_column="id_usuario",
+        related_name="envios_programados",
+        null=True,
+        blank=True,
+    )
+    fecha_procesado = models.DateTimeField(null=True, blank=True)
+    comunicacion = models.ForeignKey(
+        "comunicaciones.Comunicacion",
+        on_delete=models.SET_NULL,
+        db_column="id_comunicacion",
+        related_name="+",
+        null=True,
+        blank=True,
+    )
+    detalle_error = models.CharField(max_length=255, blank=True)
+
+    class Meta:
+        db_table = "envio_programado"
+        verbose_name = "envío programado"
+        verbose_name_plural = "envíos programados"
+        ordering = ["-fecha_programada"]
+        indexes = [
+            models.Index(fields=["estado", "fecha_programada"], name="idx_envio_estado_fecha"),
+        ]
+
+    def __str__(self):
+        return f"{self.tipo} por {self.canal} - cuenta {self.cuenta_cobro_id} ({self.estado})"

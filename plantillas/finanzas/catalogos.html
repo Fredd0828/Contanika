@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% load finanzas_tags %}
+
+{% block titulo %}Catálogos de honorarios{% endblock %}
+
+{% block contenido %}
+<div class="panel">
+    <div class="ph mb-0">
+        <div class="ph-title" style="font-size:18px"><i class="bi bi-journal-bookmark"></i> Catálogos de honorarios</div>
+        <a class="ph-link" href="{% url 'finanzas:historico' %}"><i class="bi bi-arrow-left"></i> Volver</a>
+    </div>
+</div>
+
+{% for catalogo in catalogos %}
+<div class="panel">
+    <div class="ph">
+        <div class="ph-title"><i class="bi {{ catalogo.icono }}"></i> {{ catalogo.titulo }}</div>
+        <a class="ph-btn" href="{% url 'finanzas:catalogo_crear' catalogo.clave %}"><i class="bi bi-plus-lg"></i> Agregar</a>
+    </div>
+    <div class="table-responsive">
+        <table class="tbl">
+            <tbody>
+                {% for elemento in catalogo.elementos %}
+                <tr>
+                    <td>
+                        {% if catalogo.clave == "conceptos" %}
+                        {{ elemento.nombre_concepto }}
+                        {% if elemento.valor_sugerido %}<span class="text-muted small"> · valor sugerido {{ elemento.valor_sugerido|pesos }}</span>{% endif %}
+                        {% elif catalogo.clave == "cuentas-bancarias" %}
+                        {{ elemento.banco }} · {{ elemento.tipo_cuenta }} {{ elemento.numero_cuenta }}
+                        <span class="text-muted small"> · titular {{ elemento.titular }}</span>
+                        {% else %}
+                        {{ elemento }}
+                        {% endif %}
+                    </td>
+                    <td class="text-end text-nowrap">
+                        <a class="icon-btn" href="{% url 'finanzas:catalogo_editar' catalogo.clave elemento.pk %}" title="Editar"><i class="bi bi-pencil"></i></a>
+                        <form method="post" action="{% url 'finanzas:catalogo_eliminar' catalogo.clave elemento.pk %}" class="d-inline"
+                              onsubmit="return confirm('¿Eliminar este elemento del catálogo?');">
+                            {% csrf_token %}
+                            <button type="submit" class="icon-btn" title="Eliminar"><i class="bi bi-trash"></i></button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="2" class="text-center text-muted py-3">Sin elementos registrados.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}

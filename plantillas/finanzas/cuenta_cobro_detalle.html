@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% load finanzas_tags %}
+
+{% block titulo %}Cuenta de cobro No. {{ cuenta.pk }}{% endblock %}
+
+{% block contenido %}
+<div class="panel">
+    <div class="ph mb-0">
+        <div>
+            <div class="ph-title" style="font-size:18px"><i class="bi bi-receipt"></i> Cuenta de cobro No. {{ cuenta.pk }}</div>
+            <div class="ph-meta mt-1">
+                <a href="{% url 'clientes:detalle' cuenta.cliente.pk %}#tab-honorarios">{{ cuenta.cliente.nombre_razon_social }}</a>
+                · {{ cuenta.cliente.get_tipo_documento_display }} {{ cuenta.cliente.nit_cedula }}
+                · {% include "finanzas/_estado_pago.html" %}
+            </div>
+        </div>
+        <div class="ph-actions">
+            {% if cuenta.archivo %}
+            <a class="ph-btn" href="{% url 'finanzas:descargar' cuenta.pk %}"><i class="bi bi-download"></i> Descargar PDF</a>
+            {% endif %}
+            {% if es_administrador %}
+            <button type="button" class="ph-link" data-bs-toggle="modal" data-bs-target="#modalEliminarCuenta"><i class="bi bi-trash"></i> Eliminar</button>
+            {% endif %}
+            <a class="ph-link" href="{% url 'finanzas:historico' %}"><i class="bi bi-arrow-left"></i> Volver</a>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-5">
+        <div class="panel h-100">
+            <div class="ph"><div class="ph-title"><i class="bi bi-info-circle"></i> Datos de la cuenta</div></div>
+            <dl class="row mb-0">
+                <dt class="col-6 text-muted fw-normal">Valor total</dt><dd class="col-6 fw-semibold">{{ cuenta.valor_total|pesos }}</dd>
+                <dt class="col-6 text-muted fw-normal">Período facturado</dt>
+                <dd class="col-6">
+                    {{ cuenta.periodo_facturado }}
+                    {% if cuenta.fecha_inicio_periodo %}<div class="small text-muted">{{ cuenta.fecha_inicio_periodo|date:"d/m/Y" }} – {{ cuenta.fecha_fin_periodo|date:"d/m/Y" }}</div>{% endif %}
+                </dd>
+                <dt class="col-6 text-muted fw-normal">Vencimiento del pago</dt><dd class="col-6">{{ cuenta.fecha_vencimiento_pago|date:"d/m/Y" }}</dd>
+                <dt class="col-6 text-muted fw-normal">Generada</dt><dd class="col-6">{{ cuenta.fecha_generacion|date:"d/m/Y H:i" }}</dd>
+                <dt class="col-6 text-muted fw-normal">Método de pago</dt><dd class="col-6">{{ cuenta.metodo_pago|default:"—" }}</dd>
+                <dt class="col-6 text-muted fw-normal">Cuenta bancaria</dt>
+                <dd class="col-6">
+                    {% if cuenta.cuenta_bancaria %}
+                    {{ cuenta.cuenta_bancaria.banco }} · {{ cuenta.cuenta_bancaria.tipo_cuenta }} {{ cuenta.cuenta_bancaria.numero_cuenta }}
+                    <div class="small text-muted">Titular: {{ cuenta.cuenta_bancaria.titular }}</div>
+                    {% else %}—{% endif %}
+                </dd>
+                <dt class="col-6 text-muted fw-normal">Estado de envío</dt><dd class="col-6">{{ cuenta.estado_envio }}</dd>
+            </dl>
+        </div>
+    </div>
+    <div class="col-lg-7">
+        <div class="panel h-100">
+            <div class="ph"><div class="ph-title"><i class="bi bi-list-check"></i> Descripción del servicio</div></div>
+            <table class="tbl">
+                <thead><tr><th>Concepto</th><th class="text-end">Valor</th></tr></thead>
+                <tbody>
+                    {% for linea in lineas %}
+                    <tr>
+                        <td>{{ linea.descripcion_linea }}</td>
+                        <td class="text-end">{% if linea.valor_linea %}{{ linea.valor_linea|pesos }}{% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                    <tr class="fw-semibold"><td>Total</td><td class="text-end">{{ cuenta.valor_total|pesos }}</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% if es_administrador %}
+<div class="panel mt-3">
+    <div class="ph"><div class="ph-title"><i class="bi bi-send"></i> Enviar al cliente</div></div>
+    <div class="small text-muted mb-3">
+        <i class="bi bi-envelope"></i> {{ cuenta.cliente.correo_cliente|default:"Sin correo registrado" }}
+        · <i class="bi bi-whatsapp"></i> {% if numero_whatsapp %}+{{ numero_whatsapp }}{% else %}Sin celular válido para WhatsApp{% endif %}
+    </div>
+    <form method="post" action="{% url 'finanzas:enviar' cuenta.pk %}" class="row g-3 align-items-end" id="form-envio">
+        {% csrf_token %}
+        <div class="col-md-3">
+            <label class="form-label" for="{{ formulario_envio.tipo.id_for_label }}">{{ formulario_envio.tipo.label }}</label>
+            {{ formulario_envio.tipo }}
+        </div>
+        <div class="col-md-3">
+            <label class="form-label" for="{{ formulario_envio.canal.id_for_label }}">{{ formulario_envio.canal.label }}</label>
+            {{ formulario_envio.canal }}
+        </div>
+        <div class="col-md-3">
+            <label class="form-label" for="{{ formulario_envio.modo.id_for_label }}">{{ formulario_envio.modo.label }}</label>
+            {{ formulario_envio.modo }}
+        </div>
+        <div class="col-md-3" id="campo-fecha-envio">
+            <label class="form-label" for="{{ formulario_envio.fecha_programada.id_for_label }}">{{ formulario_envio.fecha_programada.label }}</label>
+            {{ formulario_envio.fecha_programada }}
+        </div>
+        <div class="col-12">
+            <button type="submit" class="ph-btn"><i class="bi bi-send"></i> Enviar / programar</button>
+        </div>
+    </form>
+</div>
+{% endif %}
+
+<div class="panel mt-3">
+    <div class="ph"><div class="ph-title"><i class="bi bi-clock-history"></i> Historial de envíos</div></div>
+    {% if envios %}
+    <div class="table-responsive">
+        <table class="tbl">
+            <thead>
+                <tr><th>Fecha</th><th>Qué</th><th>Canal</th><th>Estado</th><th>Usuario</th><th></th></tr>
+            </thead>
+            <tbody>
+                {% for envio in envios %}
+                <tr>
+                    <td>{{ envio.fecha_programada|date:"d/m/Y H:i" }}</td>
+                    <td>{{ envio.tipo }}</td>
+                    <td>{{ envio.canal }}</td>
+                    <td>
+                        {% include "finanzas/_estado_envio.html" %}
+                        {% if envio.detalle_error %}<div class="small text-danger">{{ envio.detalle_error }}</div>{% endif %}
+                    </td>
+                    <td>{{ envio.usuario.nombre|default:"Automático" }}</td>
+                    <td class="text-end text-nowrap">
+                        {% if es_administrador %}{% include "finanzas/_acciones_envio.html" with siguiente=request.path %}{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="text-muted mb-0">La cuenta de cobro todavía no se ha enviado.</p>
+    {% endif %}
+</div>
+
+{% include "finanzas/_script_whatsapp.html" %}
+<script>
+// La fecha y hora solo se piden al programar el envío.
+document.addEventListener("DOMContentLoaded", function () {
+    const modo = document.getElementById("{{ formulario_envio.modo.id_for_label }}");
+    const campo = document.getElementById("campo-fecha-envio");
+    if (!modo || !campo) return;
+    function actualizar() { campo.style.display = modo.value === "programar" ? "" : "none"; }
+    modo.addEventListener("change", actualizar);
+    actualizar();
+});
+</script>
+
+{% if es_administrador %}
+<div class="modal fade" id="modalEliminarCuenta" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Eliminar cuenta de cobro</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                Se eliminará la cuenta de cobro No. {{ cuenta.pk }} y su PDF. Una cuenta con abonos
+                registrados no se puede eliminar. ¿Desea continuar?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form method="post" action="{% url 'finanzas:eliminar' cuenta.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Sí, eliminar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -804,3 +804,211 @@ python gestionar.py runserver
 - Al reemplazar el membrete, la imagen anterior queda en `media/despacho/`
   (mismo comportamiento que la firma del Módulo 4).
 
+---
+
+## Jueves 24 de septiembre de 2026 — Módulo 6, bloque 1: honorarios, catálogos y cuentas de cobro
+
+**Objetivo del bloque:** dejar navegable la parte de facturación del Módulo 6
+(HU044, HU049 y la generación de la cuenta de cobro de HU016): honorario por
+cliente, catálogos, cuenta de cobro con líneas de servicio y PDF con membrete.
+Abonos y cartera (bloque 2) y envíos (bloque 3) quedan para los siguientes.
+
+### Trabajo realizado
+
+1. **Modelos** (decisiones con el usuario):
+   - Tabla nueva `honorario_servicio`: monto por tipo de servicio cuando el
+     honorario es "Por servicio" (HU044, criterio 2). El modelo pasa a tener
+     **37 tablas**; hay que reflejarlo en el diccionario de datos del Word.
+   - `Honorario` ganó `usuario_actualizacion` y `fecha_actualizacion`
+     (HU044, criterio 4).
+   - `CuentaCobro.archivo_url` (URLField sin uso) → `archivo` (`FileField`), y
+     se agregaron `fecha_inicio_periodo`/`fecha_fin_periodo`.
+2. **Honorario del cliente**: nueva pestaña **Honorarios** en la ficha del
+   cliente con el tipo, el monto (o el detalle por servicio) y el último
+   cambio (fecha y usuario). El Administrador lo configura: fijo mensual con
+   un monto, o por servicio con un monto por cada tipo de servicio del
+   cliente. Cambiar el honorario no altera las cuentas ya generadas.
+3. **Catálogos** (solo Administrador): conceptos facturables, cuentas
+   bancarias del despacho y métodos de pago en una sola pantalla, con crear,
+   editar y eliminar; no se elimina un elemento ya usado en cuentas o abonos.
+4. **Generar cuenta de cobro** (solo Administrador): al elegir el cliente se
+   sugieren el valor total (según su honorario) y una línea por cada servicio
+   (con su monto si el honorario es por servicio). Las líneas se agregan,
+   quitan y reordenan; cada una puede tomar un concepto del catálogo, que
+   completa la descripción y el valor sugerido. Si se indican valores por
+   línea, la suma debe ser igual al total (HU049). El fin del período se
+   calcula solo (mensual a anual); el personalizado pide ambas fechas.
+5. **PDF de la cuenta de cobro** (ReportLab): membrete del despacho (reutiliza
+   el encabezado del Módulo 4, movido a `comunes/pdf.py`), número, ciudad y
+   fecha, cliente con su documento, "debe a" el despacho con su NIT, valor,
+   tabla de líneas con total, período, fecha de vencimiento, método de pago y
+   datos bancarios. Todo texto capturado se escapa antes de pasar a ReportLab.
+6. **Histórico** en el menú **Honorarios**: filtrable por cliente, estado de
+   pago, período y fecha de generación; detalle, descarga individual del PDF
+   (excepción expresa a la regla de descargas centralizadas) y eliminación
+   solo para Administrador y solo si la cuenta no tiene abonos.
+7. **Visibilidad**: Contador Senior y Contador Junior solo consultan las
+   cuentas de sus clientes asignados (404 en URL directa a una ajena).
+8. La ficha del cliente ahora abre la pestaña indicada en la URL
+   (`#tab-honorarios`), para volver a ella después de configurar el honorario.
+
+### Cómo verificarlo (entorno local)
+
+```bash
+cd /home/fredd/documentos/ubuntu/contanika/codigo
+source .venv/bin/activate
+python gestionar.py migrate
+python gestionar.py runserver
+```
+
+1. **Honorarios → Catálogos**: agregar una cuenta bancaria (ej. Bancolombia,
+   Ahorros) y revisar los conceptos y métodos de pago sembrados.
+2. Ficha de un cliente con servicios → pestaña **Honorarios** → "Configurar
+   honorario": elegir "Por servicio", poner montos y guardar; debe mostrar el
+   total y el último cambio.
+3. "Generar cuenta de cobro": revisar que vengan las líneas y el valor;
+   subir/bajar una línea, agregar una con un concepto del catálogo, cuadrar la
+   suma y generar. Probar también con una suma que no cuadre (debe rechazarla).
+4. Descargar el PDF y **revisarlo visualmente** (membrete, tabla de líneas,
+   datos bancarios): en este entorno no se pudo renderizar el PDF a imagen.
+5. Como Contador Senior o Junior: sin botones de generar, catálogos ni
+   eliminar (403 por URL directa); solo ven cuentas de sus clientes.
+
+### Resultado de las pruebas
+
+- 404 pruebas en total: **404 aprobadas**; la carpeta `pruebas/finanzas`
+  suma 73 (casos parametrizados incluidos).
+- Cobertura total: **94 %**; finanzas: selectores 100 %, servicios 99 %,
+  formularios 99 %, vistas 99 %.
+- Pruebas de seguridad: acceso sin sesión, módulo inhabilitado (403),
+  permisos por rol (403 para Senior/Junior en generar, catálogos, honorario y
+  eliminar), IDOR en detalle y descarga (404), CSRF (403 sin token) y XSS en
+  las líneas de servicio (escapado en el detalle y en el PDF).
+- Ruff (estilo y formato), bandit y pip-audit sin hallazgos.
+
+### Pendientes del Módulo 6
+
+- Registro de abonos con disparador (trigger) en PostgreSQL para saldo
+  anterior/resultante y estado de pago, panel de cartera con días de mora
+  (rojo a más de 30 días) e historial de abonos en la ficha (HU016 parte 2,
+  HU017, HU018).
+- Envío individual y masivo de cuentas de cobro, recordatorios de pago y
+  registro en Comunicaciones (HU045-HU047).
+- Actualizar el diccionario de datos del Word: tabla `honorario_servicio` y
+  columnas nuevas de `honorario` y `cuenta_cobro`.
+- Nota de alcance: HU015 dice que el Contador Junior no crea ni edita
+  hallazgos, pero en el Módulo 5 se decidió que sí puede (sobre sus clientes).
+  Confirmar con el usuario cuál criterio queda.
+
+> **Reordenado el 25-sep-2026:** a pedido del usuario, los envíos pasan a ser
+> el Bloque 2 (con la ampliación de programación y cobro automático) y los
+> abonos con disparador y la cartera, el Bloque 3.
+
+---
+
+## Viernes 25 de septiembre de 2026 — Módulo 6, bloque 2: envíos, recordatorios y cobro automático
+
+**Objetivo del bloque:** que las cuentas de cobro y los recordatorios de pago
+se puedan enviar por correo y WhatsApp, uno por uno o de forma masiva, ahora o
+programados (HU045, HU046, HU047), y además — **ampliación de alcance pedida
+por el usuario** — el cobro mensual automático y los recordatorios automáticos.
+
+### Decisiones con el usuario
+
+- **WhatsApp por enlace `wa.me`** (gratis, sin trámites con Meta). Como exige
+  que una persona pulse "Enviar", los WhatsApp programados o masivos quedan en
+  una **bandeja de pendientes**. La API oficial queda como mejora futura.
+- **Correo: se configura después.** Mientras `CORREO_HOST` esté vacío en `.env`,
+  los correos se muestran en la consola de `runserver`.
+- **Programar las tres cosas:** envíos en fecha y hora, cobro mensual
+  automático y recordatorios automáticos.
+
+### Trabajo realizado
+
+1. **Modelos** (migración `finanzas 0003`, el modelo pasa a **39 tablas**):
+   `configuracion_cobro` (una fila con los parámetros del cobro mensual y de
+   los recordatorios) y `envio_programado` (cada envío: tipo, canal, fecha,
+   estado, usuario, comunicación registrada, error).
+2. **Canales** (`finanzas/envios.py`): correo con el PDF adjunto; WhatsApp con
+   el mensaje ya escrito (saldo, vencimiento, datos bancarios) y un **enlace
+   seguro y temporal al PDF** (firmado, vence en 30 días, no se puede adivinar
+   el de otra cuenta). El celular se toma del contacto del cliente (celular
+   colombiano de 10 dígitos → se antepone 57).
+3. **Detalle de la cuenta**: panel "Enviar al cliente" (cuenta de cobro o
+   recordatorio; correo, WhatsApp o ambos; ahora o programado) e **historial de
+   envíos** con «Abrir WhatsApp», «Reintentar» (fallidos) y cancelar.
+4. **Envío masivo** (HU046, HU047): selección de cuentas (o "seleccionar
+   todas"), canal y momento → **confirmación del listado** → **resumen** de
+   enviados, fallidos, WhatsApp por abrir y programados, con el detalle de
+   cada caso. Recordatorios: solo cuentas con saldo pendiente.
+5. **Bandeja de WhatsApp pendientes**, **Envíos programados** (filtro por
+   estado, cancelar) y **Cobro automático** (configuración + «Ejecutar ahora»),
+   con accesos desde la pantalla de Honorarios (la bandeja muestra contador).
+6. **Proceso automático** `python gestionar.py procesar_cobros` (para cron cada
+   15 minutos): marca vencidas las cuentas con saldo, genera el cobro mensual
+   (una sola vez por cliente y mes, desde el día configurado), programa los
+   recordatorios (antes del vencimiento y cada N días en mora, sin repetir) y
+   despacha los envíos cuya hora llegó. Idempotente.
+7. Cada envío queda en el historial de **Comunicaciones** del cliente (canal,
+   tipo manual/automático, usuario, éxito/fallo, reintentos).
+8. `config/settings/local.py`: usa SMTP real si `CORREO_HOST` tiene valor;
+   nueva variable `URL_SITIO` (base de los enlaces públicos; en producción
+   debe ser el dominio real).
+9. Documentación: ampliación de alcance en
+   `md/Contanika_Especificaciones_Módulos.md` y `PLAN_TRABAJO.md` (T2 y T3
+   resueltas); scripts SQL con las dos tablas nuevas y la fila inicial.
+
+### Cómo verificarlo (entorno local)
+
+```bash
+cd /home/fredd/documentos/ubuntu/contanika/codigo
+source .venv/bin/activate
+python gestionar.py migrate
+python gestionar.py runserver   # la fila de configuración del cobro se crea sola al abrirla
+```
+
+1. Detalle de una cuenta de cobro → "Enviar al cliente" → correo, ahora: el
+   correo (con el PDF adjunto) aparece en la **consola de runserver**.
+2. Mismo panel → WhatsApp: en el historial aparece «Abrir WhatsApp»; al
+   pulsarlo se abre WhatsApp Web con el mensaje listo.
+3. Honorarios → **Recordatorios de pago**: seleccionar, revisar la
+   confirmación, enviar y ver el resumen.
+4. Programar un envío para dentro de 2 minutos; esperar y en **Cobro
+   automático** pulsar «Ejecutar ahora»: el envío se despacha.
+5. **Cobro automático**: activar el cobro mensual con el día de hoy o uno
+   anterior y pulsar «Ejecutar ahora»: se genera y envía la cuenta del mes de
+   cada cliente con honorario; volver a ejecutarlo no duplica nada.
+
+### Limitaciones conocidas
+
+- Con `wa.me` no hay confirmación real de entrega: el WhatsApp se registra
+  como enviado cuando el Administrador abre el enlace.
+- El enlace al PDF solo funciona para el cliente cuando el sistema esté
+  publicado en internet (`URL_SITIO` con el dominio real).
+- La programación automática requiere el cron en el servidor; sin cron, los
+  envíos programados salen al pulsar «Ejecutar ahora».
+
+### Resultado de las pruebas
+
+- Suite completa: **476 pruebas aprobadas**; finanzas suma 145 (72 nuevas de
+  este bloque: `test_envios.py`, `test_procesar_cobros.py`,
+  `test_vistas_envios.py`).
+- Cobertura total **94 %**; finanzas: `envios.py` 100 %, selectores 100 %,
+  servicios 99 %, formularios 98 %, vistas 96 %.
+- Ruff (estilo y formato), bandit y pip-audit sin hallazgos.
+- Seguridad: 403 para Contador Senior/Junior en todas las pantallas y acciones
+  de envío; «Abrir WhatsApp» solo por POST (405 por GET); CSRF; redirección
+  `siguiente` a sitios externos ignorada; token del PDF público alterado,
+  vencido o de otra cuenta → 404; el envío masivo rechaza cuentas fuera del
+  listado aunque se fuerce su id.
+
+### Pendientes del Módulo 6
+
+- **Bloque 3**: abonos con disparador PostgreSQL, panel de cartera e
+  historial de abonos (HU016 parte 2, HU017, HU018).
+- Configurar el correo real (`CORREO_*` en `.env`) cuando el despacho defina
+  la cuenta.
+- Programar el cron de `procesar_cobros` en WSL y en el hosting de producción.
+- Reflejar en el documento Word la ampliación de alcance (HU/RQF nuevas) y las
+  tablas `honorario_servicio`, `configuracion_cobro` y `envio_programado`.
+

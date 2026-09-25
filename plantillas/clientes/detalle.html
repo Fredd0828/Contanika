@@ -54,6 +54,11 @@
             <i class="bi bi-search-heart-fill"></i> Hallazgos
         </button>
     </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-honorarios-btn" data-bs-toggle="tab" data-bs-target="#tab-honorarios" type="button" role="tab" aria-controls="tab-honorarios" aria-selected="false">
+            <i class="bi bi-cash-coin"></i> Honorarios
+        </button>
+    </li>
 </ul>
 
 <div class="tab-content" id="tabsClienteContenido">
@@ -134,7 +139,21 @@
     <div class="tab-pane fade" id="tab-hallazgos" role="tabpanel" aria-labelledby="tab-hallazgos-btn">
         {% include "clientes/hallazgos_panel.html" with hallazgos=hallazgos cliente=cliente %}
     </div>
+
+    <div class="tab-pane fade" id="tab-honorarios" role="tabpanel" aria-labelledby="tab-honorarios-btn">
+        {% include "clientes/honorarios_panel.html" with honorario=honorario cuentas_cobro=cuentas_cobro cliente=cliente %}
+    </div>
 </div>
+
+<script>
+// Abre la pestaña indicada en la URL (por ejemplo, #tab-honorarios al volver
+// de configurar el honorario) en vez de la pestaña de datos generales.
+document.addEventListener("DOMContentLoaded", function () {
+    if (!window.location.hash) return;
+    const boton = document.querySelector('[data-bs-target="' + window.location.hash + '"]');
+    if (boton) bootstrap.Tab.getOrCreateInstance(boton).show();
+});
+</script>
 
 {% if puede_editar %}
 <!-- Modal vacío para credenciales; el contenido se carga vía AJAX -->

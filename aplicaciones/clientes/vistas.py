@@ -104,6 +104,12 @@ class DetalleClienteView(ModuloHabilitadoMixin, DetailView):
         from aplicaciones.hallazgos.selectores import hallazgos_del_cliente
 
         contexto["hallazgos"] = hallazgos_del_cliente(self.request.user, self.object)
+        # Honorario y cuentas de cobro del cliente, visibles desde su perfil (Módulo 6).
+        from aplicaciones.finanzas.selectores import cuentas_del_cliente, honorario_del_cliente
+
+        contexto["honorario"] = honorario_del_cliente(self.object)
+        contexto["cuentas_cobro"] = cuentas_del_cliente(self.request.user, self.object)
+        contexto["es_administrador"] = self.request.user.es_administrador
         return contexto
 
 

@@ -1,0 +1,22 @@
+{# Acciones sobre un envío (abrir WhatsApp, reintentar, cancelar): se incluye con `envio` y `siguiente` #}
+{% if envio.estado == "Pendiente WhatsApp" %}
+<form method="post" action="{% url 'finanzas:abrir_whatsapp' envio.pk %}" target="_blank" class="d-inline form-whatsapp">
+    {% csrf_token %}
+    <input type="hidden" name="siguiente" value="{{ siguiente }}">
+    <button type="submit" class="btn btn-sm btn-success"><i class="bi bi-whatsapp"></i> Abrir WhatsApp</button>
+</form>
+{% endif %}
+{% if envio.estado == "Fallido" %}
+<form method="post" action="{% url 'finanzas:reintentar' envio.pk %}" class="d-inline">
+    {% csrf_token %}
+    <input type="hidden" name="siguiente" value="{{ siguiente }}">
+    <button type="submit" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-repeat"></i> Reintentar</button>
+</form>
+{% endif %}
+{% if envio.estado == "Programado" or envio.estado == "Pendiente WhatsApp" %}
+<form method="post" action="{% url 'finanzas:cancelar_envio' envio.pk %}" class="d-inline">
+    {% csrf_token %}
+    <input type="hidden" name="siguiente" value="{{ siguiente }}">
+    <button type="submit" class="icon-btn" title="Cancelar envío"><i class="bi bi-x-circle"></i></button>
+</form>
+{% endif %}

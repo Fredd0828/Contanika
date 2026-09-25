@@ -13,6 +13,7 @@ urlpatterns = [
     path("", include("aplicaciones.tareas.urls")),
     path("", include("aplicaciones.documentos.urls")),
     path("", include("aplicaciones.hallazgos.urls")),
+    path("", include("aplicaciones.finanzas.urls")),
 ]
 
 if settings.DEBUG:

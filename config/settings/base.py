@@ -163,6 +163,11 @@ EMAIL_HOST_PASSWORD = config("CORREO_CLAVE", default="")
 EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = config("CORREO_REMITENTE", default="Contanika <no-responder@contanika.co>")
 
+# Dirección pública del sistema: base de los enlaces que reciben los clientes
+# (por ejemplo, el PDF de la cuenta de cobro compartido por WhatsApp). En
+# producción debe ser el dominio real; 127.0.0.1 solo sirve en el propio equipo.
+URL_SITIO = config("URL_SITIO", default="http://127.0.0.1:8000")
+
 # ---------------------------------------------------------------
 # Cifrado de credenciales (Módulo 1)
 # ---------------------------------------------------------------

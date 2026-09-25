@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% load finanzas_tags %}
+
+{% block titulo %}Envío masivo{% endblock %}
+
+{% block contenido %}
+<div class="panel">
+    <div class="ph mb-0">
+        <div class="ph-title" style="font-size:18px"><i class="bi bi-send-check"></i> Envío masivo</div>
+        <a class="ph-link" href="{% url 'finanzas:historico' %}"><i class="bi bi-arrow-left"></i> Volver</a>
+    </div>
+</div>
+
+<div class="panel">
+    <ul class="nav nav-pills mb-3">
+        <li class="nav-item">
+            <a class="nav-link {% if tipo == 'Cuenta de cobro' %}active{% endif %}" href="?tipo=Cuenta de cobro">Cuentas de cobro sin enviar</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if tipo == 'Recordatorio' %}active{% endif %}" href="?tipo=Recordatorio">Recordatorios de pago</a>
+        </li>
+    </ul>
+    <p class="text-muted small mb-0">
+        {% if tipo == "Recordatorio" %}
+        Se listan las cuentas con saldo pendiente; las que están en mora aparecen marcadas.
+        El recordatorio incluye el saldo, la fecha de vencimiento y los datos bancarios.
+        {% else %}
+        Se listan las cuentas de cobro de clientes activos que aún no se han enviado o cuyo envío falló.
+        {% endif %}
+    </p>
+</div>
+
+<form method="post" novalidate>
+    {% csrf_token %}
+    <input type="hidden" name="tipo" value="{{ tipo }}">
+
+    {% if formulario.non_field_errors %}<div class="alert alert-danger">{{ formulario.non_field_errors }}</div>{% endif %}
+    {% if formulario.cuentas.errors %}<div class="alert alert-danger">{{ formulario.cuentas.errors }}</div>{% endif %}
+
+    <div class="panel">
+        <div class="ph">
+            <div class="ph-title"><i class="bi bi-people"></i> Seleccione los clientes</div>
+            {% if candidatas %}
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="seleccionar-todas">
+                <label class="form-check-label" for="seleccionar-todas">Seleccionar todas ({{ candidatas|length }})</label>
+            </div>
+            {% endif %}
+        </div>
+        <div class="table-responsive">
+            <table class="tbl">
+                <thead>
+                    <tr><th></th><th>Cliente</th><th>Cuenta</th><th class="text-end">{% if tipo == "Recordatorio" %}Saldo{% else %}Valor{% endif %}</th><th>Vence</th><th>Correo</th><th>Celular</th></tr>
+                </thead>
+                <tbody>
+                    {% for cuenta in candidatas %}
+                    <tr>
+                        <td><input class="form-check-input casilla-cuenta" type="checkbox" name="cuentas" value="{{ cuenta.pk }}"
+                            {% if cuenta.pk|stringformat:"s" in seleccionadas %}checked{% endif %}></td>
+                        <td>{{ cuenta.cliente.nombre_razon_social }}</td>
+                        <td>No. {{ cuenta.pk }} · {{ cuenta.periodo_facturado }}</td>
+                        <td class="text-end">{% if tipo == "Recordatorio" %}{{ cuenta.saldo_pendiente|pesos }}{% else %}{{ cuenta.valor_total|pesos }}{% endif %}</td>
+                        <td>{{ cuenta.fecha_vencimiento_pago|date:"d/m/Y" }} {% if cuenta.esta_en_mora %}<span class="badge-est be-r">En mora</span>{% endif %}</td>
+                        <td>{% if cuenta.cliente.correo_cliente %}<i class="bi bi-check-lg text-success"></i>{% else %}<span class="text-muted small">Sin correo</span>{% endif %}</td>
+                        <td>{% if cuenta.cliente.informacion_contacto %}{{ cuenta.cliente.informacion_contacto }}{% else %}<span class="text-muted small">Sin celular</span>{% endif %}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="7" class="text-center text-muted py-4">No hay cuentas para este tipo de envío.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if candidatas %}
+    <div class="panel">
+        <div class="ph"><div class="ph-title"><i class="bi bi-sliders"></i> Canal y momento</div></div>
+        <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label" for="{{ formulario.canal.id_for_label }}">{{ formulario.canal.label }}</label>
+                {{ formulario.canal }}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="{{ formulario.modo.id_for_label }}">{{ formulario.modo.label }}</label>
+                {{ formulario.modo }}
+            </div>
+            <div class="col-md-4" id="campo-fecha-envio">
+                <label class="form-label" for="{{ formulario.fecha_programada.id_for_label }}">{{ formulario.fecha_programada.label }}</label>
+                {{ formulario.fecha_programada }}
+                {% if formulario.fecha_programada.errors %}<div class="text-danger small">{{ formulario.fecha_programada.errors }}</div>{% endif %}
+            </div>
+        </div>
+        <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="ph-btn"><i class="bi bi-list-check"></i> Revisar el listado</button>
+        </div>
+    </div>
+    {% endif %}
+</form>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const todas = document.getElementById("seleccionar-todas");
+    if (todas) {
+        todas.addEventListener("change", function () {
+            document.querySelectorAll(".casilla-cuenta").forEach(function (casilla) { casilla.checked = todas.checked; });
+        });
+    }
+    const modo = document.getElementById("{{ formulario.modo.id_for_label }}");
+    const campo = document.getElementById("campo-fecha-envio");
+    if (modo && campo) {
+        const actualizar = function () { campo.style.display = modo.value === "programar" ? "" : "none"; };
+        modo.addEventListener("change", actualizar);
+        actualizar();
+    }
+});
+</script>
+{% endblock %}

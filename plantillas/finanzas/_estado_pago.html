@@ -1,0 +1,5 @@
+{# Insignia del estado de pago de una cuenta de cobro: se incluye con `cuenta` en el contexto #}
+{% if cuenta.estado_pago == "Pagada" %}<span class="badge-est be-g">{{ cuenta.estado_pago }}</span>
+{% elif cuenta.estado_pago == "Abonada" %}<span class="badge-est be-teal">{{ cuenta.estado_pago }}</span>
+{% elif cuenta.estado_pago == "Vencida" %}<span class="badge-est be-r">{{ cuenta.estado_pago }}</span>
+{% else %}<span class="badge-est be-w">{{ cuenta.estado_pago }}</span>{% endif %}

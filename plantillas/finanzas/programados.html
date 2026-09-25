@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block titulo %}Envíos programados{% endblock %}
+
+{% block contenido %}
+<div class="panel">
+    <div class="ph">
+        <div class="ph-title"><i class="bi bi-calendar-event"></i> Envíos programados</div>
+        <div class="ph-actions">
+            <a class="ph-link" href="{% url 'finanzas:configuracion' %}"><i class="bi bi-gear"></i> Cobro automático</a>
+            <a class="ph-link" href="{% url 'finanzas:historico' %}"><i class="bi bi-arrow-left"></i> Volver</a>
+        </div>
+    </div>
+
+    <form method="get" class="filters mb-3">
+        <div class="campo">
+            <label for="filtro-estado">Estado</label>
+            <select name="estado" id="filtro-estado" class="form-select">
+                <option value="">Todos los estados</option>
+                {% for estado in estados %}
+                <option value="{{ estado }}" {% if estado == estado_actual %}selected{% endif %}>{{ estado }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="campo"><button type="submit" class="ph-btn"><i class="bi bi-funnel"></i> Filtrar</button></div>
+    </form>
+
+    <div class="table-responsive">
+        <table class="tbl">
+            <thead><tr><th>Programado para</th><th>Cliente</th><th>Cuenta</th><th>Qué</th><th>Canal</th><th>Estado</th><th>Programó</th><th></th></tr></thead>
+            <tbody>
+                {% for envio in envios %}
+                <tr>
+                    <td>{{ envio.fecha_programada|date:"d/m/Y H:i" }}</td>
+                    <td>{{ envio.cuenta_cobro.cliente.nombre_razon_social }}</td>
+                    <td><a href="{% url 'finanzas:detalle' envio.cuenta_cobro_id %}">No. {{ envio.cuenta_cobro_id }}</a></td>
+                    <td>{{ envio.tipo }}</td>
+                    <td>{{ envio.canal }}</td>
+                    <td>{% include "finanzas/_estado_envio.html" %}</td>
+                    <td>{{ envio.usuario.nombre|default:"Automático" }}</td>
+                    <td class="text-end text-nowrap">{% include "finanzas/_acciones_envio.html" with siguiente=request.get_full_path %}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="8" class="text-center text-muted py-4">No hay envíos registrados.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if is_paginated %}
+<div class="panel mt-3">
+    <nav aria-label="Paginación de envíos">
+        <ul class="pagination pagination-sm mb-0">
+            {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&estado={{ estado_actual|urlencode }}">Anterior</a></li>{% endif %}
+            <li class="page-item active" aria-current="page"><span class="page-link">{{ page_obj.number }}</span></li>
+            {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&estado={{ estado_actual|urlencode }}">Siguiente</a></li>{% endif %}
+        </ul>
+    </nav>
+</div>
+{% endif %}
+{% include "finanzas/_script_whatsapp.html" %}
+{% endblock %}

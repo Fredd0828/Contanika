@@ -242,7 +242,57 @@ Ninguna funcionalidad se da por terminada sin:
 - El filtro de fechas del listado busca por traslape con el período revisado
   (`fecha_fin_periodo >= desde` y `fecha_inicio_periodo <= hasta`).
 
-### Módulos 6–10
+### Módulo 6 — Honorarios, cartera y cuentas de cobro
+- Se construye en 3 bloques: (1) honorarios, catálogos y cuentas de cobro con
+  PDF; (2) envíos por correo/WhatsApp, recordatorios y programación (incluye la
+  ampliación de alcance: cobro mensual y recordatorios automáticos); (3) abonos
+  con disparador PostgreSQL y panel de cartera. El reporte de ingresos (HU048)
+  va en el M10.
+- Permisos: solo el Administrador configura honorarios, gestiona catálogos y
+  genera/elimina cuentas de cobro. Senior y Junior solo consultan, y solo la
+  información de sus clientes asignados (`Cliente.responsable`), vía
+  `selectores._restringir_a_asignados`.
+- Tabla nueva `honorario_servicio` (37 tablas en total, decisión con el
+  usuario): monto por tipo de servicio cuando el honorario es "Por servicio"
+  (HU044); el `Honorario.monto` pasa a ser la suma. `Honorario` ganó
+  `usuario_actualizacion`/`fecha_actualizacion` (HU044, criterio 4).
+- `CuentaCobro.archivo_url` → `archivo` (`FileField`); se agregaron
+  `fecha_inicio_periodo`/`fecha_fin_periodo` (el fin se calcula con
+  `servicios.calcular_fin_periodo` salvo en el período personalizado).
+- Líneas de servicio (HU049) con `formset_factory` sin modelo
+  (`LineasCobroFormSet`): la vista asigna `formset.valor_total` antes de
+  validar, y el formset exige que la suma de valores por línea sea igual al
+  total si se indicó alguno. El orden visual se conserva renumerando los
+  nombres de los campos con JavaScript al subir/bajar líneas.
+- `aplicaciones/comunes/pdf.py::encabezado_despacho` es el encabezado común
+  de los PDF (membrete o texto) para Documentos y Cuentas de cobro.
+- Montos en pesos: filtro `{{ valor|pesos }}` y función `formato_pesos` en
+  `finanzas/templatetags/finanzas_tags.py` (`$ 1.200.000`).
+- La ficha del cliente abre la pestaña indicada en el `#hash` de la URL
+  (p. ej. `#tab-honorarios`).
+- **Bloque 2 (envíos, ampliación de alcance):** canales en `finanzas/envios.py`
+  (correo con `EmailMessage` y PDF adjunto; WhatsApp por enlace `wa.me` con el
+  texto ya escrito y un enlace público firmado al PDF — `TimestampSigner`,
+  30 días, vista `finanzas:pdf_publico` sin sesión). Textos en
+  `plantillas/finanzas/mensajes/*.txt` (`{% autoescape off %}`, son texto plano).
+- Todo envío pasa por `EnvioProgramado` (incluso el inmediato: se crea con la
+  hora actual y se despacha al momento), así el historial de la cuenta es uno
+  solo. Estados: Programado → Enviado/Fallido (correo) o Pendiente WhatsApp
+  (bandeja; pasa a Enviado cuando el Administrador pulsa «Abrir WhatsApp»,
+  por POST con CSRF). Cada envío registra una `comunicaciones.Comunicacion`.
+- `servicios.procesar_cobros(ahora)` (comando `procesar_cobros`, cron cada
+  15 min, y botón «Ejecutar ahora»): marca vencidas, genera el cobro mensual
+  (una vez por cliente y mes), programa recordatorios automáticos y despacha
+  los envíos cuya hora llegó. Idempotente; se prueba con `ahora` simulado.
+- `ConfiguracionCobro.obtener()` devuelve la única fila (se siembra
+  desactivada en `cargar_datos_iniciales`).
+- Correo en local: consola de `runserver` mientras `CORREO_HOST` esté vacío
+  en `.env`; con SMTP configurado, envía de verdad. `URL_SITIO` (`.env`) es la
+  base de los enlaces públicos: en producción debe ser el dominio real.
+- Pruebas: el `addopts` del proyecto ya trae `-q`; no agregar otro `-q` o se
+  oculta la línea de resumen de pytest.
+
+### Módulos 7–10
 - Ver `PLAN_TRABAJO.md` y `md/Contanika_Especificaciones_Módulos.md`.
 
 ---
@@ -264,5 +314,5 @@ Ninguna funcionalidad se da por terminada sin:
 
 ---
 
-Última actualización: 24 de septiembre de 2026 (cierre de pendientes de los
-Módulos 4 y 5: membrete del despacho y filtro por traslape).
+Última actualización: 25 de septiembre de 2026 (Módulo 6, bloque 2:
+envíos, recordatorios y cobro automático).

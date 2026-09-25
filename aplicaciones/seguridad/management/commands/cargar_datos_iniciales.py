@@ -12,7 +12,7 @@ from django.db import transaction
 
 from aplicaciones.clientes.models import TipoServicio
 from aplicaciones.documentos.models import CampoPlantilla, Plantilla
-from aplicaciones.finanzas.models import ConceptoFacturable, MetodoPago
+from aplicaciones.finanzas.models import ConceptoFacturable, ConfiguracionCobro, MetodoPago
 from aplicaciones.reportes.models import PermisoReporteRol, Reporte
 from aplicaciones.seguridad.models import (
     ConfiguracionDespacho,
@@ -249,6 +249,8 @@ class Command(BaseCommand):
                 "ciudad": "Bogotá D.C.",
             },
         )
+        # Cobro automático del Módulo 6: se crea desactivado, lo activa el Administrador.
+        ConfiguracionCobro.obtener()
 
     def _crear_catalogos(self):
         for nombre in TIPOS_SERVICIO:

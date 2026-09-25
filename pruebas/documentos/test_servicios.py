@@ -9,6 +9,7 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import cm
 from reportlab.platypus import Image
 
+from aplicaciones.comunes.pdf import encabezado_despacho
 from aplicaciones.documentos import servicios
 from aplicaciones.documentos.formularios import CampoPlantillaFormSet, PlantillaForm
 from aplicaciones.documentos.models import (
@@ -204,7 +205,7 @@ def test_actualizar_plantilla_no_permite_borrar_campo_con_documentos(
 
 
 def test_encabezado_despacho_sin_membrete_usa_nombre_y_ciudad(despacho):
-    elementos = servicios.encabezado_despacho(despacho, getSampleStyleSheet(), ancho_maximo=16 * cm)
+    elementos = encabezado_despacho(despacho, getSampleStyleSheet(), ancho_maximo=16 * cm)
     assert [elemento.getPlainText() for elemento in elementos] == ["Befrec Y Asociados SAS", "Bogotá D.C."]
 
 
@@ -214,7 +215,7 @@ def test_encabezado_despacho_con_membrete_escala_la_imagen_sin_deformarla(despac
     despacho.membrete = SimpleUploadedFile("membrete.png", buffer.getvalue(), content_type="image/png")
     despacho.save()
 
-    elementos = servicios.encabezado_despacho(despacho, getSampleStyleSheet(), ancho_maximo=16 * cm)
+    elementos = encabezado_despacho(despacho, getSampleStyleSheet(), ancho_maximo=16 * cm)
 
     assert len(elementos) == 1
     imagen = elementos[0]

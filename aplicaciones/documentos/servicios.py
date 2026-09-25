@@ -15,9 +15,9 @@ from django.db.models import ProtectedError
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import cm
-from reportlab.lib.utils import ImageReader
 from reportlab.platypus import Image, Paragraph, SimpleDocTemplate, Spacer
 
+from aplicaciones.comunes.pdf import encabezado_despacho
 from aplicaciones.seguridad.models import ConfiguracionDespacho
 
 from . import selectores
@@ -92,23 +92,6 @@ def generar_documento(
     pdf_bytes = construir_pdf_documento(documento, usuario_firmante)
     documento.archivo.save(f"documento_{documento.pk}.pdf", ContentFile(pdf_bytes), save=True)
     return documento
-
-
-def encabezado_despacho(despacho, estilos, ancho_maximo, alto_maximo=3 * cm):
-    """
-    Elementos del encabezado del PDF: la imagen del membrete del despacho si
-    el Administrador la cargó (escalada sin deformarla para caber en el ancho
-    útil de la página), o el nombre y la ciudad del despacho como texto.
-    """
-    if despacho and despacho.membrete:
-        ancho_original, alto_original = ImageReader(despacho.membrete.path).getSize()
-        escala = min(ancho_maximo / ancho_original, alto_maximo / alto_original)
-        return [Image(despacho.membrete.path, width=ancho_original * escala, height=alto_original * escala)]
-
-    elementos = [Paragraph(despacho.nombre_despacho if despacho else "", estilos["Title"])]
-    if despacho and despacho.ciudad:
-        elementos.append(Paragraph(despacho.ciudad, estilos["Normal"]))
-    return elementos
 
 
 def construir_pdf_documento(documento, usuario_firmante):

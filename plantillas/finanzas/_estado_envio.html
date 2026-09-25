@@ -1,0 +1,6 @@
+{# Insignia del estado de un envío programado: se incluye con `envio` en el contexto #}
+{% if envio.estado == "Enviado" %}<span class="badge-est be-g">{{ envio.estado }}</span>
+{% elif envio.estado == "Fallido" %}<span class="badge-est be-r" title="{{ envio.detalle_error }}">{{ envio.estado }}</span>
+{% elif envio.estado == "Pendiente WhatsApp" %}<span class="badge-est be-teal">{{ envio.estado }}</span>
+{% elif envio.estado == "Cancelado" %}<span class="badge-est be-n">{{ envio.estado }}</span>
+{% else %}<span class="badge-est be-w">{{ envio.estado }}</span>{% endif %}

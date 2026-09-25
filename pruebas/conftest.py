@@ -95,6 +95,14 @@ def modulo_hallazgos(db):
     )
 
 
+@pytest.fixture
+def modulo_finanzas(db):
+    return Modulo.objects.create(
+        codigo_modulo=Modulo.MOD06_FINANZAS,
+        nombre_modulo="Honorarios, cartera y cuentas de cobro",
+    )
+
+
 def _asignar_obligaciones(cliente, *nombres):
     """Marca en el cliente las obligaciones tributarias indicadas por nombre."""
     for nombre in nombres:

@@ -18,6 +18,7 @@ RUTAS_MODULOS = {
     Modulo.MOD03_TAREAS: "tareas:tablero",
     Modulo.MOD04_DOCUMENTOS: "documentos:historico",
     Modulo.MOD05_HALLAZGOS: "hallazgos:lista",
+    Modulo.MOD06_FINANZAS: "finanzas:historico",
 }
 
 

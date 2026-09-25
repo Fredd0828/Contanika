@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block titulo %}{% if elemento %}Editar{% else %}Agregar{% endif %} {{ catalogo.singular }}{% endblock %}
+
+{% block contenido %}
+<div class="panel">
+    <div class="ph mb-0">
+        <div class="ph-title" style="font-size:18px">
+            <i class="bi {{ catalogo.icono }}"></i> {% if elemento %}Editar{% else %}Agregar{% endif %} {{ catalogo.singular }}
+        </div>
+        <a class="ph-link" href="{% url 'finanzas:catalogos' %}"><i class="bi bi-arrow-left"></i> Volver</a>
+    </div>
+</div>
+
+<div class="panel">
+    <form method="post" novalidate>
+        {% csrf_token %}
+        {% if formulario.non_field_errors %}
+        <div class="alert alert-danger">{{ formulario.non_field_errors }}</div>
+        {% endif %}
+        <div class="row g-3">
+            {% for campo in formulario %}
+            <div class="col-md-6">
+                <label class="form-label" for="{{ campo.id_for_label }}">{{ campo.label }}{% if campo.field.required %} *{% endif %}</label>
+                {{ campo }}
+                {% if campo.errors %}<div class="text-danger small">{{ campo.errors }}</div>{% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        <datalist id="lista-tipos-cuenta">
+            <option value="Ahorros"></option>
+            <option value="Corriente"></option>
+        </datalist>
+        <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="ph-btn"><i class="bi bi-save"></i> Guardar</button>
+            <a class="btn btn-outline-secondary" href="{% url 'finanzas:catalogos' %}">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

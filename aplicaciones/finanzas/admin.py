@@ -5,16 +5,42 @@ from django.contrib import admin
 from .models import (
     Abono,
     ConceptoFacturable,
+    ConfiguracionCobro,
     CuentaBancaria,
     CuentaCobro,
     CuentaCobroDetalle,
+    EnvioProgramado,
     Honorario,
+    HonorarioServicio,
     MetodoPago,
 )
 
 
+@admin.register(ConfiguracionCobro)
+class ConfiguracionCobroAdmin(admin.ModelAdmin):
+    list_display = [
+        "__str__",
+        "cobro_automatico_activo",
+        "dia_generacion",
+        "recordatorios_activos",
+        "ultima_ejecucion",
+    ]
+
+
+@admin.register(EnvioProgramado)
+class EnvioProgramadoAdmin(admin.ModelAdmin):
+    list_display = ["cuenta_cobro", "tipo", "canal", "fecha_programada", "estado", "usuario"]
+    list_filter = ["estado", "tipo", "canal"]
+    search_fields = ["cuenta_cobro__cliente__nombre_razon_social"]
+
+
 class CuentaCobroDetalleInline(admin.TabularInline):
     model = CuentaCobroDetalle
+    extra = 0
+
+
+class HonorarioServicioInline(admin.TabularInline):
+    model = HonorarioServicio
     extra = 0
 
 
@@ -26,9 +52,10 @@ class AbonoInline(admin.TabularInline):
 
 @admin.register(Honorario)
 class HonorarioAdmin(admin.ModelAdmin):
-    list_display = ["cliente", "tipo", "monto"]
+    list_display = ["cliente", "tipo", "monto", "usuario_actualizacion", "fecha_actualizacion"]
     list_filter = ["tipo"]
     search_fields = ["cliente__nombre_razon_social"]
+    inlines = [HonorarioServicioInline]
 
 
 @admin.register(ConceptoFacturable)
