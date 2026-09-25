@@ -15,6 +15,7 @@ from django.db.models import ProtectedError
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import cm
+from reportlab.lib.utils import ImageReader
 from reportlab.platypus import Image, Paragraph, SimpleDocTemplate, Spacer
 
 from aplicaciones.seguridad.models import ConfiguracionDespacho
@@ -93,6 +94,23 @@ def generar_documento(
     return documento
 
 
+def encabezado_despacho(despacho, estilos, ancho_maximo, alto_maximo=3 * cm):
+    """
+    Elementos del encabezado del PDF: la imagen del membrete del despacho si
+    el Administrador la cargó (escalada sin deformarla para caber en el ancho
+    útil de la página), o el nombre y la ciudad del despacho como texto.
+    """
+    if despacho and despacho.membrete:
+        ancho_original, alto_original = ImageReader(despacho.membrete.path).getSize()
+        escala = min(ancho_maximo / ancho_original, alto_maximo / alto_original)
+        return [Image(despacho.membrete.path, width=ancho_original * escala, height=alto_original * escala)]
+
+    elementos = [Paragraph(despacho.nombre_despacho if despacho else "", estilos["Title"])]
+    if despacho and despacho.ciudad:
+        elementos.append(Paragraph(despacho.ciudad, estilos["Normal"]))
+    return elementos
+
+
 def construir_pdf_documento(documento, usuario_firmante):
     """
     Arma el PDF del documento generado con ReportLab (Platypus).
@@ -114,9 +132,7 @@ def construir_pdf_documento(documento, usuario_firmante):
     estilos = getSampleStyleSheet()
     despacho = ConfiguracionDespacho.objects.first()
 
-    elementos = [Paragraph(despacho.nombre_despacho if despacho else "", estilos["Title"])]
-    if despacho and despacho.ciudad:
-        elementos.append(Paragraph(despacho.ciudad, estilos["Normal"]))
+    elementos = encabezado_despacho(despacho, estilos, ancho_maximo=documento_pdf.width)
     elementos.append(Spacer(1, 1 * cm))
     elementos.append(Paragraph(documento.plantilla.nombre_plantilla, estilos["Heading2"]))
     elementos.append(Spacer(1, 0.5 * cm))
@@ -148,4 +164,9 @@ def eliminar_documento(documento):
 
 def actualizar_firma(usuario, formulario):
     """Guarda la firma, identificación y tarjeta profesional del usuario."""
+    return formulario.save()
+
+
+def actualizar_datos_despacho(formulario):
+    """Guarda los datos fijos del despacho (incluido el membrete) que se imprimen en los PDF."""
     return formulario.save()

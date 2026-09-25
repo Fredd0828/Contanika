@@ -100,6 +100,10 @@ class DetalleClienteView(ModuloHabilitadoMixin, DetailView):
         from aplicaciones.documentos.selectores import documentos_del_cliente
 
         contexto["documentos"] = documentos_del_cliente(self.request.user, self.object)
+        # Hallazgos y revisiones del cliente, visibles desde su perfil (Módulo 5).
+        from aplicaciones.hallazgos.selectores import hallazgos_del_cliente
+
+        contexto["hallazgos"] = hallazgos_del_cliente(self.request.user, self.object)
         return contexto
 
 

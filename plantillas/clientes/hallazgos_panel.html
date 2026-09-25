@@ -1,0 +1,52 @@
+{# Panel de hallazgos y revisiones del cliente: se incluye en clientes/detalle.html #}
+<div class="panel">
+    <div class="ph">
+        <div class="ph-title"><i class="bi bi-search-heart-fill"></i> Hallazgos y revisiones</div>
+        <div class="d-flex gap-2">
+            <a class="ph-link" href="{% url 'hallazgos:lista' %}">
+                <i class="bi bi-list-ul"></i> Ver todos
+            </a>
+            <a class="ph-btn" href="{% url 'hallazgos:crear' %}?cliente={{ cliente.pk }}">
+                <i class="bi bi-plus-lg"></i> Registrar hallazgo
+            </a>
+        </div>
+    </div>
+
+    {% if hallazgos %}
+    <div class="table-responsive">
+        <table class="tbl">
+            <thead>
+                <tr>
+                    <th>Tipo</th>
+                    <th>Período revisado</th>
+                    <th>Prioridad</th>
+                    <th>Estado</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for hallazgo in hallazgos %}
+                <tr>
+                    <td>{{ hallazgo.tipo_hallazgo }}</td>
+                    <td>{{ hallazgo.fecha_inicio_periodo|date:"d/m/Y" }} – {{ hallazgo.fecha_fin_periodo|date:"d/m/Y" }}</td>
+                    <td><span class="kb-prio kb-prio-{{ hallazgo.prioridad|lower }}">{{ hallazgo.prioridad }}</span></td>
+                    <td>
+                        {% if hallazgo.estado == "Abierto" %}<span class="badge-est be-r">{{ hallazgo.estado }}</span>
+                        {% elif hallazgo.estado == "En proceso" %}<span class="badge-est be-w">{{ hallazgo.estado }}</span>
+                        {% elif hallazgo.estado == "Pendiente cliente" %}<span class="badge-est be-teal">{{ hallazgo.estado }}</span>
+                        {% else %}<span class="badge-est be-g">{{ hallazgo.estado }}</span>{% endif %}
+                    </td>
+                    <td>
+                        <a class="icon-btn" href="{% url 'hallazgos:detalle' hallazgo.pk %}" title="Ver detalle">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="text-muted mb-0">El cliente no tiene hallazgos registrados.</p>
+    {% endif %}
+</div>

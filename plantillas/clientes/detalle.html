@@ -49,6 +49,11 @@
             <i class="bi bi-file-earmark-text-fill"></i> Documentos
         </button>
     </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-hallazgos-btn" data-bs-toggle="tab" data-bs-target="#tab-hallazgos" type="button" role="tab" aria-controls="tab-hallazgos" aria-selected="false">
+            <i class="bi bi-search-heart-fill"></i> Hallazgos
+        </button>
+    </li>
 </ul>
 
 <div class="tab-content" id="tabsClienteContenido">
@@ -124,6 +129,10 @@
 
     <div class="tab-pane fade" id="tab-documentos" role="tabpanel" aria-labelledby="tab-documentos-btn">
         {% include "clientes/documentos_panel.html" with documentos=documentos cliente=cliente %}
+    </div>
+
+    <div class="tab-pane fade" id="tab-hallazgos" role="tabpanel" aria-labelledby="tab-hallazgos-btn">
+        {% include "clientes/hallazgos_panel.html" with hallazgos=hallazgos cliente=cliente %}
     </div>
 </div>
 

@@ -87,7 +87,7 @@ COPY public.concepto_facturable (id_concepto, nombre_concepto, valor_sugerido) F
 -- Data for Name: configuracion_despacho; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.configuracion_despacho (id_configuracion, nombre_despacho, nit_despacho, membrete_url, ciudad, direccion, telefono, correo) FROM stdin;
+COPY public.configuracion_despacho (id_configuracion, nombre_despacho, nit_despacho, membrete, ciudad, direccion, telefono, correo) FROM stdin;
 1	Befrec Y Asociados SAS			Bogotá D.C.			
 \.
 

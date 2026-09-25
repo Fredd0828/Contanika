@@ -22,7 +22,7 @@ class Adjunto(models.Model):
     id_adjunto = models.AutoField(primary_key=True)
     tabla_origen = models.CharField(max_length=30, choices=OPCIONES_TABLA_ORIGEN)
     id_origen = models.PositiveIntegerField()
-    archivo_url = models.URLField(max_length=255)
+    archivo = models.FileField(upload_to="adjuntos/hallazgos/%Y/%m/", max_length=255)
     nombre_archivo = models.CharField(max_length=150)
     fecha_carga = models.DateTimeField(auto_now_add=True)
 

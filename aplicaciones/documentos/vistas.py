@@ -6,7 +6,8 @@ Permisos:
   los clientes que tiene asignados (mismo criterio que `clientes`/`tareas`).
 - Solo Administrador y Contador Senior pueden tener firma guardada y
   aparecer como firmantes; solo ellos pueden eliminar un documento generado.
-- Solo el Administrador gestiona el catálogo de plantillas.
+- Solo el Administrador gestiona el catálogo de plantillas y los datos del
+  despacho (incluido el membrete que encabeza los PDF).
 
 El panel de generación funciona en dos pasos: `GenerarDocumentoView` valida
 el formulario común y los campos propios de la plantilla elegida (simples y
@@ -23,12 +24,13 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.generic import ListView, View
 
-from aplicaciones.seguridad.models import Modulo, Rol
+from aplicaciones.seguridad.models import ConfiguracionDespacho, Modulo, Rol
 from aplicaciones.seguridad.permisos import ModuloHabilitadoMixin, RolRequeridoMixin
 
 from . import selectores, servicios
 from .formularios import (
     CampoPlantillaFormSet,
+    DatosDespachoForm,
     FiltroHistoricoForm,
     GenerarDocumentoForm,
     MiFirmaForm,
@@ -80,6 +82,7 @@ class HistoricoDocumentosView(ModuloHabilitadoMixin, ListView):
         contexto = super().get_context_data(**kwargs)
         contexto["formulario_filtro"] = self.formulario_filtro
         contexto["puede_eliminar"] = self.request.user.rol.nombre_rol in ROLES_ELIMINAN
+        contexto["es_administrador"] = self.request.user.rol.nombre_rol in ROLES_ADMIN
         return contexto
 
 
@@ -398,3 +401,26 @@ class MiFirmaView(ModuloHabilitadoMixin, RolRequeridoMixin, View):
             messages.success(request, "Su firma se guardó correctamente.")
             return _redirigir_o_recargar(request, "documentos:generar")
         return render(request, self._template(request), {"formulario": formulario})
+
+
+class DatosDespachoView(ModuloHabilitadoMixin, RolRequeridoMixin, View):
+    """Datos fijos del despacho y membrete de los documentos en PDF (solo Administrador)."""
+
+    codigo_modulo = Modulo.MOD04_DOCUMENTOS
+    roles_permitidos = ROLES_ADMIN
+    template_name = "documentos/datos_despacho_form.html"
+
+    def _despacho(self):
+        return ConfiguracionDespacho.objects.first() or ConfiguracionDespacho()
+
+    def get(self, request):
+        formulario = DatosDespachoForm(instance=self._despacho())
+        return render(request, self.template_name, {"formulario": formulario})
+
+    def post(self, request):
+        formulario = DatosDespachoForm(request.POST, request.FILES, instance=self._despacho())
+        if formulario.is_valid():
+            servicios.actualizar_datos_despacho(formulario)
+            messages.success(request, "Los datos del despacho se guardaron correctamente.")
+            return redirect("documentos:datos_despacho")
+        return render(request, self.template_name, {"formulario": formulario})

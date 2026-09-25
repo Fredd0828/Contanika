@@ -1,0 +1,21 @@
+<div class="modal-header">
+    <h5 class="modal-title">
+        {% if accion == "crear" %}
+            <i class="bi bi-plus-lg"></i> Nuevo hallazgo
+        {% else %}
+            <i class="bi bi-pencil"></i> Editar hallazgo
+        {% endif %}
+    </h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+</div>
+<form method="post" action="{% if accion == 'crear' %}{% url 'hallazgos:crear' %}{% else %}{% url 'hallazgos:editar' hallazgo.pk %}{% endif %}">
+    <div class="modal-body">
+        {% include "hallazgos/_hallazgo_form_campos.html" %}
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-save"></i> {% if accion == "crear" %}Registrar hallazgo{% else %}Guardar cambios{% endif %}
+        </button>
+    </div>
+</form>

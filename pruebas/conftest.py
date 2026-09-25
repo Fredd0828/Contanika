@@ -87,6 +87,14 @@ def modulo_documentos(db):
     )
 
 
+@pytest.fixture
+def modulo_hallazgos(db):
+    return Modulo.objects.create(
+        codigo_modulo=Modulo.MOD05_HALLAZGOS,
+        nombre_modulo="Hallazgos y revisiones",
+    )
+
+
 def _asignar_obligaciones(cliente, *nombres):
     """Marca en el cliente las obligaciones tributarias indicadas por nombre."""
     for nombre in nombres:

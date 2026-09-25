@@ -19,12 +19,12 @@ Contexto técnico y convenciones de trabajo para agentes de código que colabore
 | Calidad | `bash scripts/calidad.sh` |
 | Credenciales dev | `paula@befrec.co` / `Contanika2026*` |
 | Repositorio | https://github.com/fredd0828/Contanika |
-| Rama de trabajo | `feature/modulo-4-documentos` |
+| Rama de trabajo | `feature/modulo-5-hallazgos` |
 | Rama principal | `main` |
 
 **Nota Git:** una rama por módulo, creada a partir de la última rama de trabajo (no siempre desde
 `main`, para no perder de la vista lo ya construido mientras el módulo anterior espera aprobación).
-`feature/modulo-4-documentos` se creó a partir de `feature/modulo-3-tareas` (tareas aún sin
+`feature/modulo-5-hallazgos` se creó a partir de `feature/modulo-4-documentos` (documentos aún sin
 mergear a `main`). El push a GitHub ya funciona sin pedir token manualmente (credenciales
 almacenadas por el gestor de credenciales de Git).
 
@@ -209,10 +209,40 @@ Ninguna funcionalidad se da por terminada sin:
   ya existían en `Usuario` (pensados para este módulo) pero no había forma de
   cargarlos; se agregó una vista mínima "Mi firma" dentro de `documentos`
   (Administrador y Contador Senior) en vez de construir el Módulo 8 completo.
-- `ConfiguracionDespacho.membrete_url` sigue sin usarse; el PDF imprime el
-  encabezado del despacho como texto, no como imagen.
+- `ConfiguracionDespacho.membrete_url` → `membrete` (`ImageField`,
+  `upload_to="despacho/"`), cargado por el Administrador en la vista "Datos
+  del despacho" (`documentos:datos_despacho`). `servicios.encabezado_despacho()`
+  arma el encabezado del PDF: la imagen escalada sin deformar al ancho útil
+  (alto máximo 3 cm) o, si no hay membrete, nombre y ciudad como texto. El
+  Módulo 6 (cuenta de cobro "con membrete") debe reutilizar esta función.
+- Séptima plantilla: sin definir en el spec; no se siembra, el Administrador
+  la crea desde "Gestión de plantillas" cuando se defina.
 
-### Módulos 5–10
+### Módulo 5 — Hallazgos y revisiones
+- El modelo `Hallazgo` ya existía completo (migrado desde antes de este
+  bloque) y coincide exactamente con el spec; no se modificó.
+- `comunes.Adjunto.archivo_url` (`URLField` sin uso real, mismo diagnóstico
+  del Módulo 4) → `archivo` (`FileField`, `upload_to="adjuntos/hallazgos/%Y/%m/"`).
+  `Adjunto` es genérico (`tabla_origen`/`id_origen`, sin FK real); al no tener
+  `on_delete` de la base de datos, `eliminar_hallazgo` borra a mano el
+  archivo físico y la fila de cada adjunto antes de borrar el hallazgo.
+- Sin permisos explícitos en el spec para este módulo (a diferencia de
+  Tareas y Documentos): se decidió con el usuario seguir el patrón de
+  Documentos/Calendario — Contador Junior gestiona hallazgos solo de sus
+  clientes asignados (crea, edita, cambia estado, adjunta), no elimina;
+  Administrador y Contador Senior gestionan cualquiera.
+- Cambio de estado en un solo formulario (`CambiarEstadoHallazgoForm`), que
+  exige observación de cierre únicamente al pasar a "Cerrado" y reutiliza
+  `Hallazgo.cerrar()`, ya existente en el modelo.
+- Sin patrón de subida múltiple en el proyecto: los adjuntos se suben de uno
+  en uno desde el detalle del hallazgo, cada uno con su propio botón de
+  descarga/eliminar (en vez de construir un formset de archivos nuevo).
+- Reutiliza clases CSS ya existentes para estado y prioridad
+  (`.badge-est`/`.kb-prio`) — sin CSS nuevo.
+- El filtro de fechas del listado busca por traslape con el período revisado
+  (`fecha_fin_periodo >= desde` y `fecha_inicio_periodo <= hasta`).
+
+### Módulos 6–10
 - Ver `PLAN_TRABAJO.md` y `md/Contanika_Especificaciones_Módulos.md`.
 
 ---
@@ -234,5 +264,5 @@ Ninguna funcionalidad se da por terminada sin:
 
 ---
 
-Última actualización: 24 de septiembre de 2026 (Módulo 4, bloque 1: expedición
-de documentos y certificados navegable).
+Última actualización: 24 de septiembre de 2026 (cierre de pendientes de los
+Módulos 4 y 5: membrete del despacho y filtro por traslape).

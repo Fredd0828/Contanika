@@ -1,0 +1,20 @@
+<div class="modal-header">
+    <div>
+        <h5 class="modal-title mb-0">{{ hallazgo.tipo_hallazgo }}</h5>
+        <div class="text-muted small">{{ hallazgo.cliente.nombre_razon_social }}</div>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+</div>
+<div class="modal-body">
+    {% include "hallazgos/_hallazgo_detalle_cuerpo.html" %}
+</div>
+<div class="modal-footer">
+    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
+    {% if puede_eliminar %}
+    <form method="post" action="{% url 'hallazgos:eliminar' hallazgo.pk %}"
+          onsubmit="return confirm('¿Eliminar este hallazgo y sus adjuntos? Esta acción no se puede deshacer.')">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline-danger"><i class="bi bi-trash"></i> Eliminar</button>
+    </form>
+    {% endif %}
+</div>

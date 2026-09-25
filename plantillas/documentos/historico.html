@@ -9,8 +9,9 @@
         <div class="ph-actions">
             <span class="ph-meta">{% if is_paginated %}{{ page_obj.paginator.count }}{% else %}{{ documentos|length }}{% endif %} registro(s)</span>
             <a class="ph-link" href="{% url 'documentos:mi_firma' %}"><i class="bi bi-pen"></i> Mi firma</a>
-            {% if puede_eliminar %}
+            {% if es_administrador %}
             <a class="ph-link" href="{% url 'documentos:plantillas' %}"><i class="bi bi-file-earmark-ruled"></i> Gestión de plantillas</a>
+            <a class="ph-link" href="{% url 'documentos:datos_despacho' %}"><i class="bi bi-building"></i> Datos del despacho</a>
             {% endif %}
             <a class="ph-btn" href="{% url 'documentos:generar' %}"><i class="bi bi-plus-lg"></i> Generar documento</a>
         </div>

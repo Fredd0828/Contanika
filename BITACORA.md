@@ -656,3 +656,151 @@ python gestionar.py runserver
   nombre y ciudad del despacho como texto, no como imagen) — evaluar si vale
   la pena resolverlo junto con el plan pendiente de adjuntos (Módulo 9), que
   tiene el mismo diagnóstico de "URLField sin mecanismo de subida real".
+  **Resuelto** en el bloque de cierre de pendientes (vista Datos del despacho).
+
+---
+
+## Jueves 24 de septiembre de 2026 — Módulo 5, bloque 1: hallazgos y revisiones
+
+**Objetivo del bloque:** dejar navegable el Módulo 5 (HU016-018): registro y
+edición de hallazgos por cliente (tipo abierto, período revisado,
+responsable, prioridad, descripción, adjuntos de soporte), cambio de estado
+con observación obligatoria al cerrar, listado filtrable, y pestaña
+"Hallazgos" en la ficha del cliente.
+
+### Trabajo realizado
+
+1. **Modelo**: `Hallazgo` ya existía completo y coincide exactamente con el
+   spec (tipo, período, responsable, prioridad, descripción, estado,
+   observación de cierre); no se modificó.
+2. **Adjuntos de soporte**: `comunes.Adjunto.archivo_url` (URLField sin uso
+   real, mismo diagnóstico ya resuelto en el Módulo 4 para
+   `Documento`/`Usuario.firma`) se cambió a `archivo` (`FileField`). Al ser
+   `Adjunto` una tabla genérica sin FK real hacia `Hallazgo`
+   (`tabla_origen`/`id_origen`), `eliminar_hallazgo` borra a mano el archivo
+   físico y la fila de cada adjunto antes de borrar el hallazgo. Sin
+   patrón de subida múltiple en el proyecto, los adjuntos se suben de uno en
+   uno desde el detalle del hallazgo (extensión y tamaño validados: PDF,
+   Word, Excel o imagen, máximo 10 MB), cada uno con su propio botón de
+   descarga y eliminación.
+3. **Permisos**: el spec no los detalla para este módulo (a diferencia de
+   Tareas y Documentos); se decidió con el usuario seguir el patrón de
+   Documentos/Calendario — Contador Junior gestiona (crea, edita, cambia
+   estado, adjunta) solo los hallazgos de sus clientes asignados, sin
+   eliminar; Administrador y Contador Senior gestionan cualquiera, incluida
+   la eliminación.
+4. **Cambio de estado**: un solo formulario (estado + observación de
+   cierre) que exige la observación únicamente al pasar a "Cerrado" y
+   reutiliza `Hallazgo.cerrar()`, ya existente en el modelo.
+5. **Listado y panel**: histórico filtrable por tipo (campo abierto, con
+   `datalist` de tipos ya usados), estado, responsable y rango de fechas del
+   período revisado; pestaña "Hallazgos" nueva en la ficha del cliente con
+   los últimos registrados y acceso directo a registrar uno nuevo.
+6. **Integración**: rutas registradas, menú lateral y tarjeta del panel
+   principal activos para el Módulo 5. Sin CSS nuevo: se reutilizan
+   `.badge-est` (estado) y `.kb-prio` (prioridad), ya usados en Calendario y
+   Tareas con los mismos valores.
+
+### Cómo verificarlo (entorno local)
+
+```bash
+cd /home/fredd/documentos/ubuntu/contanika/codigo
+source .venv/bin/activate
+python gestionar.py migrate
+python gestionar.py runserver
+```
+
+1. Entrar a **Hallazgos** en el menú lateral: listado vacío.
+2. Desde la ficha de un cliente → pestaña **Hallazgos** → "Registrar
+   hallazgo": tipo con datalist, rango de fechas del período, responsable,
+   prioridad, descripción → guardar → aparece en el panel y en el listado.
+3. Entrar al detalle: adjuntar un PDF y una imagen, descargar cada uno,
+   eliminar uno.
+4. Cambiar el estado a "Cerrado" sin observación (debe rechazarlo) y con
+   observación (debe cerrarlo y mostrar la observación en el detalle).
+5. Filtrar el listado por tipo, estado, responsable y rango de fechas.
+6. Como Contador Junior: solo ve/gestiona hallazgos de sus clientes
+   asignados (404 en URL directa a uno ajeno, incluida la descarga de su
+   adjunto); sin botón eliminar. Como Contador Senior, sí puede eliminar un
+   hallazgo de otro usuario (y sus adjuntos desaparecen del disco).
+
+### Resultado de las pruebas
+
+- 327 pruebas en total: **327 aprobadas** (49 nuevas del Módulo 5).
+- Cobertura total: **93 %**; módulo hallazgos: modelos, selectores,
+  servicios y formularios 100 %, vistas 95 %.
+- Pruebas de seguridad: acceso sin sesión, módulo inhabilitado (403),
+  permisos por rol (403 al eliminar para Junior), IDOR de hallazgos y
+  adjuntos ajenos (404 en detalle, edición, descarga y agregar adjunto),
+  CSRF y XSS en la descripción se escapan en el detalle.
+- Ruff (estilo y formato), bandit y pip-audit sin hallazgos.
+
+### Pendientes del Módulo 5 (siguientes bloques)
+
+- Sin reporte propio en el Módulo 10 (confirmado explícitamente en el spec).
+- El filtro de rango de fechas compara solo contra `fecha_inicio_periodo`
+  (no modela traslape con `fecha_fin_periodo`), igual de simple que el resto
+  de filtros de fecha del proyecto — revisar si algún caso real lo necesita.
+  **Resuelto** en el bloque de cierre de pendientes (filtro por traslape).
+
+---
+
+## Jueves 24 de septiembre de 2026 — Cierre de pendientes de los Módulos 4 y 5
+
+**Objetivo del bloque:** resolver los pendientes que quedaron abiertos en los
+Módulos 4 y 5 antes de arrancar el Módulo 6.
+
+### Trabajo realizado
+
+1. **Membrete del despacho (M4)**: `ConfiguracionDespacho.membrete_url`
+   (URLField sin uso) se cambió a `membrete` (`ImageField`). Nueva vista
+   **Datos del despacho** (solo Administrador), enlazada desde el histórico
+   de documentos, para editar nombre, NIT, ciudad, dirección, teléfono,
+   correo y cargar la imagen del membrete (máximo 2 MB). El encabezado de
+   los PDF usa la imagen escalada sin deformarla al ancho útil de la página
+   (alto máximo 3 cm); si no hay membrete, se conserva el nombre y la ciudad
+   como texto. La función `encabezado_despacho()` queda lista para que el
+   Módulo 6 la reutilice en la cuenta de cobro.
+2. **Enlace de Gestión de plantillas**: se mostraba también al Contador
+   Senior (que recibía 403 al entrar); ahora el histórico solo muestra
+   "Gestión de plantillas" y "Datos del despacho" al Administrador.
+3. **Séptima plantilla (M4)**: se decidió con el usuario no sembrarla hasta
+   que se defina; el Administrador ya puede crearla desde "Gestión de
+   plantillas" sin cambios de código.
+4. **Filtro de hallazgos por traslape (M5)**: el rango de fechas del listado
+   ahora encuentra un hallazgo si su período revisado se cruza con el rango
+   consultado (antes solo comparaba la fecha de inicio). Ejemplo: un
+   hallazgo de enero a junio aparece al filtrar solo marzo.
+5. Scripts SQL (`01_esquema_contanika.sql`, `02_datos_iniciales.sql`)
+   actualizados con la columna `membrete`.
+
+### Cómo verificarlo (entorno local)
+
+```bash
+cd /home/fredd/documentos/ubuntu/contanika/codigo
+source .venv/bin/activate
+python gestionar.py migrate
+python gestionar.py runserver
+```
+
+1. Como Administrador: **Documentos** → **Datos del despacho** → cargar una
+   imagen de membrete y guardar; la vista previa aparece arriba.
+2. Generar un documento y descargar el PDF: el encabezado es la imagen.
+3. Como Contador Senior: el histórico ya no muestra "Gestión de plantillas"
+   ni "Datos del despacho" (403 por URL directa).
+4. **Hallazgos**: registrar uno con período de enero a junio y filtrar el
+   listado solo por marzo: debe aparecer.
+
+### Resultado de las pruebas
+
+- 335 pruebas en total: **335 aprobadas** (8 nuevas).
+- Cobertura total: **93 %**; documentos/servicios 96 %, hallazgos/selectores 100 %.
+- Ruff (estilo y formato), bandit y pip-audit sin hallazgos.
+
+### Pendientes
+
+- Séptima plantilla del Módulo 4: pendiente de definición por parte del
+  usuario (se crea desde la interfaz, no requiere código).
+- Al reemplazar el membrete, la imagen anterior queda en `media/despacho/`
+  (mismo comportamiento que la firma del Módulo 4).
+

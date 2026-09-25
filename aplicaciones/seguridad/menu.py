@@ -24,7 +24,7 @@ SECCIONES_MENU = [
             ("Calendario", "calendario:calendario", "bi-calendar2-check-fill", Modulo.MOD02_CALENDARIO),
             ("Tareas", "tareas:tablero", "bi-kanban-fill", Modulo.MOD03_TAREAS),
             ("Documentos", "documentos:historico", "bi-file-earmark-text-fill", Modulo.MOD04_DOCUMENTOS),
-            ("Hallazgos", None, "bi-search-heart-fill", Modulo.MOD05_HALLAZGOS),
+            ("Hallazgos", "hallazgos:lista", "bi-search-heart-fill", Modulo.MOD05_HALLAZGOS),
             ("Expediente", None, "bi-journal-text", Modulo.MOD09_EXPEDIENTE),
         ],
     ),

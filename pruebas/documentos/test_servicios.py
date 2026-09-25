@@ -5,6 +5,9 @@ import io
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from PIL import Image as PILImage
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.units import cm
+from reportlab.platypus import Image
 
 from aplicaciones.documentos import servicios
 from aplicaciones.documentos.formularios import CampoPlantillaFormSet, PlantillaForm
@@ -193,3 +196,28 @@ def test_actualizar_plantilla_no_permite_borrar_campo_con_documentos(
         servicios.actualizar_plantilla(plantilla, formulario, formset)
 
     assert CampoPlantilla.objects.filter(pk=campo_simple.pk).exists()
+
+
+# ---------------------------------------------------------------------------
+# Encabezado del PDF: membrete del despacho
+# ---------------------------------------------------------------------------
+
+
+def test_encabezado_despacho_sin_membrete_usa_nombre_y_ciudad(despacho):
+    elementos = servicios.encabezado_despacho(despacho, getSampleStyleSheet(), ancho_maximo=16 * cm)
+    assert [elemento.getPlainText() for elemento in elementos] == ["Befrec Y Asociados SAS", "Bogotá D.C."]
+
+
+def test_encabezado_despacho_con_membrete_escala_la_imagen_sin_deformarla(despacho):
+    buffer = io.BytesIO()
+    PILImage.new("RGB", (400, 100), color="navy").save(buffer, format="PNG")
+    despacho.membrete = SimpleUploadedFile("membrete.png", buffer.getvalue(), content_type="image/png")
+    despacho.save()
+
+    elementos = servicios.encabezado_despacho(despacho, getSampleStyleSheet(), ancho_maximo=16 * cm)
+
+    assert len(elementos) == 1
+    imagen = elementos[0]
+    assert isinstance(imagen, Image)
+    assert imagen.drawWidth == pytest.approx(12 * cm)
+    assert imagen.drawHeight == pytest.approx(3 * cm)

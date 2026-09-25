@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block titulo %}{% if accion == "crear" %}Nuevo hallazgo{% else %}Editar hallazgo{% endif %}{% endblock %}
+
+{% block contenido %}
+<div class="panel">
+    <div class="ph">
+        <div class="ph-title">
+            <i class="bi bi-search-heart-fill"></i>
+            {% if accion == "crear" %}Nuevo hallazgo{% else %}Editar hallazgo{% endif %}
+        </div>
+        <a class="ph-link" href="{% url 'hallazgos:lista' %}"><i class="bi bi-arrow-left"></i> Volver al listado</a>
+    </div>
+
+    <form method="post" action="{% if accion == 'crear' %}{% url 'hallazgos:crear' %}{% else %}{% url 'hallazgos:editar' hallazgo.pk %}{% endif %}">
+        {% include "hallazgos/_hallazgo_form_campos.html" %}
+        <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="ph-btn">
+                <i class="bi bi-save"></i> {% if accion == "crear" %}Registrar hallazgo{% else %}Guardar cambios{% endif %}
+            </button>
+            <a class="btn btn-outline-secondary" href="{% url 'hallazgos:lista' %}">Cancelar</a>
+        </div>
+    </form>
+</div>
+
+<datalist id="lista-tipos-hallazgo">
+    {% for tipo in opciones.tipos_hallazgo %}<option value="{{ tipo }}"></option>{% endfor %}
+</datalist>
+{% endblock %}

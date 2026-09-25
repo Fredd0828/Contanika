@@ -265,7 +265,7 @@ class ConfiguracionDespacho(models.Model):
     id_configuracion = models.AutoField(primary_key=True)
     nombre_despacho = models.CharField(max_length=150, default="Befrec Y Asociados SAS")
     nit_despacho = models.CharField(max_length=20, blank=True)
-    membrete_url = models.URLField(max_length=255, blank=True)
+    membrete = models.ImageField(upload_to="despacho/", blank=True)
     ciudad = models.CharField(max_length=60, blank=True)
     direccion = models.CharField(max_length=150, blank=True)
     telefono = models.CharField(max_length=20, blank=True)

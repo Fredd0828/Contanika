@@ -5,6 +5,7 @@ from django.contrib.auth import get_user_model
 from django.forms import inlineformset_factory
 
 from aplicaciones.comunes.formularios import FormularioBase, ModeloFormularioBase
+from aplicaciones.seguridad.models import ConfiguracionDespacho
 
 from . import selectores
 from .models import CampoPlantilla, Documento, Plantilla
@@ -142,6 +143,24 @@ class MiFirmaForm(ModeloFormularioBase):
         archivo = self.cleaned_data.get("firma")
         if archivo and hasattr(archivo, "size") and archivo.size > 2 * 1024 * 1024:
             raise forms.ValidationError("La imagen de la firma no debe superar los 2 MB.")
+        return archivo
+
+
+class DatosDespachoForm(ModeloFormularioBase):
+    """Datos fijos del despacho y membrete que encabeza los documentos en PDF."""
+
+    class Meta:
+        model = ConfiguracionDespacho
+        fields = ["nombre_despacho", "nit_despacho", "membrete", "ciudad", "direccion", "telefono", "correo"]
+        widgets = {
+            "membrete": forms.ClearableFileInput(attrs={"accept": "image/*"}),
+        }
+
+    def clean_membrete(self):
+        """Valida el tamaño de la imagen antes de guardarla (el tipo lo valida `ImageField`)."""
+        archivo = self.cleaned_data.get("membrete")
+        if archivo and hasattr(archivo, "size") and archivo.size > 2 * 1024 * 1024:
+            raise forms.ValidationError("La imagen del membrete no debe superar los 2 MB.")
         return archivo
 
 

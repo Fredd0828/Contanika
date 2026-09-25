@@ -1,0 +1,35 @@
+{% csrf_token %}
+<div class="row g-3">
+    <div class="col-md-6">
+        <label for="{{ formulario.cliente.id_for_label }}" class="form-label">{{ formulario.cliente.label }}</label>
+        {{ formulario.cliente }}
+        {% if formulario.cliente.errors %}<div class="text-danger small">{{ formulario.cliente.errors }}</div>{% endif %}
+    </div>
+    <div class="col-md-6">
+        <label for="{{ formulario.tipo_hallazgo.id_for_label }}" class="form-label">{{ formulario.tipo_hallazgo.label }}</label>
+        {{ formulario.tipo_hallazgo }}
+    </div>
+    <div class="col-md-3">
+        <label for="{{ formulario.fecha_inicio_periodo.id_for_label }}" class="form-label">{{ formulario.fecha_inicio_periodo.label }}</label>
+        {{ formulario.fecha_inicio_periodo }}
+        {% if formulario.fecha_inicio_periodo.errors %}<div class="text-danger small">{{ formulario.fecha_inicio_periodo.errors }}</div>{% endif %}
+    </div>
+    <div class="col-md-3">
+        <label for="{{ formulario.fecha_fin_periodo.id_for_label }}" class="form-label">{{ formulario.fecha_fin_periodo.label }}</label>
+        {{ formulario.fecha_fin_periodo }}
+        {% if formulario.fecha_fin_periodo.errors %}<div class="text-danger small">{{ formulario.fecha_fin_periodo.errors }}</div>{% endif %}
+    </div>
+    <div class="col-md-3">
+        <label for="{{ formulario.responsable.id_for_label }}" class="form-label">{{ formulario.responsable.label }}</label>
+        {{ formulario.responsable }}
+    </div>
+    <div class="col-md-3">
+        <label for="{{ formulario.prioridad.id_for_label }}" class="form-label">{{ formulario.prioridad.label }}</label>
+        {{ formulario.prioridad }}
+    </div>
+    <div class="col-12">
+        <label for="{{ formulario.descripcion.id_for_label }}" class="form-label">{{ formulario.descripcion.label }}</label>
+        {{ formulario.descripcion }}
+        {% if formulario.descripcion.errors %}<div class="text-danger small">{{ formulario.descripcion.errors }}</div>{% endif %}
+    </div>
+</div>

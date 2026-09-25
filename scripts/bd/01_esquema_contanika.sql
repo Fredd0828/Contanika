@@ -110,9 +110,9 @@ CREATE TABLE public.adjunto (
     id_adjunto integer NOT NULL,
     tabla_origen character varying(30) NOT NULL,
     id_origen integer NOT NULL,
-    archivo_url character varying(255) NOT NULL,
     nombre_archivo character varying(150) NOT NULL,
     fecha_carga timestamp with time zone NOT NULL,
+    archivo character varying(255) NOT NULL,
     CONSTRAINT adjunto_id_origen_check CHECK ((id_origen >= 0))
 );
 
@@ -418,11 +418,11 @@ CREATE TABLE public.configuracion_despacho (
     id_configuracion integer NOT NULL,
     nombre_despacho character varying(150) NOT NULL,
     nit_despacho character varying(20) NOT NULL,
-    membrete_url character varying(255) NOT NULL,
     ciudad character varying(60) NOT NULL,
     direccion character varying(150) NOT NULL,
     telefono character varying(20) NOT NULL,
-    correo character varying(100) NOT NULL
+    correo character varying(100) NOT NULL,
+    membrete character varying(100) NOT NULL
 );
 
 

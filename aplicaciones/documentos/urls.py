@@ -12,6 +12,7 @@ urlpatterns = [
     path("documentos/generar/campos/", vistas.CamposPlantillaParcialView.as_view(), name="campos_plantilla"),
     path("documentos/generar/confirmar/", vistas.ConfirmarDocumentoView.as_view(), name="confirmar"),
     path("documentos/mi-firma/", vistas.MiFirmaView.as_view(), name="mi_firma"),
+    path("documentos/datos-despacho/", vistas.DatosDespachoView.as_view(), name="datos_despacho"),
     path("documentos/plantillas/", vistas.ListaPlantillasView.as_view(), name="plantillas"),
     path("documentos/plantillas/nueva/", vistas.CrearPlantillaView.as_view(), name="plantilla_crear"),
     path(

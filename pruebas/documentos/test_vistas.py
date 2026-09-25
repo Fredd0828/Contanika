@@ -16,6 +16,7 @@ URLS_PROTEGIDAS = [
     "documentos:historico",
     "documentos:generar",
     "documentos:mi_firma",
+    "documentos:datos_despacho",
     "documentos:plantillas",
     "documentos:plantilla_crear",
 ]
@@ -210,6 +211,44 @@ def test_junior_no_accede_a_mi_firma(client, usuario_junior):
 def test_senior_accede_a_mi_firma(client, usuario_senior):
     client.force_login(usuario_senior)
     assert client.get(reverse("documentos:mi_firma")).status_code == 200
+
+
+@pytest.mark.parametrize("usuario_fixture", ["usuario_junior", "usuario_senior"])
+def test_solo_administrador_accede_a_datos_del_despacho(client, request, usuario_fixture):
+    client.force_login(request.getfixturevalue(usuario_fixture))
+    assert client.get(reverse("documentos:datos_despacho")).status_code == 403
+
+
+def test_administrador_carga_membrete_del_despacho(client, usuario_administrador, despacho):
+    client.force_login(usuario_administrador)
+    imagen = _imagen_prueba()
+    imagen.name = "membrete.png"
+    respuesta = client.post(
+        reverse("documentos:datos_despacho"),
+        {
+            "nombre_despacho": "Befrec Y Asociados SAS",
+            "nit_despacho": "900123456-1",
+            "membrete": imagen,
+            "ciudad": "Bogotá D.C.",
+            "direccion": "",
+            "telefono": "",
+            "correo": "",
+        },
+    )
+    assert respuesta.status_code == 302
+    despacho.refresh_from_db()
+    assert despacho.nit_despacho == "900123456-1"
+    assert despacho.membrete.name.startswith("despacho/")
+
+
+def test_historico_muestra_datos_del_despacho_solo_al_administrador(
+    client, usuario_administrador, usuario_senior
+):
+    url_despacho = reverse("documentos:datos_despacho")
+    client.force_login(usuario_administrador)
+    assert url_despacho in client.get(reverse("documentos:historico")).content.decode()
+    client.force_login(usuario_senior)
+    assert url_despacho not in client.get(reverse("documentos:historico")).content.decode()
 
 
 def test_junior_no_elimina_documento(client, usuario_junior, documento_cliente_junior):
