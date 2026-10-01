@@ -45,9 +45,15 @@ class HonorarioServicioInline(admin.TabularInline):
 
 
 class AbonoInline(admin.TabularInline):
+    """Solo consulta: los abonos se registran desde la aplicación y el disparador los hace inmutables."""
+
     model = Abono
     extra = 0
-    readonly_fields = ["saldo_anterior", "saldo_resultante"]
+    can_delete = False
+    readonly_fields = ["fecha", "monto", "metodo_pago", "responsable", "saldo_anterior", "saldo_resultante"]
+
+    def has_add_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(Honorario)

@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% load finanzas_tags %}
+
+{% block titulo %}Cartera{% endblock %}
+
+{% block contenido %}
+<div class="panel">
+    <div class="ph">
+        <div class="ph-title"><i class="bi bi-graph-down-arrow"></i> Panel de cartera</div>
+        <div class="ph-actions">
+            {% if incluir_al_dia %}
+            <a class="ph-link" href="{% url 'finanzas:cartera' %}"><i class="bi bi-funnel"></i> Solo clientes con saldo</a>
+            {% else %}
+            <a class="ph-link" href="{% url 'finanzas:cartera' %}?todos=1"><i class="bi bi-list"></i> Incluir clientes al día</a>
+            {% endif %}
+            <a class="ph-link" href="{% url 'finanzas:historico' %}"><i class="bi bi-arrow-left"></i> Volver</a>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-md-4">
+            <div class="text-muted small">Total facturado</div>
+            <div class="fw-bold fs-5">{{ totales.facturado|pesos }}</div>
+        </div>
+        <div class="col-md-4">
+            <div class="text-muted small">Total cobrado</div>
+            <div class="fw-bold fs-5 text-success">{{ totales.cobrado|pesos }}</div>
+        </div>
+        <div class="col-md-4">
+            <div class="text-muted small">Saldo pendiente</div>
+            <div class="fw-bold fs-5 text-danger">{{ totales.saldo|pesos }}</div>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="tbl">
+            <thead>
+                <tr>
+                    <th>Cliente</th>
+                    <th class="text-end">Facturado</th>
+                    <th class="text-end">Cobrado</th>
+                    <th class="text-end">Saldo pendiente</th>
+                    <th class="text-center">Cuentas pendientes</th>
+                    <th>Mora</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fila in filas %}
+                <tr>
+                    <td>{{ fila.cliente.nombre_razon_social }}</td>
+                    <td class="text-end">{{ fila.facturado|pesos }}</td>
+                    <td class="text-end">{{ fila.cobrado|pesos }}</td>
+                    <td class="text-end fw-semibold">{{ fila.saldo|pesos }}</td>
+                    <td class="text-center">{{ fila.cuentas_pendientes }}</td>
+                    <td>
+                        {% if fila.mora_critica %}<span class="badge-est be-r">{{ fila.dias_mora }} días</span>
+                        {% elif fila.dias_mora %}<span class="badge-est be-w">{{ fila.dias_mora }} días</span>
+                        {% elif fila.saldo > 0 %}<span class="badge-est be-teal">Al día</span>
+                        {% else %}<span class="badge-est be-g">Pagado</span>{% endif %}
+                    </td>
+                    <td class="text-end">
+                        <a class="icon-btn" href="{% url 'clientes:detalle' fila.cliente.pk %}#tab-honorarios" title="Ver historial de abonos"><i class="bi bi-eye"></i></a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" class="text-center text-muted py-4">No hay clientes con saldo pendiente.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <p class="text-muted small mt-3 mb-0">
+        Ordenado de mayor a menor mora. En rojo, los clientes con más de {{ dias_mora_critica }} días en mora.
+    </p>
+</div>
+{% endblock %}

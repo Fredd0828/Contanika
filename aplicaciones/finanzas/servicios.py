@@ -13,7 +13,7 @@ from decimal import Decimal
 
 from dateutil.relativedelta import relativedelta
 from django.core.files.base import ContentFile
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import ProtectedError
 from django.utils import timezone
 from django.utils.formats import date_format
@@ -33,12 +33,14 @@ from .models import (
     AMBOS,
     CORREO,
     WHATSAPP,
+    Abono,
     ConfiguracionCobro,
     CuentaCobro,
     CuentaCobroDetalle,
     EnvioProgramado,
     Honorario,
     HonorarioServicio,
+    MetodoPago,
 )
 from .templatetags.finanzas_tags import formato_pesos
 
@@ -176,11 +178,77 @@ def _texto_periodo(cuenta):
     return cuenta.periodo_facturado
 
 
+def _seccion_abonos_pdf(cuenta, estilos, ancho):
+    """
+    Pagos y abonos recibidos, con el total abonado y el saldo pendiente por
+    pagar, para que el cliente vea en la cuenta lo que le falta. Si la cuenta
+    no tiene abonos no se agrega nada.
+    """
+    abonos = list(cuenta.abonos.select_related("metodo_pago").order_by("fecha", "id_abono"))
+    if not abonos:
+        return []
+    total_abonado = sum((abono.monto for abono in abonos), Decimal("0"))
+    saldo = cuenta.valor_total - total_abonado
+    filas = [["Fecha", "Medio de pago", "Valor"]]
+    for abono in abonos:
+        medio = escape(abono.metodo_pago.nombre_metodo) if abono.metodo_pago else "—"
+        filas.append(
+            [
+                date_format(abono.fecha, "SHORT_DATE_FORMAT"),
+                Paragraph(medio, estilos["Normal"]),
+                formato_pesos(abono.monto),
+            ]
+        )
+    filas.append(["", "Valor de la cuenta", formato_pesos(cuenta.valor_total)])
+    filas.append(["", "Total abonado", formato_pesos(total_abonado)])
+    filas.append(["", "SALDO PENDIENTE POR PAGAR", formato_pesos(saldo)])
+    tabla = Table(filas, colWidths=[3.5 * cm, ancho - 7.5 * cm, 4 * cm])
+    tabla.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0f766e")),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("FONTNAME", (1, -3), (-1, -1), "Helvetica-Bold"),
+                ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#fef3c7")),
+                ("ALIGN", (2, 0), (2, -1), "RIGHT"),
+                ("ALIGN", (1, -3), (1, -1), "RIGHT"),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e1")),
+                ("TOPPADDING", (0, 0), (-1, -1), 4),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+            ]
+        )
+    )
+    corte = date_format(timezone.localdate())
+    elementos = [
+        Paragraph(f"<b>Pagos y abonos recibidos</b> (estado de cuenta al {corte})", estilos["Normal"]),
+        Spacer(1, 0.2 * cm),
+        tabla,
+    ]
+    if saldo <= 0:
+        elementos.append(Spacer(1, 0.2 * cm))
+        elementos.append(
+            Paragraph("<b>Esta cuenta de cobro se encuentra pagada en su totalidad.</b>", estilos["Normal"])
+        )
+    elementos.append(Spacer(1, 0.6 * cm))
+    return elementos
+
+
+def actualizar_pdf_cuenta_cobro(cuenta):
+    """Vuelve a generar el PDF guardado de la cuenta (por ejemplo, al registrar un abono)."""
+    nombre = f"cuenta_cobro_{cuenta.pk}.pdf"
+    if cuenta.archivo:
+        cuenta.archivo.delete(save=False)
+    cuenta.archivo.save(nombre, ContentFile(construir_pdf_cuenta_cobro(cuenta)), save=True)
+
+
 def construir_pdf_cuenta_cobro(cuenta):
     """
     Arma el PDF de la cuenta de cobro con ReportLab (Platypus): membrete del
     despacho, cliente y NIT, valor, descripción del servicio por líneas,
-    período, fecha de vencimiento, datos bancarios y método de pago.
+    abonos recibidos y saldo pendiente (si los hay), período, fecha de
+    vencimiento, datos bancarios y método de pago.
 
     Todo texto capturado por un usuario (nombres, líneas de servicio) se
     escapa antes de pasarlo a `Paragraph`, que interpreta marcado propio.
@@ -245,6 +313,7 @@ def construir_pdf_cuenta_cobro(cuenta):
     )
     elementos.append(tabla)
     elementos.append(Spacer(1, 0.6 * cm))
+    elementos.extend(_seccion_abonos_pdf(cuenta, estilos, documento_pdf.width))
 
     elementos.append(Paragraph(f"<b>Período facturado:</b> {_texto_periodo(cuenta)}", estilos["Normal"]))
     elementos.append(
@@ -283,6 +352,50 @@ def eliminar_cuenta_cobro(cuenta):
         raise ValueError("No se puede eliminar una cuenta de cobro que ya tiene abonos registrados.")
     cuenta.archivo.delete(save=False)
     cuenta.delete()
+
+
+# ---------------------------------------------------------------------------
+# Abonos (HU016): el saldo lo calcula el disparador de PostgreSQL
+# ---------------------------------------------------------------------------
+
+
+def _mensaje_base_datos(error):
+    """Mensaje legible que devolvió un disparador (RAISE EXCEPTION) de PostgreSQL."""
+    diagnostico = getattr(error.__cause__, "diag", None)
+    return getattr(diagnostico, "message_primary", None) or "La base de datos rechazó la operación."
+
+
+def registrar_abono(cuenta, *, fecha, monto, metodo_pago, usuario, metodo_nuevo=""):
+    """
+    Registra un pago o abono. El disparador `trg_abono_calcular_saldo` fija el
+    saldo anterior y el resultante (con la cuenta bloqueada) y rechaza montos
+    mayores que el saldo; `trg_abono_actualizar_estado` actualiza el estado de
+    pago de la cuenta. Aquí solo se traduce su rechazo en un error de negocio.
+
+    Si se escribe un método de pago que no está en el catálogo, se agrega.
+    Después se vuelve a generar el PDF de la cuenta con el abono y el saldo.
+    """
+    if metodo_nuevo.strip():
+        metodo_pago, _ = MetodoPago.objects.get_or_create(nombre_metodo=metodo_nuevo.strip()[:40])
+    try:
+        with transaction.atomic():
+            abono = Abono.objects.create(
+                cuenta_cobro=cuenta,
+                fecha=fecha,
+                monto=monto,
+                metodo_pago=metodo_pago,
+                responsable=usuario,
+                # Valores provisionales: los reemplaza el disparador antes de insertar.
+                saldo_anterior=Decimal("0"),
+                saldo_resultante=Decimal("0"),
+            )
+    except IntegrityError as error:
+        raise ValueError(_mensaje_base_datos(error)) from error
+    abono.refresh_from_db()
+    cuenta.refresh_from_db()
+    # El PDF se rehace para que el cliente vea el abono y el saldo pendiente.
+    actualizar_pdf_cuenta_cobro(cuenta)
+    return abono
 
 
 # ---------------------------------------------------------------------------

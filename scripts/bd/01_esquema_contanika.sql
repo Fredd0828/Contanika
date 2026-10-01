@@ -9,6 +9,9 @@
 -- agregadas en el Módulo 6 (numerales 2.4 y 2.5 del
 -- documento de proyecto) y los comentarios de cada tabla tomados del
 -- diccionario de datos. Las llaves foráneas se agregan al final del script.
+-- Incluye el disparador exigido por la guía: sobre la tabla abono, calcula el
+-- saldo anterior y resultante, actualiza el estado de pago de la cuenta de
+-- cobro e impide modificar o eliminar abonos (migración finanzas 0004).
 -- ============================================================================
 
 -- Comentarios de las tablas (diccionario de datos, numeral 2.5)
@@ -72,6 +75,71 @@ SET check_function_bodies = false;
 SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
+
+--
+-- Name: fn_abono_calcular_saldo(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE OR REPLACE FUNCTION public.fn_abono_calcular_saldo() RETURNS trigger AS $$
+DECLARE
+    v_valor_total numeric(12, 2);
+    v_abonado numeric(12, 2);
+BEGIN
+    IF NEW.monto IS NULL OR NEW.monto <= 0 THEN
+        RAISE EXCEPTION 'El monto del abono debe ser mayor que cero.'
+            USING ERRCODE = 'check_violation';
+    END IF;
+
+    -- Bloquea la cuenta para que dos abonos simultáneos no calculen el mismo saldo.
+    SELECT valor_total INTO v_valor_total
+      FROM cuenta_cobro
+     WHERE id_cuenta_cobro = NEW.id_cuenta_cobro
+       FOR UPDATE;
+
+    SELECT COALESCE(SUM(monto), 0) INTO v_abonado
+      FROM abono
+     WHERE id_cuenta_cobro = NEW.id_cuenta_cobro;
+
+    NEW.saldo_anterior := v_valor_total - v_abonado;
+    IF NEW.monto > NEW.saldo_anterior THEN
+        RAISE EXCEPTION 'El abono supera el saldo pendiente de la cuenta (%).', NEW.saldo_anterior
+            USING ERRCODE = 'check_violation';
+    END IF;
+    NEW.saldo_resultante := NEW.saldo_anterior - NEW.monto;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+
+--
+-- Name: fn_abono_actualizar_estado_cuenta(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE OR REPLACE FUNCTION public.fn_abono_actualizar_estado_cuenta() RETURNS trigger AS $$
+BEGIN
+    UPDATE cuenta_cobro
+       SET estado_pago = CASE
+               WHEN NEW.saldo_resultante = 0 THEN 'Pagada'
+               WHEN fecha_vencimiento_pago < (now() AT TIME ZONE 'America/Bogota')::date THEN 'Vencida'
+               ELSE 'Abonada'
+           END
+     WHERE id_cuenta_cobro = NEW.id_cuenta_cobro;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+
+--
+-- Name: fn_abono_inmutable(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE OR REPLACE FUNCTION public.fn_abono_inmutable() RETURNS trigger AS $$
+BEGIN
+    RAISE EXCEPTION 'Los abonos no se modifican ni se eliminan: conservan la trazabilidad de la cartera.'
+        USING ERRCODE = 'restrict_violation';
+END;
+$$ LANGUAGE plpgsql;
+
 
 SET default_tablespace = '';
 
@@ -2164,6 +2232,33 @@ CREATE INDEX vencimiento_id_tarea_7f55dc35 ON public.vencimiento USING btree (id
 --
 
 CREATE INDEX vencimiento_id_usuario_responsable_6bad33c0 ON public.vencimiento USING btree (id_usuario_responsable);
+
+
+--
+-- Name: abono trg_abono_calcular_saldo; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_abono_calcular_saldo
+    BEFORE INSERT ON public.abono
+    FOR EACH ROW EXECUTE FUNCTION public.fn_abono_calcular_saldo();
+
+
+--
+-- Name: abono trg_abono_actualizar_estado; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_abono_actualizar_estado
+    AFTER INSERT ON public.abono
+    FOR EACH ROW EXECUTE FUNCTION public.fn_abono_actualizar_estado_cuenta();
+
+
+--
+-- Name: abono trg_abono_inmutable; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_abono_inmutable
+    BEFORE UPDATE OR DELETE ON public.abono
+    FOR EACH ROW EXECUTE FUNCTION public.fn_abono_inmutable();
 
 
 --

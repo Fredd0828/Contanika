@@ -31,6 +31,7 @@ from aplicaciones.seguridad.permisos import ModuloHabilitadoMixin, RolRequeridoM
 from . import envios, selectores, servicios
 from .formularios import (
     ENVIAR_AHORA,
+    AbonoForm,
     ConceptoFacturableForm,
     ConfiguracionCobroForm,
     CuentaBancariaForm,
@@ -41,6 +42,7 @@ from .formularios import (
     HonorarioForm,
     LineasCobroFormSet,
     MetodoPagoForm,
+    campo_fecha_cuenta,
 )
 from .models import (
     ConceptoFacturable,
@@ -50,6 +52,7 @@ from .models import (
     EnvioProgramado,
     MetodoPago,
 )
+from .templatetags.finanzas_tags import formato_pesos
 
 ROLES_ADMIN = (Rol.ADMINISTRADOR,)
 
@@ -202,6 +205,8 @@ class DetalleCuentaCobroView(ModuloHabilitadoMixin, View):
             "envios": selectores.envios_de_cuenta(cuenta),
             "formulario_envio": EnvioForm(),
             "numero_whatsapp": envios.numero_whatsapp(cuenta.cliente),
+            "abonos": cuenta.abonos.select_related("metodo_pago", "responsable"),
+            "formulario_abono": AbonoForm(cuenta=cuenta),
         }
         return render(request, "finanzas/cuenta_cobro_detalle.html", contexto)
 
@@ -344,6 +349,67 @@ class EliminarElementoCatalogoView(ModuloHabilitadoMixin, RolRequeridoMixin, Vie
 
 
 # ---------------------------------------------------------------------------
+# Abonos y cartera (HU016-HU018)
+# ---------------------------------------------------------------------------
+
+
+class RegistrarAbonoView(ModuloHabilitadoMixin, RolRequeridoMixin, View):
+    """Registra un pago o abono a una cuenta de cobro (solo Administrador, HU016)."""
+
+    codigo_modulo = Modulo.MOD06_FINANZAS
+    roles_permitidos = ROLES_ADMIN
+
+    def post(self, request, pk):
+        cuenta = get_object_or_404(CuentaCobro, pk=pk)
+        formulario = AbonoForm(request.POST, cuenta=cuenta)
+        if not formulario.is_valid():
+            for errores in formulario.errors.values():
+                for error in errores:
+                    messages.error(request, error)
+            return redirect("finanzas:detalle", pk=pk)
+        datos = formulario.cleaned_data
+        try:
+            abono = servicios.registrar_abono(
+                cuenta,
+                fecha=datos["fecha"],
+                monto=datos["monto"],
+                metodo_pago=datos.get("metodo_pago"),
+                metodo_nuevo=datos.get("metodo_nuevo") or "",
+                usuario=request.user,
+            )
+        except ValueError as error:
+            messages.error(request, str(error))
+        else:
+            messages.success(
+                request,
+                f"Abono registrado. Saldo anterior {formato_pesos(abono.saldo_anterior)}, "
+                f"saldo actual {formato_pesos(abono.saldo_resultante)}.",
+            )
+        return redirect("finanzas:detalle", pk=pk)
+
+
+class CarteraView(ModuloHabilitadoMixin, View):
+    """
+    Panel de cartera (HU016-4, HU017): por cliente, facturado, cobrado, saldo
+    y días en mora, con indicador rojo a más de 30 días. El Contador Senior y
+    el Junior ven solo sus clientes asignados.
+    """
+
+    codigo_modulo = Modulo.MOD06_FINANZAS
+
+    def get(self, request):
+        incluir_al_dia = request.GET.get("todos") == "1"
+        filas = selectores.cartera(request.user, solo_con_saldo=not incluir_al_dia)
+        contexto = {
+            "filas": filas,
+            "totales": selectores.totales_cartera(filas),
+            "incluir_al_dia": incluir_al_dia,
+            "dias_mora_critica": selectores.DIAS_MORA_CRITICA,
+        }
+        return render(request, "finanzas/cartera.html", contexto)
+
+
+# ---------------------------------------------------------------------------
 # Envíos (HU045-HU047) y programación
 # ---------------------------------------------------------------------------
 
@@ -464,33 +530,65 @@ class EnvioMasivoView(ModuloHabilitadoMixin, RolRequeridoMixin, View):
         valido = tipo in dict(EnvioProgramado.OPCIONES_TIPO)
         return tipo if valido else EnvioProgramado.CUENTA_COBRO
 
-    def get(self, request):
-        tipo = self._tipo(request.GET)
-        candidatas = selectores.cuentas_para_envio_masivo(request.user, tipo)
-        formulario = EnvioMasivoForm(initial={"tipo": tipo}, candidatas=candidatas)
-        contexto = {"formulario": formulario, "candidatas": candidatas, "tipo": tipo, "seleccionadas": []}
+    def _candidatas(self, request, datos):
+        tipo = self._tipo(datos)
+        incluir_enviadas = datos.get("incluir_enviadas") == "1"
+        return (
+            tipo,
+            incluir_enviadas,
+            selectores.cuentas_para_envio_masivo(request.user, tipo, incluir_enviadas),
+        )
+
+    def _render_seleccion(self, request, formulario, tipo, incluir_enviadas, candidatas, datos=None):
+        """Listado de selección: cada fila con su casilla, su fecha propia y su error de fecha."""
+        datos = datos or {}
+        seleccionadas = datos.getlist("cuentas") if datos else []
+        filas = [
+            {
+                "cuenta": cuenta,
+                "seleccionada": str(cuenta.pk) in seleccionadas,
+                "campo_fecha": campo_fecha_cuenta(cuenta.pk),
+                "fecha": datos.get(campo_fecha_cuenta(cuenta.pk), ""),
+                "error_fecha": formulario.errores_fecha.get(cuenta.pk),
+            }
+            for cuenta in candidatas
+        ]
+        contexto = {
+            "formulario": formulario,
+            "candidatas": candidatas,
+            "filas": filas,
+            "tipo": tipo,
+            "incluir_enviadas": incluir_enviadas,
+        }
         return render(request, "finanzas/envio_masivo.html", contexto)
 
+    def get(self, request):
+        tipo, incluir_enviadas, candidatas = self._candidatas(request, request.GET)
+        formulario = EnvioMasivoForm(initial={"tipo": tipo}, candidatas=candidatas)
+        return self._render_seleccion(request, formulario, tipo, incluir_enviadas, candidatas)
+
     def post(self, request):
-        tipo = self._tipo(request.POST)
-        candidatas = selectores.cuentas_para_envio_masivo(request.user, tipo)
+        tipo, incluir_enviadas, candidatas = self._candidatas(request, request.POST)
         formulario = EnvioMasivoForm(request.POST, candidatas=candidatas)
         if not formulario.is_valid():
+            return self._render_seleccion(
+                request, formulario, tipo, incluir_enviadas, candidatas, request.POST
+            )
+        datos = formulario.cleaned_data
+        # Se toman de las candidatas para conservar su orden, su saldo y sus abonos.
+        ids = {cuenta.pk for cuenta in datos["cuentas"]}
+        cuentas = [cuenta for cuenta in candidatas if cuenta.pk in ids]
+        if "confirmar" not in request.POST:
+            filas = [{"cuenta": cuenta, "fecha": datos["fechas"].get(cuenta.pk)} for cuenta in cuentas]
+            fechas_distintas = {fila["fecha"] for fila in filas}
             contexto = {
                 "formulario": formulario,
-                "candidatas": candidatas,
-                "tipo": tipo,
-                "seleccionadas": request.POST.getlist("cuentas"),
+                "filas": filas,
+                "datos": datos,
+                "incluir_enviadas": incluir_enviadas,
+                "fecha_unica": fechas_distintas.pop() if len(fechas_distintas) == 1 else None,
             }
-            return render(request, "finanzas/envio_masivo.html", contexto)
-        datos = formulario.cleaned_data
-        cuentas = list(datos["cuentas"].select_related("cliente"))
-        if "confirmar" not in request.POST:
-            return render(
-                request,
-                "finanzas/envio_masivo_confirmar.html",
-                {"formulario": formulario, "cuentas": cuentas, "datos": datos},
-            )
+            return render(request, "finanzas/envio_masivo_confirmar.html", contexto)
         if datos["modo"] == ENVIAR_AHORA:
             procesados = servicios.enviar_ahora(cuentas, datos["tipo"], datos["canal"], request.user)
         else:
@@ -498,7 +596,7 @@ class EnvioMasivoView(ModuloHabilitadoMixin, RolRequeridoMixin, View):
                 envio
                 for cuenta in cuentas
                 for envio in servicios.programar_envio(
-                    cuenta, datos["tipo"], datos["canal"], datos["fecha_programada"], request.user
+                    cuenta, datos["tipo"], datos["canal"], datos["fechas"][cuenta.pk], request.user
                 )
             ]
         request.session[CLAVE_SESION_RESUMEN] = [envio.pk for envio in procesados]

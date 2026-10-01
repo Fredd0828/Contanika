@@ -321,3 +321,105 @@ def test_pdf_publico_no_permite_adivinar_otra_cuenta(client, cuenta_cliente, cue
     token = envios.token_pdf_publico(cuenta_cliente)
     alterado = token.replace(f"{cuenta_cliente.pk}:", f"{cuenta_cliente_junior.pk}:", 1)
     assert client.get(reverse("finanzas:pdf_publico", args=[alterado])).status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# Envío masivo con una fecha distinta por cliente
+# ---------------------------------------------------------------------------
+
+
+def _en_dias(dias, hora=9):
+    fecha = timezone.localtime() + timedelta(days=dias)
+    return fecha.replace(hour=hora, minute=0).strftime("%Y-%m-%dT%H:%M")
+
+
+def test_envio_masivo_programa_cada_cliente_en_su_fecha(
+    client, usuario_administrador, cuenta_cliente, cuenta_cliente_junior
+):
+    client.force_login(usuario_administrador)
+    datos = {
+        "tipo": EnvioProgramado.CUENTA_COBRO,
+        "canal": CORREO,
+        "modo": "programar",
+        "cuentas": [cuenta_cliente.pk, cuenta_cliente_junior.pk],
+        f"fecha_{cuenta_cliente.pk}": _en_dias(2),
+        f"fecha_{cuenta_cliente_junior.pk}": _en_dias(5),
+    }
+    confirmacion = client.post(reverse("finanzas:envio_masivo"), datos)
+    assert "en la fecha indicada para cada cliente" in confirmacion.content.decode()
+    assert confirmacion.context["fecha_unica"] is None
+
+    client.post(reverse("finanzas:envio_masivo"), {**datos, "confirmar": "1"})
+    fechas = {
+        envio.cuenta_cobro_id: timezone.localtime(envio.fecha_programada).strftime("%Y-%m-%dT%H:%M")
+        for envio in EnvioProgramado.objects.all()
+    }
+    assert fechas == {cuenta_cliente.pk: _en_dias(2), cuenta_cliente_junior.pk: _en_dias(5)}
+    assert not mail.outbox
+
+
+def test_envio_masivo_usa_la_fecha_general_si_la_cuenta_no_trae_la_suya(
+    client, usuario_administrador, cuenta_cliente, cuenta_cliente_junior
+):
+    client.force_login(usuario_administrador)
+    client.post(
+        reverse("finanzas:envio_masivo"),
+        {
+            "tipo": EnvioProgramado.CUENTA_COBRO,
+            "canal": CORREO,
+            "modo": "programar",
+            "fecha_programada": _en_dias(3),
+            "cuentas": [cuenta_cliente.pk, cuenta_cliente_junior.pk],
+            f"fecha_{cuenta_cliente_junior.pk}": _en_dias(7),
+            "confirmar": "1",
+        },
+    )
+    propia = EnvioProgramado.objects.get(cuenta_cobro=cuenta_cliente_junior)
+    general = EnvioProgramado.objects.get(cuenta_cobro=cuenta_cliente)
+    assert timezone.localtime(propia.fecha_programada).strftime("%Y-%m-%dT%H:%M") == _en_dias(7)
+    assert timezone.localtime(general.fecha_programada).strftime("%Y-%m-%dT%H:%M") == _en_dias(3)
+
+
+@pytest.mark.parametrize("fecha_propia", ["", "2020-01-01T08:00", "no-es-fecha"])
+def test_envio_masivo_exige_fecha_futura_por_cuenta(
+    client, usuario_administrador, cuenta_cliente, fecha_propia
+):
+    client.force_login(usuario_administrador)
+    respuesta = client.post(
+        reverse("finanzas:envio_masivo"),
+        {
+            "tipo": EnvioProgramado.CUENTA_COBRO,
+            "canal": CORREO,
+            "modo": "programar",
+            "cuentas": [cuenta_cliente.pk],
+            f"fecha_{cuenta_cliente.pk}": fecha_propia,
+            "confirmar": "1",
+        },
+    )
+    assert respuesta.status_code == 200
+    assert "Revise las fechas de envío" in respuesta.content.decode()
+    assert respuesta.context["filas"][0]["error_fecha"]
+    assert respuesta.context["filas"][0]["seleccionada"]
+    assert not EnvioProgramado.objects.exists()
+
+
+def test_envio_masivo_puede_incluir_cuentas_ya_enviadas(client, usuario_administrador, cuenta_cliente):
+    servicios.enviar_ahora([cuenta_cliente], EnvioProgramado.CUENTA_COBRO, CORREO, usuario_administrador)
+    mail.outbox.clear()
+    client.force_login(usuario_administrador)
+    assert client.get(reverse("finanzas:envio_masivo")).context["candidatas"] == []
+    respuesta = client.get(reverse("finanzas:envio_masivo"), {"incluir_enviadas": "1"})
+    assert respuesta.context["candidatas"] == [cuenta_cliente]
+
+    client.post(
+        reverse("finanzas:envio_masivo"),
+        {
+            "tipo": EnvioProgramado.CUENTA_COBRO,
+            "canal": CORREO,
+            "modo": "ahora",
+            "incluir_enviadas": "1",
+            "cuentas": [cuenta_cliente.pk],
+            "confirmar": "1",
+        },
+    )
+    assert len(mail.outbox) == 1

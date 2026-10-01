@@ -7,28 +7,42 @@
 <div class="panel">
     <div class="ph mb-0">
         <div class="ph-title" style="font-size:18px"><i class="bi bi-list-check"></i> Confirmar envío masivo</div>
-        <a class="ph-link" href="{% url 'finanzas:envio_masivo' %}?tipo={{ datos.tipo|urlencode }}"><i class="bi bi-arrow-left"></i> Cambiar la selección</a>
+        <a class="ph-link" href="{% url 'finanzas:envio_masivo' %}?tipo={{ datos.tipo|urlencode }}{% if incluir_enviadas %}&incluir_enviadas=1{% endif %}"><i class="bi bi-arrow-left"></i> Cambiar la selección</a>
     </div>
 </div>
 
 <div class="panel">
     <p class="mb-3">
-        Se {% if datos.modo == "programar" %}programará para el <strong>{{ datos.fecha_programada|date:"d/m/Y H:i" }}</strong>{% else %}enviará <strong>ahora</strong>{% endif %}
+        {% if datos.modo == "programar" %}
+        Se programará {% if fecha_unica %}para el <strong>{{ fecha_unica|date:"d/m/Y H:i" }}</strong>{% else %}<strong>en la fecha indicada para cada cliente</strong>{% endif %}
+        {% else %}
+        Se enviará <strong>ahora</strong>
+        {% endif %}
         el envío de <strong>{{ datos.tipo|lower }}</strong> por <strong>{{ datos.canal|lower }}</strong>
-        a los siguientes {{ cuentas|length }} cliente(s):
+        a los siguientes {{ filas|length }} cliente(s):
     </p>
     <div class="table-responsive">
         <table class="tbl">
-            <thead><tr><th>Cliente</th><th>Cuenta</th><th class="text-end">Valor / saldo</th><th>Correo</th><th>Celular</th></tr></thead>
+            <thead>
+                <tr>
+                    <th>Cliente</th><th>Cuenta</th><th class="text-end">Valor</th><th class="text-end">Abonado</th><th class="text-end">Saldo</th>
+                    <th>Correo</th><th>Celular</th>{% if datos.modo == "programar" %}<th>Fecha de envío</th>{% endif %}
+                </tr>
+            </thead>
             <tbody>
-                {% for cuenta in cuentas %}
+                {% for fila in filas %}
+                {% with cuenta=fila.cuenta %}
                 <tr>
                     <td>{{ cuenta.cliente.nombre_razon_social }}</td>
                     <td>No. {{ cuenta.pk }}</td>
-                    <td class="text-end">{% if datos.tipo == "Recordatorio" %}{{ cuenta.saldo_pendiente|pesos }}{% else %}{{ cuenta.valor_total|pesos }}{% endif %}</td>
+                    <td class="text-end">{{ cuenta.valor_total|pesos }}</td>
+                    <td class="text-end">{% if cuenta.abonado %}{{ cuenta.abonado|pesos }}{% else %}—{% endif %}</td>
+                    <td class="text-end fw-semibold">{{ cuenta.saldo|pesos }}</td>
                     <td>{{ cuenta.cliente.correo_cliente|default:"—" }}</td>
                     <td>{{ cuenta.cliente.informacion_contacto|default:"—" }}</td>
+                    {% if datos.modo == "programar" %}<td>{{ fila.fecha|date:"d/m/Y H:i" }}</td>{% endif %}
                 </tr>
+                {% endwith %}
                 {% endfor %}
             </tbody>
         </table>
@@ -45,8 +59,11 @@
         <input type="hidden" name="tipo" value="{{ datos.tipo }}">
         <input type="hidden" name="canal" value="{{ datos.canal }}">
         <input type="hidden" name="modo" value="{{ datos.modo }}">
-        {% if datos.fecha_programada %}<input type="hidden" name="fecha_programada" value="{{ datos.fecha_programada|date:'Y-m-d\TH:i' }}">{% endif %}
-        {% for cuenta in cuentas %}<input type="hidden" name="cuentas" value="{{ cuenta.pk }}">{% endfor %}
+        {% if incluir_enviadas %}<input type="hidden" name="incluir_enviadas" value="1">{% endif %}
+        {% for fila in filas %}
+        <input type="hidden" name="cuentas" value="{{ fila.cuenta.pk }}">
+        {% if fila.fecha %}<input type="hidden" name="fecha_{{ fila.cuenta.pk }}" value="{{ fila.fecha|date:'Y-m-d\TH:i' }}">{% endif %}
+        {% endfor %}
         <input type="hidden" name="confirmar" value="1">
         <button type="submit" class="ph-btn"><i class="bi bi-send"></i> Confirmar {% if datos.modo == "programar" %}programación{% else %}envío{% endif %}</button>
         <a class="btn btn-outline-secondary" href="{% url 'finanzas:historico' %}">Cancelar</a>

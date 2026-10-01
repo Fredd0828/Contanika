@@ -32,6 +32,8 @@
             <div class="ph"><div class="ph-title"><i class="bi bi-info-circle"></i> Datos de la cuenta</div></div>
             <dl class="row mb-0">
                 <dt class="col-6 text-muted fw-normal">Valor total</dt><dd class="col-6 fw-semibold">{{ cuenta.valor_total|pesos }}</dd>
+                <dt class="col-6 text-muted fw-normal">Saldo pendiente</dt>
+                <dd class="col-6 fw-semibold {% if cuenta.saldo_pendiente > 0 %}text-danger{% else %}text-success{% endif %}">{{ cuenta.saldo_pendiente|pesos }}</dd>
                 <dt class="col-6 text-muted fw-normal">Período facturado</dt>
                 <dd class="col-6">
                     {{ cuenta.periodo_facturado }}
@@ -68,6 +70,60 @@
             </table>
         </div>
     </div>
+</div>
+
+<div class="panel mt-3">
+    <div class="ph"><div class="ph-title"><i class="bi bi-wallet2"></i> Pagos y abonos</div></div>
+    {% if abonos %}
+    <div class="table-responsive">
+        <table class="tbl">
+            <thead>
+                <tr><th>Fecha</th><th class="text-end">Monto</th><th class="text-end">Saldo anterior</th><th class="text-end">Saldo resultante</th><th>Medio</th><th>Registró</th></tr>
+            </thead>
+            <tbody>
+                {% for abono in abonos %}
+                <tr>
+                    <td>{{ abono.fecha|date:"d/m/Y" }}</td>
+                    <td class="text-end">{{ abono.monto|pesos }}</td>
+                    <td class="text-end">{{ abono.saldo_anterior|pesos }}</td>
+                    <td class="text-end">{{ abono.saldo_resultante|pesos }}</td>
+                    <td>{{ abono.metodo_pago|default:"—" }}</td>
+                    <td>{{ abono.responsable.nombre }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="text-muted">Todavía no hay pagos registrados para esta cuenta.</p>
+    {% endif %}
+
+    {% if es_administrador and cuenta.saldo_pendiente > 0 %}
+    <form method="post" action="{% url 'finanzas:registrar_abono' cuenta.pk %}" class="row g-3 align-items-end mt-1" novalidate>
+        {% csrf_token %}
+        <div class="col-md-3">
+            <label class="form-label" for="{{ formulario_abono.fecha.id_for_label }}">{{ formulario_abono.fecha.label }}</label>
+            {{ formulario_abono.fecha }}
+        </div>
+        <div class="col-md-3">
+            <label class="form-label" for="{{ formulario_abono.monto.id_for_label }}">{{ formulario_abono.monto.label }}</label>
+            {{ formulario_abono.monto }}
+            <div class="form-text">Saldo: {{ cuenta.saldo_pendiente|pesos }}</div>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label" for="{{ formulario_abono.metodo_pago.id_for_label }}">{{ formulario_abono.metodo_pago.label }}</label>
+            {{ formulario_abono.metodo_pago }}
+        </div>
+        <div class="col-md-3">
+            <label class="form-label" for="{{ formulario_abono.metodo_nuevo.id_for_label }}">{{ formulario_abono.metodo_nuevo.label }}</label>
+            {{ formulario_abono.metodo_nuevo }}
+        </div>
+        <div class="col-12">
+            <button type="submit" class="ph-btn"><i class="bi bi-cash-stack"></i> Registrar pago</button>
+            <span class="text-muted small ms-2">Los pagos registrados no se modifican ni se eliminan.</span>
+        </div>
+    </form>
+    {% endif %}
 </div>
 
 {% if es_administrador %}

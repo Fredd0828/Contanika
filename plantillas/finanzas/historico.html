@@ -9,6 +9,7 @@
         <div class="ph-title"><i class="bi bi-cash-coin"></i> Cuentas de cobro</div>
         <div class="ph-actions">
             <span class="ph-meta">{% if is_paginated %}{{ page_obj.paginator.count }}{% else %}{{ cuentas|length }}{% endif %} registro(s)</span>
+            <a class="ph-link" href="{% url 'finanzas:cartera' %}"><i class="bi bi-graph-down-arrow"></i> Cartera</a>
             {% if es_administrador %}
             <a class="ph-link" href="{% url 'finanzas:catalogos' %}"><i class="bi bi-journal-bookmark"></i> Catálogos</a>
             <a class="ph-btn" href="{% url 'finanzas:generar' %}"><i class="bi bi-plus-lg"></i> Generar cuenta de cobro</a>
@@ -66,6 +67,8 @@
                     <th>Cliente</th>
                     <th>Período</th>
                     <th class="text-end">Valor</th>
+                    <th class="text-end">Abonado</th>
+                    <th class="text-end">Saldo</th>
                     <th>Vence</th>
                     <th>Estado de pago</th>
                     <th></th>
@@ -81,6 +84,7 @@
                         {% if cuenta.fecha_inicio_periodo %}<div class="text-muted small">{{ cuenta.fecha_inicio_periodo|date:"d/m/Y" }} – {{ cuenta.fecha_fin_periodo|date:"d/m/Y" }}</div>{% endif %}
                     </td>
                     <td class="text-end">{{ cuenta.valor_total|pesos }}</td>
+                    {% include "finanzas/_celdas_abonos.html" %}
                     <td>{{ cuenta.fecha_vencimiento_pago|date:"d/m/Y" }}</td>
                     <td>{% include "finanzas/_estado_pago.html" %}</td>
                     <td class="text-end text-nowrap">
@@ -90,9 +94,10 @@
                         {% endif %}
                     </td>
                 </tr>
+                {% include "finanzas/_fila_abonos.html" with columnas=9 %}
                 {% empty %}
                 <tr>
-                    <td colspan="7" class="text-center text-muted py-4">No hay cuentas de cobro registradas.</td>
+                    <td colspan="9" class="text-center text-muted py-4">No hay cuentas de cobro registradas.</td>
                 </tr>
                 {% endfor %}
             </tbody>

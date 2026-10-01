@@ -898,7 +898,9 @@ python gestionar.py runserver
   columnas nuevas de `honorario` y `cuenta_cobro`.
 - Nota de alcance: HU015 dice que el Contador Junior no crea ni edita
   hallazgos, pero en el Módulo 5 se decidió que sí puede (sobre sus clientes).
-  Confirmar con el usuario cuál criterio queda.
+  **Resuelto el 25-sep-2026:** el usuario confirmó mantener el criterio
+  implementado (el Junior gestiona los hallazgos de sus clientes, sin
+  eliminar); queda como decisión que modifica la HU015 en el documento Word.
 
 > **Reordenado el 25-sep-2026:** a pedido del usuario, los envíos pasan a ser
 > el Bloque 2 (con la ampliación de programación y cobro automático) y los
@@ -1012,3 +1014,126 @@ python gestionar.py runserver   # la fila de configuración del cobro se crea so
 - Reflejar en el documento Word la ampliación de alcance (HU/RQF nuevas) y las
   tablas `honorario_servicio`, `configuracion_cobro` y `envio_programado`.
 
+---
+
+## Viernes 25 de septiembre de 2026 — Módulo 6, bloque 3: abonos con disparador y panel de cartera
+
+**Objetivo del bloque:** cerrar el Módulo 6 con el registro de pagos y abonos
+con trazabilidad (HU016 parte 2), el panel de cartera (HU016-4, HU017) y el
+historial de abonos en la ficha del cliente (HU018), e implementar el
+**disparador (trigger)** que exige la guía del SENA.
+
+Decisiones del usuario en esta sesión: el Contador Junior mantiene la gestión
+de hallazgos de sus clientes (se aparta de la HU015); el cron de
+`procesar_cobros` no se configura todavía; VS Code se reabrirá en WSL.
+
+### Trabajo realizado
+
+1. **Disparador de PostgreSQL** (migración `finanzas 0004`) sobre `abono`:
+   - `trg_abono_calcular_saldo` (antes de insertar): bloquea la cuenta,
+     calcula el **saldo anterior** y el **saldo resultante** y rechaza montos
+     en cero o mayores que el saldo.
+   - `trg_abono_actualizar_estado` (después de insertar): deja la cuenta en
+     **Pagada**, **Vencida** (si ya venció y queda saldo) o **Abonada**.
+   - `trg_abono_inmutable`: los abonos **no se modifican ni se eliminan**.
+   La trazabilidad la garantiza la base de datos aunque se use otra vía
+   distinta de la aplicación (pgAdmin, otro programa).
+2. **Registrar pago** en el detalle de la cuenta (solo Administrador): fecha,
+   monto, medio de pago del catálogo o uno nuevo escrito (se agrega al
+   catálogo, como pide el spec), con validación previa del saldo. La tabla de
+   pagos muestra saldo anterior, resultante y quién registró.
+3. **Panel de cartera** (Honorarios → Cartera, todos los roles): por cliente,
+   facturado, cobrado, saldo, cuentas pendientes y días de mora; rojo a más de
+   30 días; ordenado por mora; totales arriba; opción de incluir clientes al
+   día. Senior y Junior ven solo sus clientes (HU017-1).
+4. **Ficha del cliente → Honorarios**: saldo pendiente destacado e historial de
+   abonos del más reciente al más antiguo (HU018).
+5. Admin de Django: los abonos quedan en solo lectura.
+6. Script SQL: funciones y disparadores agregados en el formato de `pg_dump`.
+
+### Cómo verificarlo (entorno local)
+
+```bash
+python gestionar.py migrate
+python gestionar.py runserver
+```
+
+1. Detalle de una cuenta → **Pagos y abonos** → registrar un abono parcial:
+   aparecen saldo anterior y resultante, y la cuenta pasa a "Abonada".
+2. Registrar el resto: la cuenta pasa a "Pagada" y desaparece el formulario.
+3. Intentar un monto mayor que el saldo: se rechaza.
+4. **Honorarios → Cartera**: revisar totales, días de mora y el color rojo.
+5. En pgAdmin: intentar `UPDATE abono SET monto = 1` o `DELETE FROM abono`
+   → la base de datos lo rechaza (evidencia del disparador para el Word).
+
+### Resultado de las pruebas
+
+- Pruebas de finanzas: **170 aprobadas** (25 nuevas en `test_abonos.py`,
+  ejecutadas contra el disparador real en PostgreSQL).
+- `scripts/calidad.sh` completo en verde: **501 aprobadas**, cobertura 94 %.
+
+### Pendientes del Módulo 6
+
+- Evidencias para el Word: captura del panel de cartera, del historial de
+  abonos y del rechazo del disparador en pgAdmin.
+- Reflejar en el diccionario de datos las funciones y disparadores.
+
+## Viernes 25 de septiembre de 2026 — Módulo 6: abonos visibles en tablas y PDF, envío masivo con fecha por cliente
+
+**Pedido del usuario:** ver los abonos en las tablas de Honorarios, poder
+seleccionar varios clientes con fechas distintas para enviar masivamente las
+cuentas de cobro (programadas o todas de un solo clic) y que el PDF de la
+cuenta muestre los abonos para que el cliente vea lo pendiente por pagar.
+
+### Trabajo realizado
+
+1. **Tablas con abonos:** el histórico de cuentas de cobro, la ficha del
+   cliente (pestaña Honorarios) y el envío masivo muestran las columnas
+   **Abonado** y **Saldo**. Al pulsar el valor abonado se despliega el detalle
+   de los abonos de esa cuenta (fecha, medio, monto y saldo después del
+   abono). Una sola consulta con agregación, sin una consulta por fila.
+2. **PDF con abonos:** la cuenta de cobro trae la sección «Pagos y abonos
+   recibidos» con cada abono, el valor de la cuenta, el total abonado y el
+   **saldo pendiente por pagar** (resaltado); si ya está paga lo indica. El PDF
+   se vuelve a generar cada vez que se registra un abono, así que el archivo
+   que se descarga, se adjunta al correo y abre el cliente por WhatsApp está
+   siempre al día.
+3. **Envío masivo con fecha por cliente:** al elegir «Programar», la tabla
+   muestra la columna **Fecha de envío** para cada cliente; la «fecha para
+   todas» se puede copiar a las seleccionadas con un botón, y quien no tenga
+   fecha propia usa la general. «Enviar ahora» sigue enviando todas de un
+   solo clic (tras la confirmación que exige la HU046-3). La confirmación
+   muestra la fecha de cada cliente. Se agregaron un **buscador de clientes**
+   y la opción **incluir cuentas ya enviadas** para reenviarlas.
+4. Corrección: el histórico fija su orden (más reciente primero), porque
+   Django ignora el orden del modelo en consultas agregadas.
+
+### Cómo verificarlo (entorno local)
+
+1. Registrar un abono en una cuenta → en **Honorarios** aparecen Abonado y
+   Saldo; pulsar el valor abonado para ver el detalle.
+2. **Descargar PDF** de esa cuenta → sección de abonos y saldo pendiente.
+3. **Envío masivo** → Cuándo: «Programar» → poner fechas distintas a dos
+   clientes → Revisar el listado → Confirmar → **Envíos programados** muestra
+   cada uno en su fecha.
+
+### Resultado de las pruebas
+
+- 14 pruebas nuevas (`test_abonos.py`, `test_vistas_envios.py`).
+- `scripts/calidad.sh` completo en verde: **515 aprobadas**, cobertura 94 %,
+  ruff, bandit y pip-audit sin hallazgos.
+
+## Miércoles 30 de septiembre de 2026 — Módulo 6: disparadores aplicados en la BD local
+
+1. Se aplicó `finanzas 0004_disparadores_abono` en `contanika_bd` (estaba
+   pendiente: las pruebas lo usaban, pero la BD local no). Los tres
+   disparadores quedan activos sobre `abono`.
+2. **Corrección de datos:** los 3 abonos de prueba de la cuenta #2
+   (registrados el 25-sep antes de existir el disparador) tenían saldo
+   anterior y resultante en 0 y la cuenta seguía "Pendiente". Con aprobación
+   del usuario, en una sola transacción se desactivó `trg_abono_inmutable`,
+   se recalcularon los saldos en orden (1.100.000 → 600.000 → 250.000 →
+   200.000), la cuenta quedó "Abonada" y se reactivó el disparador. Se
+   regeneró el PDF de la cuenta.
+3. Verificado: `UPDATE abono ...` vuelve a ser rechazado por el disparador;
+   `check` y `ruff` sin hallazgos; pruebas de finanzas: **184 aprobadas**.

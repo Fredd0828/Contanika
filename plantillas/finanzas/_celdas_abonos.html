@@ -1,0 +1,12 @@
+{# Celdas «Abonado» y «Saldo» de una cuenta anotada con selectores.con_abonos; el botón despliega sus abonos #}
+{% load finanzas_tags %}
+<td class="text-end text-nowrap">
+    {% if cuenta.abonado %}
+    <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none" data-bs-toggle="collapse"
+        data-bs-target="#abonos-cuenta-{{ cuenta.pk }}" aria-expanded="false" aria-controls="abonos-cuenta-{{ cuenta.pk }}"
+        title="Ver los abonos de la cuenta">
+        {{ cuenta.abonado|pesos }} <i class="bi bi-chevron-down small"></i>
+    </button>
+    {% else %}<span class="text-muted">—</span>{% endif %}
+</td>
+<td class="text-end fw-semibold {% if cuenta.saldo > 0 %}text-danger{% else %}text-success{% endif %}">{{ cuenta.saldo|pesos }}</td>

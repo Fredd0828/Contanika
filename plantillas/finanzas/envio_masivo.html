@@ -14,104 +14,175 @@
 <div class="panel">
     <ul class="nav nav-pills mb-3">
         <li class="nav-item">
-            <a class="nav-link {% if tipo == 'Cuenta de cobro' %}active{% endif %}" href="?tipo=Cuenta de cobro">Cuentas de cobro sin enviar</a>
+            <a class="nav-link {% if tipo == 'Cuenta de cobro' %}active{% endif %}" href="?tipo=Cuenta de cobro">Cuentas de cobro</a>
         </li>
         <li class="nav-item">
             <a class="nav-link {% if tipo == 'Recordatorio' %}active{% endif %}" href="?tipo=Recordatorio">Recordatorios de pago</a>
         </li>
     </ul>
-    <p class="text-muted small mb-0">
+    <p class="text-muted small mb-2">
         {% if tipo == "Recordatorio" %}
         Se listan las cuentas con saldo pendiente; las que están en mora aparecen marcadas.
         El recordatorio incluye el saldo, la fecha de vencimiento y los datos bancarios.
         {% else %}
         Se listan las cuentas de cobro de clientes activos que aún no se han enviado o cuyo envío falló.
         {% endif %}
+        Puede enviarlas todas <strong>ahora con un solo clic</strong> o <strong>programarlas</strong>:
+        con una misma fecha para todas o con una fecha distinta para cada cliente.
     </p>
+    {% if tipo != "Recordatorio" %}
+    <form method="get" class="form-check mb-0">
+        <input type="hidden" name="tipo" value="{{ tipo }}">
+        <input class="form-check-input" type="checkbox" name="incluir_enviadas" value="1" id="incluir-enviadas"
+            {% if incluir_enviadas %}checked{% endif %} onchange="this.form.submit()">
+        <label class="form-check-label small" for="incluir-enviadas">Incluir también las cuentas ya enviadas (para reenviarlas)</label>
+    </form>
+    {% endif %}
 </div>
 
 <form method="post" novalidate>
     {% csrf_token %}
     <input type="hidden" name="tipo" value="{{ tipo }}">
+    {% if incluir_enviadas %}<input type="hidden" name="incluir_enviadas" value="1">{% endif %}
 
     {% if formulario.non_field_errors %}<div class="alert alert-danger">{{ formulario.non_field_errors }}</div>{% endif %}
     {% if formulario.cuentas.errors %}<div class="alert alert-danger">{{ formulario.cuentas.errors }}</div>{% endif %}
+
+    {% if candidatas %}
+    <div class="panel">
+        <div class="ph"><div class="ph-title"><i class="bi bi-sliders"></i> Canal y momento</div></div>
+        <div class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label" for="{{ formulario.canal.id_for_label }}">{{ formulario.canal.label }}</label>
+                {{ formulario.canal }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="{{ formulario.modo.id_for_label }}">{{ formulario.modo.label }}</label>
+                {{ formulario.modo }}
+            </div>
+            <div class="col-md-4 solo-programar">
+                <label class="form-label" for="{{ formulario.fecha_programada.id_for_label }}">{{ formulario.fecha_programada.label }}</label>
+                {{ formulario.fecha_programada }}
+                {% if formulario.fecha_programada.errors %}<div class="text-danger small">{{ formulario.fecha_programada.errors }}</div>{% endif %}
+            </div>
+            <div class="col-md-2 solo-programar">
+                <button type="button" class="btn btn-outline-secondary w-100" id="aplicar-fecha">Aplicar a las seleccionadas</button>
+            </div>
+        </div>
+        <p class="text-muted small mt-2 mb-0 solo-programar">
+            Cada cliente puede tener su propia fecha en la columna «Fecha de envío».
+            Los que la dejen vacía se envían en la fecha para todas.
+        </p>
+    </div>
+    {% endif %}
 
     <div class="panel">
         <div class="ph">
             <div class="ph-title"><i class="bi bi-people"></i> Seleccione los clientes</div>
             {% if candidatas %}
-            <div class="form-check">
-                <input class="form-check-input" type="checkbox" id="seleccionar-todas">
-                <label class="form-check-label" for="seleccionar-todas">Seleccionar todas ({{ candidatas|length }})</label>
+            <div class="d-flex flex-wrap align-items-center gap-3">
+                <input type="search" class="form-control form-control-sm" id="buscar-cliente" placeholder="Buscar cliente…" style="max-width:220px">
+                <div class="form-check mb-0">
+                    <input class="form-check-input" type="checkbox" id="seleccionar-todas">
+                    <label class="form-check-label" for="seleccionar-todas">Seleccionar todas ({{ candidatas|length }})</label>
+                </div>
             </div>
             {% endif %}
         </div>
         <div class="table-responsive">
             <table class="tbl">
                 <thead>
-                    <tr><th></th><th>Cliente</th><th>Cuenta</th><th class="text-end">{% if tipo == "Recordatorio" %}Saldo{% else %}Valor{% endif %}</th><th>Vence</th><th>Correo</th><th>Celular</th></tr>
+                    <tr>
+                        <th></th><th>Cliente</th><th>Cuenta</th><th class="text-end">Valor</th><th class="text-end">Abonado</th>
+                        <th class="text-end">Saldo</th><th>Vence</th><th>Correo</th><th>Celular</th>
+                        <th class="solo-programar">Fecha de envío</th>
+                    </tr>
                 </thead>
                 <tbody>
-                    {% for cuenta in candidatas %}
-                    <tr>
+                    {% for fila in filas %}
+                    {% with cuenta=fila.cuenta %}
+                    <tr class="fila-cuenta" data-cliente="{{ cuenta.cliente.nombre_razon_social|lower }} {{ cuenta.cliente.nit_cedula }}">
                         <td><input class="form-check-input casilla-cuenta" type="checkbox" name="cuentas" value="{{ cuenta.pk }}"
-                            {% if cuenta.pk|stringformat:"s" in seleccionadas %}checked{% endif %}></td>
+                            aria-label="Seleccionar la cuenta No. {{ cuenta.pk }}" {% if fila.seleccionada %}checked{% endif %}></td>
                         <td>{{ cuenta.cliente.nombre_razon_social }}</td>
-                        <td>No. {{ cuenta.pk }} · {{ cuenta.periodo_facturado }}</td>
-                        <td class="text-end">{% if tipo == "Recordatorio" %}{{ cuenta.saldo_pendiente|pesos }}{% else %}{{ cuenta.valor_total|pesos }}{% endif %}</td>
+                        <td>
+                            No. {{ cuenta.pk }} · {{ cuenta.periodo_facturado }}
+                            {% if cuenta.estado_envio == "Enviada" %}<span class="badge-est be-g">Ya enviada</span>{% endif %}
+                        </td>
+                        <td class="text-end">{{ cuenta.valor_total|pesos }}</td>
+                        <td class="text-end">{% if cuenta.abonado %}{{ cuenta.abonado|pesos }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
+                        <td class="text-end fw-semibold">{{ cuenta.saldo|pesos }}</td>
                         <td>{{ cuenta.fecha_vencimiento_pago|date:"d/m/Y" }} {% if cuenta.esta_en_mora %}<span class="badge-est be-r">En mora</span>{% endif %}</td>
                         <td>{% if cuenta.cliente.correo_cliente %}<i class="bi bi-check-lg text-success"></i>{% else %}<span class="text-muted small">Sin correo</span>{% endif %}</td>
                         <td>{% if cuenta.cliente.informacion_contacto %}{{ cuenta.cliente.informacion_contacto }}{% else %}<span class="text-muted small">Sin celular</span>{% endif %}</td>
+                        <td class="solo-programar">
+                            <input type="datetime-local" class="form-control form-control-sm fecha-cuenta{% if fila.error_fecha %} is-invalid{% endif %}"
+                                name="{{ fila.campo_fecha }}" value="{{ fila.fecha }}" aria-label="Fecha de envío de la cuenta No. {{ cuenta.pk }}">
+                            {% if fila.error_fecha %}<div class="invalid-feedback">{{ fila.error_fecha }}</div>{% endif %}
+                        </td>
                     </tr>
+                    {% endwith %}
                     {% empty %}
-                    <tr><td colspan="7" class="text-center text-muted py-4">No hay cuentas para este tipo de envío.</td></tr>
+                    <tr><td colspan="10" class="text-center text-muted py-4">No hay cuentas para este tipo de envío.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-    </div>
-
-    {% if candidatas %}
-    <div class="panel">
-        <div class="ph"><div class="ph-title"><i class="bi bi-sliders"></i> Canal y momento</div></div>
-        <div class="row g-3 align-items-end">
-            <div class="col-md-4">
-                <label class="form-label" for="{{ formulario.canal.id_for_label }}">{{ formulario.canal.label }}</label>
-                {{ formulario.canal }}
-            </div>
-            <div class="col-md-4">
-                <label class="form-label" for="{{ formulario.modo.id_for_label }}">{{ formulario.modo.label }}</label>
-                {{ formulario.modo }}
-            </div>
-            <div class="col-md-4" id="campo-fecha-envio">
-                <label class="form-label" for="{{ formulario.fecha_programada.id_for_label }}">{{ formulario.fecha_programada.label }}</label>
-                {{ formulario.fecha_programada }}
-                {% if formulario.fecha_programada.errors %}<div class="text-danger small">{{ formulario.fecha_programada.errors }}</div>{% endif %}
-            </div>
-        </div>
+        {% if candidatas %}
         <div class="d-flex gap-2 mt-4">
             <button type="submit" class="ph-btn"><i class="bi bi-list-check"></i> Revisar el listado</button>
         </div>
+        {% endif %}
     </div>
-    {% endif %}
 </form>
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
+    const filasVisibles = function () {
+        return Array.from(document.querySelectorAll(".fila-cuenta")).filter(function (fila) { return fila.style.display !== "none"; });
+    };
     const todas = document.getElementById("seleccionar-todas");
     if (todas) {
         todas.addEventListener("change", function () {
-            document.querySelectorAll(".casilla-cuenta").forEach(function (casilla) { casilla.checked = todas.checked; });
+            filasVisibles().forEach(function (fila) { fila.querySelector(".casilla-cuenta").checked = todas.checked; });
+        });
+    }
+    const buscar = document.getElementById("buscar-cliente");
+    if (buscar) {
+        buscar.addEventListener("input", function () {
+            const texto = buscar.value.trim().toLowerCase();
+            document.querySelectorAll(".fila-cuenta").forEach(function (fila) {
+                fila.style.display = fila.dataset.cliente.includes(texto) ? "" : "none";
+            });
         });
     }
     const modo = document.getElementById("{{ formulario.modo.id_for_label }}");
-    const campo = document.getElementById("campo-fecha-envio");
-    if (modo && campo) {
-        const actualizar = function () { campo.style.display = modo.value === "programar" ? "" : "none"; };
+    if (modo) {
+        const actualizar = function () {
+            document.querySelectorAll(".solo-programar").forEach(function (elemento) {
+                elemento.style.display = modo.value === "programar" ? "" : "none";
+            });
+        };
         modo.addEventListener("change", actualizar);
         actualizar();
     }
+    const aplicar = document.getElementById("aplicar-fecha");
+    const general = document.getElementById("{{ formulario.fecha_programada.id_for_label }}");
+    if (aplicar && general) {
+        aplicar.addEventListener("click", function () {
+            document.querySelectorAll(".fila-cuenta").forEach(function (fila) {
+                if (fila.querySelector(".casilla-cuenta").checked) {
+                    fila.querySelector(".fecha-cuenta").value = general.value;
+                }
+            });
+        });
+    }
+    // Al escribir una fecha propia se marca la cuenta, para no olvidar seleccionarla.
+    document.querySelectorAll(".fecha-cuenta").forEach(function (campo) {
+        campo.addEventListener("change", function () {
+            if (campo.value) { campo.closest("tr").querySelector(".casilla-cuenta").checked = true; }
+        });
+    });
 });
 </script>
 {% endblock %}

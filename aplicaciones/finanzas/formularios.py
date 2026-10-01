@@ -288,16 +288,32 @@ class EnvioForm(FormularioBase):
     def clean(self):
         datos = super().clean()
         if datos.get("modo") == PROGRAMAR:
-            fecha = datos.get("fecha_programada")
-            if not fecha:
-                self.add_error("fecha_programada", "Indique la fecha y hora del envío programado.")
-            elif fecha <= timezone.now():
-                self.add_error("fecha_programada", "La fecha del envío programado debe ser futura.")
+            error = error_fecha_programada(datos.get("fecha_programada"))
+            if error:
+                self.add_error("fecha_programada", error)
         return datos
 
 
+def error_fecha_programada(fecha):
+    """Mensaje de error de una fecha de envío programado, o None si es válida."""
+    if not fecha:
+        return "Indique la fecha y hora del envío programado."
+    if fecha <= timezone.now():
+        return "La fecha del envío programado debe ser futura."
+    return None
+
+
+def campo_fecha_cuenta(cuenta_id):
+    """Nombre del campo con la fecha de envío propia de una cuenta en el envío masivo."""
+    return f"fecha_{cuenta_id}"
+
+
 class EnvioMasivoForm(EnvioForm):
-    """Envío masivo: además del tipo, canal y momento, las cuentas seleccionadas (HU046, HU047)."""
+    """
+    Envío masivo: además del tipo, canal y momento, las cuentas seleccionadas
+    (HU046, HU047). Al programar, cada cuenta puede llevar su propia fecha y
+    hora (campo `fecha_<id>`); la que no la tenga usa la fecha general.
+    """
 
     cuentas = forms.ModelMultipleChoiceField(
         queryset=CuentaCobro.objects.none(),
@@ -308,8 +324,39 @@ class EnvioMasivoForm(EnvioForm):
     def __init__(self, *args, candidatas, **kwargs):
         super().__init__(*args, **kwargs)
         self.candidatas = candidatas
+        self.errores_fecha = {}
+        self.fields["fecha_programada"].label = "Fecha y hora para todas"
         # Solo se aceptan cuentas de la lista de candidatas visibles para el usuario.
         self.fields["cuentas"].queryset = CuentaCobro.objects.filter(pk__in=[c.pk for c in candidatas])
+
+    def clean(self):
+        # Se omite la validación de EnvioForm: aquí la fecha general es opcional
+        # si cada cuenta seleccionada trae su propia fecha.
+        datos = super(EnvioForm, self).clean()
+        datos["fechas"] = {}
+        if datos.get("modo") != PROGRAMAR or not datos.get("cuentas"):
+            return datos
+        general = datos.get("fecha_programada")
+        for cuenta in datos["cuentas"]:
+            fecha = general
+            texto = (self.data.get(campo_fecha_cuenta(cuenta.pk)) or "").strip()
+            if texto:
+                try:
+                    fecha = self.fields["fecha_programada"].clean(texto)
+                except forms.ValidationError:
+                    self.errores_fecha[cuenta.pk] = "Fecha no válida."
+                    continue
+            error = error_fecha_programada(fecha)
+            if error:
+                self.errores_fecha[cuenta.pk] = error
+            else:
+                datos["fechas"][cuenta.pk] = fecha
+        if self.errores_fecha:
+            raise forms.ValidationError(
+                "Revise las fechas de envío: cada cuenta seleccionada necesita una fecha futura, "
+                "la suya propia o la fecha para todas."
+            )
+        return datos
 
 
 class ConfiguracionCobroForm(ModeloFormularioBase):
@@ -353,3 +400,58 @@ class ConfiguracionCobroForm(ModeloFormularioBase):
         if dias < 1:
             raise forms.ValidationError("La frecuencia debe ser de al menos un día.")
         return dias
+
+
+# ---------------------------------------------------------------------------
+# Abonos (HU016)
+# ---------------------------------------------------------------------------
+
+
+class AbonoForm(FormularioBase):
+    """
+    Pago completo o abono parcial a una cuenta de cobro. Valida el monto contra
+    el saldo para dar un mensaje claro; la regla definitiva la aplica el
+    disparador de la base de datos.
+    """
+
+    fecha = forms.DateField(
+        label="Fecha del pago",
+        widget=forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
+    )
+    monto = forms.DecimalField(label="Monto", max_digits=12, decimal_places=2, min_value=Decimal("0.01"))
+    metodo_pago = forms.ModelChoiceField(
+        queryset=MetodoPago.objects.all(),
+        required=False,
+        label="Medio de pago",
+        empty_label="Seleccione…",
+    )
+    metodo_nuevo = forms.CharField(
+        required=False,
+        max_length=40,
+        label="¿Otro medio de pago?",
+        help_text="Si no está en la lista, escríbalo y se agregará al catálogo.",
+    )
+
+    def __init__(self, *args, cuenta, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.cuenta = cuenta
+        self.fields["fecha"].initial = timezone.localdate()
+
+    def clean_fecha(self):
+        fecha = self.cleaned_data["fecha"]
+        if fecha > timezone.localdate():
+            raise forms.ValidationError("La fecha del pago no puede ser futura.")
+        return fecha
+
+    def clean_monto(self):
+        monto = self.cleaned_data["monto"]
+        saldo = self.cuenta.saldo_pendiente
+        if monto > saldo:
+            raise forms.ValidationError(f"El monto supera el saldo pendiente ({formato_pesos(saldo)}).")
+        return monto
+
+    def clean(self):
+        datos = super().clean()
+        if not datos.get("metodo_pago") and not (datos.get("metodo_nuevo") or "").strip():
+            raise forms.ValidationError("Indique el medio de pago.")
+        return datos

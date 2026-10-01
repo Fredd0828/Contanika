@@ -19,7 +19,7 @@ Contexto técnico y convenciones de trabajo para agentes de código que colabore
 | Calidad | `bash scripts/calidad.sh` |
 | Credenciales dev | `paula@befrec.co` / `Contanika2026*` |
 | Repositorio | https://github.com/fredd0828/Contanika |
-| Rama de trabajo | `feature/modulo-5-hallazgos` |
+| Rama de trabajo | `feature/modulo-6-finanzas` |
 | Rama principal | `main` |
 
 **Nota Git:** una rama por módulo, creada a partir de la última rama de trabajo (no siempre desde
@@ -226,8 +226,9 @@ Ninguna funcionalidad se da por terminada sin:
   `Adjunto` es genérico (`tabla_origen`/`id_origen`, sin FK real); al no tener
   `on_delete` de la base de datos, `eliminar_hallazgo` borra a mano el
   archivo físico y la fila de cada adjunto antes de borrar el hallazgo.
-- Sin permisos explícitos en el spec para este módulo (a diferencia de
-  Tareas y Documentos): se decidió con el usuario seguir el patrón de
+- Permisos: la HU015 dice que el Junior solo consulta, pero el usuario
+  confirmó (25-sep-2026) mantener este criterio. Originalmente se decidió con
+  el usuario seguir el patrón de
   Documentos/Calendario — Contador Junior gestiona hallazgos solo de sus
   clientes asignados (crea, edita, cambia estado, adjunta), no elimina;
   Administrador y Contador Senior gestionan cualquiera.
@@ -291,6 +292,33 @@ Ninguna funcionalidad se da por terminada sin:
   base de los enlaces públicos: en producción debe ser el dominio real.
 - Pruebas: el `addopts` del proyecto ya trae `-q`; no agregar otro `-q` o se
   oculta la línea de resumen de pytest.
+- **Bloque 3 (abonos y cartera):** el **disparador** de PostgreSQL (migración
+  `finanzas 0004`, `RunSQL`) es la autoridad sobre los saldos:
+  `trg_abono_calcular_saldo` (BEFORE INSERT, bloquea la cuenta `FOR UPDATE`,
+  fija `saldo_anterior`/`saldo_resultante` y rechaza montos ≤ 0 o mayores que
+  el saldo), `trg_abono_actualizar_estado` (AFTER INSERT: Pagada / Vencida /
+  Abonada) y `trg_abono_inmutable` (BEFORE UPDATE OR DELETE). En Python,
+  `servicios.registrar_abono` crea el abono con saldos provisionales, captura
+  el `IntegrityError` del disparador y devuelve su mensaje; luego hace
+  `refresh_from_db`. No editar ni borrar abonos desde el ORM (el disparador
+  lo impide) y no crear abonos con `bulk_create` sin probarlo contra el
+  disparador. Las pruebas corren sobre PostgreSQL, así que lo ejercitan.
+- Cartera (`selectores.cartera`): por cliente, facturado, cobrado, saldo y
+  días de mora de la cuenta más atrasada; rojo a más de
+  `DIAS_MORA_CRITICA` (30). Senior y Junior ven solo sus clientes.
+- Abonos en tablas: `selectores.con_abonos(consulta)` anota `abonado` y
+  `saldo` y precarga los abonos en orden cronológico; fija `order_by` porque
+  Django **no aplica `Meta.ordering` en consultas agregadas**. Lo usan el
+  histórico, la ficha del cliente y el envío masivo (parciales
+  `finanzas/_celdas_abonos.html` y `_fila_abonos.html`, desplegable).
+- PDF de la cuenta: `_seccion_abonos_pdf` agrega abonos, total abonado y
+  **saldo pendiente por pagar**; `registrar_abono` llama a
+  `actualizar_pdf_cuenta_cobro` para rehacer el archivo guardado (el que se
+  descarga, se adjunta al correo y abre el enlace público).
+- Envío masivo con fecha por cliente: al programar, cada cuenta puede traer
+  su campo `fecha_<id>` (`formularios.campo_fecha_cuenta`); sin él usa la
+  fecha general. `cleaned_data["fechas"]` = `{id_cuenta: datetime}`. Opción
+  `incluir_enviadas=1` para reenviar cuentas ya enviadas.
 
 ### Módulos 7–10
 - Ver `PLAN_TRABAJO.md` y `md/Contanika_Especificaciones_Módulos.md`.
@@ -314,5 +342,5 @@ Ninguna funcionalidad se da por terminada sin:
 
 ---
 
-Última actualización: 25 de septiembre de 2026 (Módulo 6, bloque 2:
-envíos, recordatorios y cobro automático).
+Última actualización: 25 de septiembre de 2026 (Módulo 6, bloque 3:
+abonos con disparador de PostgreSQL y panel de cartera).

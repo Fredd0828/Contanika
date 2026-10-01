@@ -41,6 +41,40 @@
 
 <div class="panel">
     <div class="ph">
+        <div class="ph-title"><i class="bi bi-wallet2"></i> Historial de abonos</div>
+        <div class="text-end">
+            <div class="text-muted small">Saldo pendiente actual</div>
+            <div class="fw-bold fs-5 {% if saldo_cliente > 0 %}text-danger{% else %}text-success{% endif %}">{{ saldo_cliente|pesos }}</div>
+        </div>
+    </div>
+    {% if abonos %}
+    <div class="table-responsive">
+        <table class="tbl">
+            <thead>
+                <tr><th>Fecha</th><th>Cuenta</th><th class="text-end">Monto</th><th class="text-end">Saldo anterior</th><th class="text-end">Saldo resultante</th><th>Medio</th><th>Registró</th></tr>
+            </thead>
+            <tbody>
+                {% for abono in abonos %}
+                <tr>
+                    <td>{{ abono.fecha|date:"d/m/Y" }}</td>
+                    <td><a href="{% url 'finanzas:detalle' abono.cuenta_cobro_id %}">No. {{ abono.cuenta_cobro_id }}</a></td>
+                    <td class="text-end">{{ abono.monto|pesos }}</td>
+                    <td class="text-end">{{ abono.saldo_anterior|pesos }}</td>
+                    <td class="text-end">{{ abono.saldo_resultante|pesos }}</td>
+                    <td>{{ abono.metodo_pago|default:"—" }}</td>
+                    <td>{{ abono.responsable.nombre }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="text-muted mb-0">El cliente no tiene abonos registrados.</p>
+    {% endif %}
+</div>
+
+<div class="panel">
+    <div class="ph">
         <div class="ph-title"><i class="bi bi-receipt"></i> Cuentas de cobro</div>
         <div class="d-flex gap-2">
             <a class="ph-link" href="{% url 'finanzas:historico' %}?cliente={{ cliente.pk }}"><i class="bi bi-list-ul"></i> Ver todas</a>
@@ -53,7 +87,7 @@
     <div class="table-responsive">
         <table class="tbl">
             <thead>
-                <tr><th>No.</th><th>Período</th><th class="text-end">Valor</th><th>Vence</th><th>Estado de pago</th><th></th></tr>
+                <tr><th>No.</th><th>Período</th><th class="text-end">Valor</th><th class="text-end">Abonado</th><th class="text-end">Saldo</th><th>Vence</th><th>Estado de pago</th><th></th></tr>
             </thead>
             <tbody>
                 {% for cuenta in cuentas_cobro %}
@@ -61,10 +95,12 @@
                     <td>{{ cuenta.pk }}</td>
                     <td>{{ cuenta.periodo_facturado }}</td>
                     <td class="text-end">{{ cuenta.valor_total|pesos }}</td>
+                    {% include "finanzas/_celdas_abonos.html" %}
                     <td>{{ cuenta.fecha_vencimiento_pago|date:"d/m/Y" }}</td>
                     <td>{% include "finanzas/_estado_pago.html" %}</td>
                     <td class="text-end"><a class="icon-btn" href="{% url 'finanzas:detalle' cuenta.pk %}" title="Ver detalle"><i class="bi bi-eye"></i></a></td>
                 </tr>
+                {% include "finanzas/_fila_abonos.html" with columnas=8 %}
                 {% endfor %}
             </tbody>
         </table>
