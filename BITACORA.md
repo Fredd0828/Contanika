@@ -1410,3 +1410,22 @@ python gestionar.py runserver
 - Word: tabla `descarga_reporte` en el diccionario de datos; el reporte de
   credenciales sigue en el M1 sin descarga (la HU028 lo lista en el M10).
 - Evidencias: capturas de cada reporte, el Excel con su gráfico y el PDF.
+
+## Jueves 1 de octubre de 2026 — Verificación del script SQL (entregable 3.1)
+
+Se cargaron `01_esquema_contanika.sql` y `02_datos_iniciales.sql` con `psql`
+(`ON_ERROR_STOP`) en una base temporal aparte, que luego se eliminó.
+
+1. **El esquema no cargaba:** los `COMMENT ON TABLE` estaban al inicio, antes
+   de crear las tablas, y sin esquema (el volcado de `pg_dump` deja vacío el
+   `search_path`). Se movieron al final del script como `public.<tabla>`.
+2. **Faltaba una columna:** `vencimiento.periodo_gravable` (agregada en el
+   Módulo 2) no estaba en el script.
+3. Resultado: ambos scripts cargan sin errores; 40 tablas, todas con su
+   comentario, y los 3 disparadores de `abono`. La comparación columna por
+   columna (tipo, longitud y nulabilidad) con la BD local da 252 columnas
+   idénticas, sin diferencias.
+
+Nota: el script trae los comandos `\restrict`/`\unrestrict` de `pg_dump` 16,
+propios de `psql`; para cargarlo usar `psql -f`, no la herramienta de
+consultas de pgAdmin.

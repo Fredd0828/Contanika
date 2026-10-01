@@ -14,49 +14,6 @@
 -- cobro e impide modificar o eliminar abonos (migración finanzas 0004).
 -- ============================================================================
 
--- Comentarios de las tablas (diccionario de datos, numeral 2.5)
-
-COMMENT ON TABLE rol IS 'Roles del sistema: Administrador, Contador Senior, Contador Junior.';
-COMMENT ON TABLE usuario IS 'Miembro del equipo del despacho (o el contador independiente).';
-COMMENT ON TABLE modulo IS 'Catálogo de los 10 módulos del sistema.';
-COMMENT ON TABLE permiso_rol_modulo IS 'Habilitación de cada módulo por rol (RQF031).';
-COMMENT ON TABLE cliente IS 'Ficha central de cada cliente del despacho.';
-COMMENT ON TABLE cliente_municipio IS 'Municipios o distritos adicionales donde el cliente tributa (multi-ICA).';
-COMMENT ON TABLE tipo_servicio IS 'Catálogo de tipos de servicio contable prestado.';
-COMMENT ON TABLE cliente_servicio IS 'Relación N:M entre cliente y los tipos de servicio que recibe.';
-COMMENT ON TABLE credencial IS 'Credenciales de acceso a portales del cliente.';
-COMMENT ON TABLE tabla_referencia_dian IS 'Calendario oficial DIAN por grupo de NIT, cargado por el Administrador.';
-COMMENT ON TABLE vencimiento IS 'Vencimiento tributario nacional, distrital/municipal o de tarea marcada.';
-COMMENT ON TABLE configuracion_alerta IS 'Alertas automáticas configuradas para un vencimiento.';
-COMMENT ON TABLE anotacion_calendario IS 'Anotación libre por fecha, no asociada a un cliente.';
-COMMENT ON TABLE anotacion_calendario_destinatario IS 'Usuarios etiquetados cuando la visibilidad es restringida.';
-COMMENT ON TABLE tarea IS 'Tarjeta del tablero Kanban.';
-COMMENT ON TABLE historial_tarea IS 'Registro de cada cambio de estado de una tarea.';
-COMMENT ON TABLE observacion_tarea IS 'Observación de avance registrada sobre una tarea.';
-COMMENT ON TABLE plantilla IS 'Plantilla de documento o certificado (6 base + creadas por el Administrador).';
-COMMENT ON TABLE campo_plantilla IS 'Campo variable propio de cada plantilla (simple o repetible).';
-COMMENT ON TABLE documento IS 'Documento o certificado generado para un cliente.';
-COMMENT ON TABLE documento_valor IS 'Valor de un campo simple para un documento generado.';
-COMMENT ON TABLE documento_detalle IS 'Fila de un campo repetible (ej. cada accionista) para un documento.';
-COMMENT ON TABLE hallazgo IS 'Hallazgo, revisión, observación o inconsistencia registrada para un cliente.';
-COMMENT ON TABLE adjunto IS 'Archivo de soporte adjunto (tabla genérica reutilizada por hallazgo y anotación).';
-COMMENT ON TABLE honorario IS 'Configuración del honorario de un cliente.';
-COMMENT ON TABLE honorario_servicio IS 'Monto del honorario por cada tipo de servicio del cliente (HU044).';
-COMMENT ON TABLE concepto_facturable IS 'Catálogo reutilizable de conceptos facturables.';
-COMMENT ON TABLE cuenta_bancaria IS 'Cuenta bancaria del despacho, disponible como destino de pago.';
-COMMENT ON TABLE metodo_pago IS 'Catálogo de métodos de pago aceptados.';
-COMMENT ON TABLE cuenta_cobro IS 'Cuenta de cobro generada en PDF para un cliente.';
-COMMENT ON TABLE configuracion_cobro IS 'Parámetros del cobro mensual automático y de los recordatorios automáticos (una fila).';
-COMMENT ON TABLE envio_programado IS 'Envío de cuenta de cobro o recordatorio por correo o WhatsApp, inmediato o programado.';
-COMMENT ON TABLE cuenta_cobro_detalle IS 'Línea de servicio descrita dentro de una cuenta de cobro.';
-COMMENT ON TABLE abono IS 'Pago o abono registrado contra una cuenta de cobro.';
-COMMENT ON TABLE comunicacion IS 'Comunicación automática o manual registrada con un cliente.';
-COMMENT ON TABLE anotacion IS 'Anotación cronológica del expediente y bitácora del cliente.';
-COMMENT ON TABLE reporte IS 'Catálogo de los 6 reportes del Módulo 10.';
-COMMENT ON TABLE permiso_reporte_rol IS 'Habilitación de cada reporte individual por rol.';
-COMMENT ON TABLE descarga_reporte IS 'Registro de cada descarga de reporte: usuario, fecha, formato y filtros (HU028-5).';
-COMMENT ON TABLE configuracion_despacho IS 'Datos fijos del despacho usados en documentos y cuentas de cobro.';
-
 --
 -- PostgreSQL database dump
 --
@@ -1267,7 +1224,8 @@ CREATE TABLE public.vencimiento (
     estado_validacion character varying(20) NOT NULL,
     id_cliente integer NOT NULL,
     id_usuario_responsable integer,
-    id_tarea integer
+    id_tarea integer,
+    periodo_gravable character varying(10) NOT NULL
 );
 
 
@@ -2775,3 +2733,47 @@ ALTER TABLE ONLY public.vencimiento
 
 \unrestrict vzljRXeDMnxgnYVzuunOG3e1a6aJXUxxLyENtAadYdWC2rZrrmUVasdwfysw6gw
 
+-- Comentarios de las tablas (diccionario de datos, numeral 2.5). Van al final,
+-- cuando las tablas ya existen, y con el esquema explícito porque el volcado
+-- de pg_dump deja vacío el search_path.
+
+COMMENT ON TABLE public.rol IS 'Roles del sistema: Administrador, Contador Senior, Contador Junior.';
+COMMENT ON TABLE public.usuario IS 'Miembro del equipo del despacho (o el contador independiente).';
+COMMENT ON TABLE public.modulo IS 'Catálogo de los 10 módulos del sistema.';
+COMMENT ON TABLE public.permiso_rol_modulo IS 'Habilitación de cada módulo por rol (RQF031).';
+COMMENT ON TABLE public.cliente IS 'Ficha central de cada cliente del despacho.';
+COMMENT ON TABLE public.cliente_municipio IS 'Municipios o distritos adicionales donde el cliente tributa (multi-ICA).';
+COMMENT ON TABLE public.tipo_servicio IS 'Catálogo de tipos de servicio contable prestado.';
+COMMENT ON TABLE public.cliente_servicio IS 'Relación N:M entre cliente y los tipos de servicio que recibe.';
+COMMENT ON TABLE public.credencial IS 'Credenciales de acceso a portales del cliente.';
+COMMENT ON TABLE public.tabla_referencia_dian IS 'Calendario oficial DIAN por grupo de NIT, cargado por el Administrador.';
+COMMENT ON TABLE public.vencimiento IS 'Vencimiento tributario nacional, distrital/municipal o de tarea marcada.';
+COMMENT ON TABLE public.configuracion_alerta IS 'Alertas automáticas configuradas para un vencimiento.';
+COMMENT ON TABLE public.anotacion_calendario IS 'Anotación libre por fecha, no asociada a un cliente.';
+COMMENT ON TABLE public.anotacion_calendario_destinatario IS 'Usuarios etiquetados cuando la visibilidad es restringida.';
+COMMENT ON TABLE public.tarea IS 'Tarjeta del tablero Kanban.';
+COMMENT ON TABLE public.historial_tarea IS 'Registro de cada cambio de estado de una tarea.';
+COMMENT ON TABLE public.observacion_tarea IS 'Observación de avance registrada sobre una tarea.';
+COMMENT ON TABLE public.plantilla IS 'Plantilla de documento o certificado (6 base + creadas por el Administrador).';
+COMMENT ON TABLE public.campo_plantilla IS 'Campo variable propio de cada plantilla (simple o repetible).';
+COMMENT ON TABLE public.documento IS 'Documento o certificado generado para un cliente.';
+COMMENT ON TABLE public.documento_valor IS 'Valor de un campo simple para un documento generado.';
+COMMENT ON TABLE public.documento_detalle IS 'Fila de un campo repetible (ej. cada accionista) para un documento.';
+COMMENT ON TABLE public.hallazgo IS 'Hallazgo, revisión, observación o inconsistencia registrada para un cliente.';
+COMMENT ON TABLE public.adjunto IS 'Archivo de soporte adjunto (tabla genérica reutilizada por hallazgo y anotación).';
+COMMENT ON TABLE public.honorario IS 'Configuración del honorario de un cliente.';
+COMMENT ON TABLE public.honorario_servicio IS 'Monto del honorario por cada tipo de servicio del cliente (HU044).';
+COMMENT ON TABLE public.concepto_facturable IS 'Catálogo reutilizable de conceptos facturables.';
+COMMENT ON TABLE public.cuenta_bancaria IS 'Cuenta bancaria del despacho, disponible como destino de pago.';
+COMMENT ON TABLE public.metodo_pago IS 'Catálogo de métodos de pago aceptados.';
+COMMENT ON TABLE public.cuenta_cobro IS 'Cuenta de cobro generada en PDF para un cliente.';
+COMMENT ON TABLE public.configuracion_cobro IS 'Parámetros del cobro mensual automático y de los recordatorios automáticos (una fila).';
+COMMENT ON TABLE public.envio_programado IS 'Envío de cuenta de cobro o recordatorio por correo o WhatsApp, inmediato o programado.';
+COMMENT ON TABLE public.cuenta_cobro_detalle IS 'Línea de servicio descrita dentro de una cuenta de cobro.';
+COMMENT ON TABLE public.abono IS 'Pago o abono registrado contra una cuenta de cobro.';
+COMMENT ON TABLE public.comunicacion IS 'Comunicación automática o manual registrada con un cliente.';
+COMMENT ON TABLE public.anotacion IS 'Anotación cronológica del expediente y bitácora del cliente.';
+COMMENT ON TABLE public.reporte IS 'Catálogo de los 6 reportes del Módulo 10.';
+COMMENT ON TABLE public.permiso_reporte_rol IS 'Habilitación de cada reporte individual por rol.';
+COMMENT ON TABLE public.descarga_reporte IS 'Registro de cada descarga de reporte: usuario, fecha, formato y filtros (HU028-5).';
+COMMENT ON TABLE public.configuracion_despacho IS 'Datos fijos del despacho usados en documentos y cuentas de cobro.';
