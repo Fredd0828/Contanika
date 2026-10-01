@@ -344,3 +344,21 @@ class CambiarClaveView(LoginRequiredMixin, View):
             "formulario_clave": formulario_clave,
         }
         return render(request, PLANTILLA_PERFIL, contexto)
+
+
+# ---------------------------------------------------------------------------
+# Ayuda (HU053, cualquier usuario)
+# ---------------------------------------------------------------------------
+
+
+class AyudaView(LoginRequiredMixin, TemplateView):
+    """Guía rápida de los módulos, preguntas frecuentes y contacto de soporte del despacho."""
+
+    template_name = "seguridad/ayuda.html"
+
+    def get_context_data(self, **kwargs):
+        from .models import ConfiguracionDespacho
+
+        contexto = super().get_context_data(**kwargs)
+        contexto["despacho"] = ConfiguracionDespacho.objects.first()
+        return contexto

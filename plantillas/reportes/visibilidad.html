@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block titulo %}Visibilidad de reportes{% endblock %}
+
+{% block contenido %}
+<div class="panel">
+    <div class="ph">
+        <div>
+            <div class="ph-title"><i class="bi bi-eye"></i> Visibilidad de reportes por rol</div>
+            <div class="ph-meta mt-1">Un reporte oculto para un rol no aparece en su vista ni se puede abrir por URL. El Administrador ve todos.</div>
+        </div>
+        <a class="ph-link" href="{% url 'reportes:inicio' %}"><i class="bi bi-arrow-left"></i> Reportes</a>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="table-responsive">
+            <table class="tbl">
+                <thead>
+                    <tr>
+                        <th>Reporte</th>
+                        {% for rol in roles %}<th class="text-center">{{ rol.nombre_rol }}</th>{% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for fila in filas %}
+                    <tr>
+                        <td>{{ fila.reporte.nombre_reporte }}</td>
+                        {% for celda in fila.celdas %}
+                        <td class="text-center">
+                            <div class="form-check form-switch d-inline-block">
+                                <input class="form-check-input" type="checkbox" role="switch" name="{{ celda.nombre_campo }}"
+                                       {% if celda.habilitado or celda.fijo %}checked{% endif %} {% if celda.fijo %}disabled{% endif %}
+                                       aria-label="{{ fila.reporte.nombre_reporte }} para {{ celda.rol.nombre_rol }}">
+                            </div>
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <button type="submit" class="ph-btn mt-3"><i class="bi bi-save"></i> Guardar visibilidad</button>
+    </form>
+</div>
+{% endblock %}

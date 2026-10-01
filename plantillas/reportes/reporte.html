@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block titulo %}Reporte de {{ definicion.nombre|lower }}{% endblock %}
+
+{% block contenido %}
+<div class="panel">
+    <div class="ph">
+        <div>
+            <div class="ph-title"><i class="bi {{ definicion.icono }}"></i> {{ definicion.nombre }}</div>
+            <div class="ph-meta mt-1">{{ definicion.descripcion }}</div>
+        </div>
+        <div class="ph-actions">
+            <a class="ph-link" href="{% url 'reportes:inicio' %}"><i class="bi bi-arrow-left"></i> Reportes</a>
+            {% if resultado %}
+            <a class="ph-btn" href="?{% if querystring %}{{ querystring }}&amp;{% endif %}formato=Excel"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+            <a class="ph-btn" href="?{% if querystring %}{{ querystring }}&amp;{% endif %}formato=PDF"><i class="bi bi-file-earmark-pdf"></i> PDF</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <form method="get" class="filters mb-3">
+        {% for campo in formulario %}
+        <div class="campo">
+            {% if campo.field.widget.input_type == "checkbox" %}
+            <div class="form-check mt-4">
+                {{ campo }}
+                <label class="form-check-label" for="{{ campo.id_for_label }}">{{ campo.label }}</label>
+            </div>
+            {% else %}
+            <label for="{{ campo.id_for_label }}">{{ campo.label }}</label>
+            {{ campo }}
+            {% endif %}
+            {% if campo.errors %}<div class="text-danger small">{{ campo.errors|join:" " }}</div>{% endif %}
+        </div>
+        {% endfor %}
+        <div class="campo">
+            <button type="submit" class="ph-btn"><i class="bi bi-funnel"></i> Aplicar filtros</button>
+        </div>
+        <div class="campo">
+            <a class="ph-link" href="{% url 'reportes:reporte' definicion.slug %}">Limpiar</a>
+        </div>
+    </form>
+    {% if formulario.non_field_errors %}
+    <div class="alert alert-danger">{{ formulario.non_field_errors|join:" " }}</div>
+    {% endif %}
+
+    {% if resultado %}
+    {% if resultado.resumen %}
+    <div class="kpi-strip mb-3">
+        {% for etiqueta, valor in resultado.resumen %}
+        <div class="kpi">
+            <div class="kpi-label">{{ etiqueta }}</div>
+            <div class="kpi-num c-teal" style="font-size:20px">{{ valor }}</div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endif %}
+</div>
+
+{% if grafico %}
+<div class="panel mt-3">
+    <div class="ph"><div class="ph-title"><i class="bi bi-bar-chart"></i> {{ grafico.titulo }}</div></div>
+    <div style="position:relative;height:{{ grafico.alto }}px">
+        <canvas id="graficoReporte" aria-label="{{ grafico.titulo }}" role="img"></canvas>
+    </div>
+</div>
+{{ grafico|json_script:"datos-grafico" }}
+{% endif %}
+
+{% for seccion in secciones %}
+<div class="panel mt-3">
+    <div class="ph">
+        <div class="ph-title">{{ seccion.titulo }}</div>
+        <span class="ph-meta">{{ seccion.total }} registro(s)</span>
+    </div>
+    <div class="table-responsive">
+        <table class="tbl">
+            <thead>
+                <tr>{% for columna in seccion.columnas %}<th>{{ columna.titulo }}</th>{% endfor %}</tr>
+            </thead>
+            <tbody>
+                {% for fila in seccion.filas %}
+                <tr{% if fila.resaltada %} style="background:#FDE2E1;color:#B42318"{% endif %}>
+                    {% for celda in fila.celdas %}
+                    <td class="{% if celda.derecha %}text-end{% endif %}{% if celda.fecha %} text-nowrap{% endif %}">{{ celda.texto }}</td>
+                    {% endfor %}
+                </tr>
+                {% empty %}
+                <tr><td colspan="{{ seccion.columnas|length }}" class="text-center text-muted py-4">Sin registros para los filtros elegidos.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if seccion.nota_resaltado %}<p class="small mt-2 mb-0" style="color:#B42318">{{ seccion.nota_resaltado }}</p>{% endif %}
+    {% if seccion.recortada %}
+    <p class="text-muted small mt-2 mb-0">En pantalla se muestran los primeros {{ filas_en_pantalla }} registros; la descarga en Excel o PDF los incluye todos.</p>
+    {% endif %}
+</div>
+{% endfor %}
+
+{% if resultado.notas %}
+<div class="panel mt-3">
+    {% for nota in resultado.notas %}<p class="text-muted small mb-1">{{ nota }}</p>{% endfor %}
+</div>
+{% endif %}
+
+{% if grafico %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+    const datos = JSON.parse(document.getElementById('datos-grafico').textContent);
+    const pesos = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
+    new Chart(document.getElementById('graficoReporte'), {
+        type: 'bar',
+        data: {
+            labels: datos.etiquetas,
+            datasets: datos.series.map(function (serie, i) {
+                return { label: serie.nombre, data: serie.valores, backgroundColor: datos.colores[i % datos.colores.length] };
+            })
+        },
+        options: {
+            indexAxis: datos.horizontal ? 'y' : 'x',
+            maintainAspectRatio: false,
+            plugins: {
+                tooltip: { callbacks: { label: function (ctx) { return ctx.dataset.label + ': ' + pesos.format(ctx.raw); } } }
+            },
+            scales: {
+                [datos.horizontal ? 'x' : 'y']: { beginAtZero: true, ticks: { callback: function (v) { return pesos.format(v); } } }
+            }
+        }
+    });
+})();
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block titulo %}Reportes{% endblock %}
+
+{% block contenido %}
+<div class="panel">
+    <div class="ph">
+        <div>
+            <div class="ph-title"><i class="bi bi-bar-chart-line-fill"></i> Reportes y análisis</div>
+            <div class="ph-meta mt-1">Elija un reporte, aplique los filtros y descárguelo en Excel o PDF.</div>
+        </div>
+        {% if user.es_administrador %}
+        <div class="ph-actions">
+            <a class="ph-link" href="{% url 'reportes:visibilidad' %}"><i class="bi bi-eye"></i> Visibilidad por rol</a>
+            <a class="ph-link" href="{% url 'reportes:descargas' %}"><i class="bi bi-clock-history"></i> Historial de descargas</a>
+        </div>
+        {% endif %}
+    </div>
+    <div class="grid-tarjetas">
+        {% for definicion in reportes %}
+        <a class="tarjeta-modulo" href="{% url 'reportes:reporte' definicion.slug %}">
+            <div class="codigo"><i class="bi {{ definicion.icono }}"></i></div>
+            <div class="nombre">{{ definicion.nombre }}</div>
+            <div class="text-muted small mt-1">{{ definicion.descripcion }}</div>
+        </a>
+        {% empty %}
+        <div class="alert alert-warning mb-0">Su rol no tiene reportes habilitados. Consulte al Administrador.</div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

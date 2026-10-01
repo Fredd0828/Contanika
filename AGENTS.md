@@ -19,7 +19,7 @@ Contexto técnico y convenciones de trabajo para agentes de código que colabore
 | Calidad | `bash scripts/calidad.sh` |
 | Credenciales dev | `paula@befrec.co` / `Contanika2026*` |
 | Repositorio | https://github.com/fredd0828/Contanika |
-| Rama de trabajo | `feature/modulo-8-equipo` |
+| Rama de trabajo | `feature/modulo-10-reportes` |
 | Rama principal | `main` |
 
 **Nota Git:** una rama por módulo, creada a partir de la última rama de trabajo (no siempre desde
@@ -410,8 +410,44 @@ Ninguna funcionalidad se da por terminada sin:
 - Pruebas: `client.login` falla con django-axes (exige `request`); usar
   `force_login` o un POST al formulario de inicio de sesión.
 
-### Módulo 10
-- Ver `PLAN_TRABAJO.md` y `md/Contanika_Especificaciones_Módulos.md`.
+### Módulo 10 — Reportes y análisis (y Ayuda, HU053)
+- Rama `feature/modulo-10-reportes`, creada desde `feature/modulo-8-equipo`.
+- Arquitectura: `reportes/definiciones.py` tiene una clase por reporte
+  (`ReporteClientes`, `ReporteVencimientos`, `ReporteCartera`,
+  `ReporteCuentasCobro`, `ReporteTareas`, `ReporteIngresos`; registro en
+  `REPORTES`/`POR_SLUG`) con su formulario de filtros
+  (`reportes/formularios.py`, base `FiltroBase` con período y responsable).
+  Cada una devuelve un `ResultadoReporte` (`reportes/resultados.py`:
+  secciones con columnas tipadas texto/pesos/fecha/número/porcentaje, filas
+  resaltadas en rojo, resumen, gráfico y notas). La misma estructura se pinta
+  en pantalla y se exporta (`reportes/exportadores.py`): Excel con openpyxl
+  (números reales con formato, filas rojas, hoja «Gráfico» con `BarChart`
+  nativo) y PDF horizontal con ReportLab (membrete, resumen, gráfico de
+  barras y tablas).
+- Para agregar un reporte: crear su clase en `definiciones.py`, agregarla a
+  `REPORTES`, sembrar la fila en `reporte` (`cargar_datos_iniciales`).
+- Datos por rol: Senior y Junior solo sus clientes asignados (HU029-1,
+  HU051-4). Ingresos es siempre el consolidado del despacho (spec), usa
+  `_UsuarioConsolidado` para leer la cartera completa.
+- Ingresos: facturado = cuentas generadas en el mes; cobrado = abonos
+  recibidos en el mes; pendiente/en mora = saldo actual de las cuentas del
+  mes según si ya vencieron. Comparativo último mes vs. anterior, promedios
+  y top 3 de saldo. Los dos gráficos de la guía SENA: evolución mensual de
+  ingresos y deuda por cliente (cartera, top 10).
+- Visibilidad por reporte y rol (`reportes:visibilidad`, sobre
+  `PermisoReporteRol`; el Administrador ve todo, fijo). Un reporte oculto no
+  aparece ni abre por URL (403).
+- Descargas: tabla nueva `descarga_reporte` (decisión del usuario 1-oct-2026,
+  40 tablas): reporte, usuario, formato, filtros en texto
+  (`FiltroBase.resumen_filtros`), fecha. Historial en `reportes:descargas`
+  (solo Administrador). En pantalla se muestran 200 filas por sección; la
+  descarga trae todas.
+- El gráfico web usa Chart.js (jsDelivr) con los datos vía `json_script`
+  (escapa nombres de clientes).
+- Ayuda (HU053): `seguridad:ayuda`, ícono en la barra superior, guía de los
+  10 módulos, preguntas frecuentes y contacto desde `ConfiguracionDespacho`.
+- El reporte de credenciales sigue en el M1 sin descarga (spec), aunque la
+  HU028 lo liste.
 
 ---
 
@@ -432,5 +468,5 @@ Ninguna funcionalidad se da por terminada sin:
 
 ---
 
-Última actualización: 1 de octubre de 2026 (Módulo 8: gestión de equipo
-y roles).
+Última actualización: 1 de octubre de 2026 (Módulo 10: reportes y
+análisis, y sección de ayuda).

@@ -138,6 +138,9 @@ Numerales 3.1, 3.2 y 3.3, conclusiones (4, una por objetivo), presentación y su
 > estaban en el spec). El M6 se construye en 3 bloques: (1) honorarios, catálogos y cuentas de
 > cobro; (2) envíos, recordatorios y programación; (3) abonos con disparador y cartera.
 > Tablas nuevas: `honorario_servicio`, `configuracion_cobro`, `envio_programado` (39 en total).
+>
+> **Módulo 10 (1 oct 2026):** tabla nueva `descarga_reporte` para registrar quién descarga
+> cada reporte, cuándo, en qué formato y con qué filtros (HU028-5). Son 40 tablas en total.
 
 ## 5. Decisiones técnicas abiertas (con recomendación)
 

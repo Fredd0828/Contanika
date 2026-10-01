@@ -66,6 +66,7 @@
             <i class="bi bi-search"></i>
             <input type="text" placeholder="Buscar cliente o empresa…" disabled title="Disponible al completar el módulo de clientes">
         </div>
+        <a href="{% url 'seguridad:ayuda' %}" class="text-decoration-none me-2" style="font-size:21px;color:var(--text)" title="Ayuda" aria-label="Ayuda"><i class="bi bi-question-circle"></i></a>
         <a href="{% url 'seguridad:perfil' %}" class="text-decoration-none" title="Mi perfil">
             {% if user.foto %}
             <img src="{{ user.foto.url }}" alt="Mi perfil" class="av-top" style="object-fit:cover;padding:0">

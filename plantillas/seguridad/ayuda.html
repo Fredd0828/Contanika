@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block titulo %}Ayuda{% endblock %}
+
+{% block contenido %}
+<div class="row g-3">
+    <div class="col-lg-8">
+        <div class="panel">
+            <div class="ph"><div class="ph-title"><i class="bi bi-question-circle"></i> Guía rápida de los módulos</div></div>
+            <div class="accordion" id="guiaModulos">
+                <div class="accordion-item">
+                    <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#m1">1. Clientes</button></h2>
+                    <div id="m1" class="accordion-collapse collapse" data-bs-parent="#guiaModulos"><div class="accordion-body small">
+                        Registre cada cliente con sus datos fiscales, municipios adicionales, servicios contratados y responsable. Puede importar varios desde Excel con la plantilla descargable. En la ficha del cliente están todas sus pestañas (vencimientos, credenciales, documentos, hallazgos, honorarios, expediente y comunicaciones). Las credenciales se guardan cifradas y el Contador Junior solo las consulta.
+                    </div></div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#m2">2. Calendario</button></h2>
+                    <div id="m2" class="accordion-collapse collapse" data-bs-parent="#guiaModulos"><div class="accordion-body small">
+                        Muestra los vencimientos tributarios en vista de día, semana o mes. Los nacionales se calculan solos desde el calendario DIAN según el NIT y el régimen del cliente; los distritales y municipales se registran a mano. Puede configurar alertas y dejar anotaciones con destinatarios.
+                    </div></div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#m3">3. Tareas</button></h2>
+                    <div id="m3" class="accordion-collapse collapse" data-bs-parent="#guiaModulos"><div class="accordion-body small">
+                        Tablero Kanban (Por hacer, En progreso, En revisión, Terminado). Cada cambio de estado queda en el historial de la tarjeta. Si marca «Mostrar en Calendario», la fecha de la tarea aparece también en el Calendario. Desde la tarjeta puede abrir el expediente del cliente.
+                    </div></div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#m4">4. Documentos</button></h2>
+                    <div id="m4" class="accordion-collapse collapse" data-bs-parent="#guiaModulos"><div class="accordion-body small">
+                        Genere certificados y documentos en PDF a partir de plantillas, con el membrete del despacho y la firma del contador. Cargue su firma y tarjeta profesional en «Mi perfil». El histórico guarda cada documento generado.
+                    </div></div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#m5">5. Hallazgos</button></h2>
+                    <div id="m5" class="accordion-collapse collapse" data-bs-parent="#guiaModulos"><div class="accordion-body small">
+                        Registre hallazgos de las revisiones contables con período revisado, prioridad, responsable y soportes adjuntos. Para cerrarlos se exige una observación de cierre.
+                    </div></div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#m6">6. Honorarios</button></h2>
+                    <div id="m6" class="accordion-collapse collapse" data-bs-parent="#guiaModulos"><div class="accordion-body small">
+                        Configure el honorario de cada cliente, genere cuentas de cobro en PDF y envíelas por correo o WhatsApp, de forma individual, masiva o programada. Los pagos y abonos calculan el saldo automáticamente y no se pueden modificar ni borrar. El panel de cartera muestra la mora de cada cliente.
+                    </div></div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#m7">7. Comunicaciones</button></h2>
+                    <div id="m7" class="accordion-collapse collapse" data-bs-parent="#guiaModulos"><div class="accordion-body small">
+                        Historial de lo comunicado a cada cliente. Los correos y WhatsApp enviados desde Contanika se registran solos («Automática»); las llamadas y reuniones se registran a mano («Manual»).
+                    </div></div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#m8">8. Equipo y roles</button></h2>
+                    <div id="m8" class="accordion-collapse collapse" data-bs-parent="#guiaModulos"><div class="accordion-body small">
+                        El Administrador crea los usuarios, asigna su rol y decide qué módulos ve cada rol. El panel de equipo muestra la carga de trabajo de cada miembro. Su perfil propio está siempre disponible desde su nombre en la barra lateral.
+                    </div></div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#m9">9. Expediente</button></h2>
+                    <div id="m9" class="accordion-collapse collapse" data-bs-parent="#guiaModulos"><div class="accordion-body small">
+                        Bitácora cronológica de todo lo gestionado con el cliente, con archivos de soporte. Las anotaciones no se editan ni se eliminan; el Administrador puede archivarlas. Use los filtros por tipo y fecha para encontrar, por ejemplo, cuándo se presentó una retención.
+                    </div></div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#m10">10. Reportes</button></h2>
+                    <div id="m10" class="accordion-collapse collapse" data-bs-parent="#guiaModulos"><div class="accordion-body small">
+                        Seis reportes con filtros, descargables en Excel o PDF: clientes, vencimientos, cartera, cuentas de cobro, tareas e ingresos mensuales (con gráfica). Es el único módulo que descarga listados consolidados.
+                    </div></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel mt-3">
+            <div class="ph"><div class="ph-title"><i class="bi bi-chat-square-text"></i> Preguntas frecuentes</div></div>
+            <dl class="mb-0 small">
+                <dt>Olvidé mi contraseña, ¿qué hago?</dt>
+                <dd>Pídale al Administrador que le asigne una contraseña temporal desde Equipo y roles; luego cámbiela en «Mi perfil».</dd>
+                <dt>No veo un módulo en el menú.</dt>
+                <dd>El Administrador decide qué módulos ve cada rol. Si lo necesita, solicítele que lo habilite para su rol.</dd>
+                <dt>Me equivoqué en una anotación o en un abono, ¿cómo lo corrijo?</dt>
+                <dd>Por trazabilidad no se editan ni se borran. Registre una anotación aclaratoria; el Administrador puede archivar la anotación incorrecta.</dd>
+                <dt>¿Por qué solo veo algunos clientes?</dt>
+                <dd>El Contador Junior trabaja únicamente con los clientes que tiene asignados.</dd>
+                <dt>¿Dónde descargo un listado en Excel?</dt>
+                <dd>En Reportes. Los demás módulos solo descargan documentos individuales (certificados y cuentas de cobro).</dd>
+                <dt>¿Debo cerrar sesión para ver la ayuda?</dt>
+                <dd class="mb-0">No. El ícono <i class="bi bi-question-circle"></i> de la barra superior abre esta página desde cualquier pantalla.</dd>
+            </dl>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="panel">
+            <div class="ph"><div class="ph-title"><i class="bi bi-headset"></i> Soporte del despacho</div></div>
+            {% if despacho %}
+            <dl class="row mb-0 small">
+                <dt class="col-5 text-muted fw-normal">Despacho</dt><dd class="col-7">{{ despacho.nombre_despacho }}</dd>
+                <dt class="col-5 text-muted fw-normal">Teléfono</dt><dd class="col-7">{{ despacho.telefono|default:"—" }}</dd>
+                <dt class="col-5 text-muted fw-normal">Correo</dt><dd class="col-7">{% if despacho.correo %}<a href="mailto:{{ despacho.correo }}">{{ despacho.correo }}</a>{% else %}—{% endif %}</dd>
+                <dt class="col-5 text-muted fw-normal">Dirección</dt><dd class="col-7">{{ despacho.direccion|default:"—" }}</dd>
+                <dt class="col-5 text-muted fw-normal">Ciudad</dt><dd class="col-7 mb-0">{{ despacho.ciudad|default:"—" }}</dd>
+            </dl>
+            {% else %}
+            <p class="text-muted small mb-0">Los datos de contacto se configuran en Documentos → Datos del despacho.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

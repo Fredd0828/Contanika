@@ -1334,3 +1334,79 @@ python gestionar.py runserver
 - Aplicar la migración `seguridad 0004` en la BD local.
 - Word: `usuario.foto` en el diccionario de datos y las reglas de
   administradores y de eliminación.
+
+---
+
+## Jueves 1 de octubre de 2026 — Módulo 10: reportes y análisis, y sección de ayuda
+
+**Objetivo del bloque:** construir el último módulo funcional (HU028, HU029,
+HU048, HU051, RQF015, RQF026) con los seis reportes exportables en Excel y
+PDF, y la sección de ayuda (HU053). Rama `feature/modulo-10-reportes` (creada
+desde `feature/modulo-8-equipo`, ya subida a GitHub).
+
+Decisiones del usuario en esta sesión:
+- **Registro de descargas:** tabla nueva `descarga_reporte` (40 tablas).
+- **Ayuda (HU053)** incluida en este bloque.
+
+### Trabajo realizado
+
+1. **Seis reportes** (menú → Reportes), cada uno con filtros, vista previa en
+   pantalla y descarga en **Excel** o **PDF**:
+   - *Clientes*: datos fiscales, municipios, servicios, contacto, responsable,
+     estado; filtros por régimen, ciudad, estado, servicio, responsable y
+     fecha de registro.
+   - *Vencimientos tributarios* (HU029): filtros por período, cliente, tipo,
+     ámbito, estado y responsable; vencidos sin presentar en rojo.
+   - *Cartera*: honorario configurado, facturado, cobrado, deuda acumulada,
+     días e indicador de mora (crítica en rojo) e historial de abonos;
+     **gráfico** de deuda por cliente (10 mayores).
+   - *Cuentas de cobro*: período, descripción del servicio, valor, abonado,
+     saldo, estados de envío y pago, vencimiento; vencidas en rojo.
+   - *Tareas del Kanban* (HU051): cliente, tipo, responsable, prioridad,
+     vencimiento, estado e historial de cambios; vencidas en rojo.
+   - *Ingresos mensuales* (HU048): facturado, cobrado, pendiente y en mora por
+     mes con **gráfico de barras**, comparativo con el mes anterior, promedio
+     mensual y los tres clientes con mayor saldo. Solo consolidado.
+2. **Excel:** cifras como números con formato de pesos y fechas, filas en rojo
+   y una hoja «Gráfico» con el gráfico de barras nativo de Excel. **PDF:**
+   horizontal, con membrete del despacho, filtros usados, resumen, gráfico y
+   tablas.
+3. **Datos por rol:** Senior y Junior solo ven sus clientes asignados; el de
+   ingresos es el total del despacho.
+4. **Visibilidad por rol** (Administrador): interruptores reporte × rol; un
+   reporte oculto no aparece en la vista del rol ni abre por URL.
+5. **Historial de descargas** (Administrador): quién descargó qué reporte,
+   cuándo, en qué formato y con qué filtros (HU028-5).
+6. **Ayuda** (ícono «?» en la barra superior, todos los roles): guía corta de
+   los 10 módulos, preguntas frecuentes y contacto del despacho.
+7. Script SQL: tabla `descarga_reporte` (40 tablas). Con los dos gráficos y el
+   disparador del M6 queda cubierto lo que pide la guía del SENA (3 reportes
+   planos, 2 gráficos, 1 disparador).
+
+### Cómo verificarlo (entorno local)
+
+```bash
+python gestionar.py migrate
+python gestionar.py runserver
+```
+
+1. **Reportes → Ingresos mensuales**: gráfico, comparativo y top 3; descargar
+   Excel (abrir la hoja «Gráfico») y PDF.
+2. **Reportes → Vencimientos tributarios**: filtrar por ámbito y descargar;
+   los vencidos sin presentar salen en rojo.
+3. **Historial de descargas**: aparecen las dos descargas con sus filtros.
+4. **Visibilidad por rol**: ocultar Ingresos al Contador Junior.
+5. Ícono **?** de la barra superior → Ayuda.
+
+### Resultado de las pruebas
+
+- 45 pruebas nuevas en `pruebas/reportes/` (cobertura del módulo 96 %).
+- `scripts/calidad.sh` completo en verde: **688 aprobadas** (antes de las 2
+  últimas), cobertura 95 %, ruff, bandit y pip-audit sin hallazgos.
+
+### Pendientes del Módulo 10
+
+- Aplicar la migración `reportes 0002` en la BD local.
+- Word: tabla `descarga_reporte` en el diccionario de datos; el reporte de
+  credenciales sigue en el M1 sin descarga (la HU028 lo lista en el M10).
+- Evidencias: capturas de cada reporte, el Excel con su gráfico y el PDF.

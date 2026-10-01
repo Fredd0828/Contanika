@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block titulo %}Historial de descargas{% endblock %}
+
+{% block contenido %}
+<div class="panel">
+    <div class="ph">
+        <div class="ph-title"><i class="bi bi-clock-history"></i> Historial de descargas de reportes</div>
+        <a class="ph-link" href="{% url 'reportes:inicio' %}"><i class="bi bi-arrow-left"></i> Reportes</a>
+    </div>
+
+    <form method="get" class="filters mb-3">
+        {% for campo in formulario_filtro %}
+        <div class="campo"><label for="{{ campo.id_for_label }}">{{ campo.label }}</label>{{ campo }}</div>
+        {% endfor %}
+        <div class="campo"><button type="submit" class="ph-btn"><i class="bi bi-funnel"></i> Filtrar</button></div>
+        <div class="campo"><a class="ph-link" href="{% url 'reportes:descargas' %}">Limpiar</a></div>
+    </form>
+
+    <div class="table-responsive">
+        <table class="tbl">
+            <thead>
+                <tr><th>Fecha y hora</th><th>Reporte</th><th>Formato</th><th>Usuario</th><th>Filtros</th></tr>
+            </thead>
+            <tbody>
+                {% for descarga in descargas %}
+                <tr>
+                    <td class="text-nowrap">{{ descarga.fecha_hora|date:"d/m/Y H:i" }}</td>
+                    <td>{{ descarga.reporte.nombre_reporte }}</td>
+                    <td>{{ descarga.formato }}</td>
+                    <td>{{ descarga.usuario.nombre }}</td>
+                    <td class="small">{{ descarga.filtros|default:"Sin filtros" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="text-center text-muted py-4">Todavía no hay descargas registradas.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if is_paginated %}
+<div class="panel mt-3">
+    <ul class="pagination pagination-sm mb-0">
+        {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ querystring }}">Anterior</a></li>{% endif %}
+        <li class="page-item active"><span class="page-link">{{ page_obj.number }}</span></li>
+        {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ querystring }}">Siguiente</a></li>{% endif %}
+    </ul>
+</div>
+{% endif %}
+{% endblock %}
