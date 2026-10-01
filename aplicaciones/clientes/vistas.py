@@ -117,6 +117,10 @@ class DetalleClienteView(ModuloHabilitadoMixin, DetailView):
         contexto["abonos"] = abonos_del_cliente(self.request.user, self.object)
         contexto["saldo_cliente"] = saldo_del_cliente(self.object)
         contexto["es_administrador"] = self.request.user.es_administrador
+        # Últimas anotaciones del expediente y bitácora del cliente (Módulo 9).
+        from aplicaciones.expediente.selectores import anotaciones_del_cliente
+
+        contexto["anotaciones"] = anotaciones_del_cliente(self.request.user, self.object)
         return contexto
 
 

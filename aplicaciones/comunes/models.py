@@ -1,6 +1,16 @@
 """Modelos compartidos por varios módulos del sistema Contanika."""
 
 from django.db import models
+from django.utils import timezone
+
+# Carpeta de `media/adjuntos/` donde se guardan los archivos de cada origen.
+CARPETAS_ADJUNTOS = {"hallazgo": "hallazgos", "anotacion": "anotaciones"}
+
+
+def ruta_adjunto(instancia, nombre_archivo):
+    """Separa los archivos por origen y mes: adjuntos/<origen>/<año>/<mes>/."""
+    carpeta = CARPETAS_ADJUNTOS.get(instancia.tabla_origen, "otros")
+    return f"adjuntos/{carpeta}/{timezone.localdate():%Y/%m}/{nombre_archivo}"
 
 
 class Adjunto(models.Model):
@@ -22,7 +32,7 @@ class Adjunto(models.Model):
     id_adjunto = models.AutoField(primary_key=True)
     tabla_origen = models.CharField(max_length=30, choices=OPCIONES_TABLA_ORIGEN)
     id_origen = models.PositiveIntegerField()
-    archivo = models.FileField(upload_to="adjuntos/hallazgos/%Y/%m/", max_length=255)
+    archivo = models.FileField(upload_to=ruta_adjunto, max_length=255)
     nombre_archivo = models.CharField(max_length=150)
     fecha_carga = models.DateTimeField(auto_now_add=True)
 

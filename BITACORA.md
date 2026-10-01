@@ -1137,3 +1137,70 @@ cuenta muestre los abonos para que el cliente vea lo pendiente por pagar.
    regeneró el PDF de la cuenta.
 3. Verificado: `UPDATE abono ...` vuelve a ser rechazado por el disparador;
    `check` y `ruff` sin hallazgos; pruebas de finanzas: **184 aprobadas**.
+
+---
+
+## Jueves 1 de octubre de 2026 — Módulo 9: expediente y bitácora por cliente
+
+**Objetivo del bloque:** dejar navegable el Módulo 9 (HU025-HU027): registro
+de anotaciones por cliente con archivos de soporte, consulta cronológica con
+filtros y archivado por el Administrador. Rama `feature/modulo-9-expediente`
+(creada desde `feature/modulo-6-finanzas`, ya subida a GitHub).
+
+Decisiones del usuario en esta sesión:
+- **Fecha del evento:** columna nueva `anotacion.fecha` (editable, por defecto
+  hoy). `fecha_hora` sigue siendo el registro exacto automático (HU025-2).
+- **Bitácora inmutable:** nadie edita ni elimina anotaciones, ni el autor.
+- **Archivadas:** solo el Administrador archiva o restaura; se ocultan por
+  defecto y cualquier rol puede verlas con el filtro «Incluir archivadas».
+
+### Trabajo realizado
+
+1. **Bitácora general** (menú → Expediente, y tarjeta del panel principal):
+   anotaciones de todos los clientes visibles, en línea de tiempo, con filtros
+   por cliente, tipo, rango de fechas e «Incluir archivadas»; paginada.
+2. **Expediente del cliente** (`/expediente/cliente/<id>/`) con los mismos
+   filtros, y pestaña **Expediente** en la ficha del cliente (últimas 10).
+   El enlace «Ver expediente completo» del Kanban abre esa pestaña.
+3. **Nueva anotación** (modal o página): cliente, tipo (los 9 del spec o uno
+   escrito), fecha, contenido y archivos de soporte en un solo selector
+   múltiple: hasta 5 (Administrador y Senior) o 3 (Junior), PDF/Word/Excel/
+   imagen de máximo 10 MB. Queda registrada con el usuario y la hora exacta.
+4. **Permisos:** los tres roles consultan, descargan adjuntos y anotan; el
+   Junior solo en sus clientes asignados, pero ve las anotaciones de todo el
+   equipo en ellos (HU027-5). Archivar/restaurar: solo el Administrador.
+5. **Adjuntos:** se guardan en `media/adjuntos/anotaciones/<año>/<mes>/`
+   (los de hallazgos siguen en `adjuntos/hallazgos/`). La validación de
+   formato y tamaño se movió a `comunes` y la comparte Hallazgos.
+6. Admin de Django: anotaciones en solo lectura (solo cambia «archivado»),
+   sin agregar ni eliminar.
+7. Script SQL: columna `fecha` e índice `idx_anotacion_cliente` actualizados.
+
+### Cómo verificarlo (entorno local)
+
+```bash
+python gestionar.py migrate
+python gestionar.py runserver
+```
+
+1. Ficha de un cliente → pestaña **Expediente** → **Nueva anotación**: tipo
+   «Retención en la fuente», fecha de hace 6 meses, un PDF adjunto.
+2. **Expediente completo y filtros** → filtrar por ese tipo y rango de fechas:
+   aparece la anotación; descargar el PDF.
+3. Como Administrador, **Archivar**: desaparece; marcar «Incluir archivadas»
+   la muestra con la etiqueta «Archivada» y el botón **Restaurar**.
+4. Como Contador Junior: solo aparecen sus clientes; no ve el botón Archivar
+   y no puede adjuntar más de 3 archivos.
+
+### Resultado de las pruebas
+
+- 47 pruebas nuevas en `pruebas/expediente/` (cobertura del módulo 99-100 %).
+- `scripts/calidad.sh` completo en verde: **562 aprobadas**, cobertura 94 %,
+  ruff, bandit y pip-audit sin hallazgos.
+
+### Pendientes del Módulo 9
+
+- Aplicar las migraciones `comunes 0003` y `expediente 0002` en la BD local.
+- Word: columna `fecha` en el diccionario de datos de `anotacion` y decisión
+  de bitácora inmutable (HU026-4 decía «de otros usuarios»).
+- Evidencias: capturas del expediente, filtros y archivado.

@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block titulo %}{% if cliente %}Expediente · {{ cliente.nombre_razon_social }}{% else %}Expediente y bitácora{% endif %}{% endblock %}
+
+{% block contenido %}
+<div class="panel">
+    <div class="ph">
+        <div>
+            <div class="ph-title">
+                <i class="bi bi-journal-text"></i>
+                {% if cliente %}Expediente de {{ cliente.nombre_razon_social }}{% else %}Expediente y bitácora{% endif %}
+            </div>
+            {% if cliente %}<div class="ph-meta mt-1">{{ cliente.get_tipo_documento_display }} {{ cliente.nit_cedula }}</div>{% endif %}
+        </div>
+        <div class="ph-actions">
+            <span class="ph-meta">{% if is_paginated %}{{ page_obj.paginator.count }}{% else %}{{ anotaciones|length }}{% endif %} anotación(es)</span>
+            {% if cliente %}
+            <a class="ph-link" href="{% url 'clientes:detalle' cliente.pk %}"><i class="bi bi-person-vcard"></i> Ficha del cliente</a>
+            <a class="ph-link" href="{% url 'expediente:lista' %}"><i class="bi bi-list-ul"></i> Todos los clientes</a>
+            {% endif %}
+            <button type="button" class="ph-btn" data-bs-toggle="modal" data-bs-target="#modalAnotacion"
+                    data-url="{% url 'expediente:crear' %}{% if cliente %}?cliente={{ cliente.pk }}{% endif %}">
+                <i class="bi bi-plus-lg"></i> Nueva anotación
+            </button>
+        </div>
+    </div>
+
+    <form method="get" class="filters mb-3">
+        {% if not cliente %}
+        <div class="campo">
+            <label>{{ formulario_filtro.cliente.label }}</label>
+            {{ formulario_filtro.cliente }}
+        </div>
+        {% endif %}
+        <div class="campo">
+            <label>{{ formulario_filtro.tipo.label }}</label>
+            {{ formulario_filtro.tipo }}
+        </div>
+        <div class="campo">
+            <label>{{ formulario_filtro.desde.label }}</label>
+            {{ formulario_filtro.desde }}
+        </div>
+        <div class="campo">
+            <label>{{ formulario_filtro.hasta.label }}</label>
+            {{ formulario_filtro.hasta }}
+        </div>
+        <div class="campo">
+            <div class="form-check mt-4">
+                {{ formulario_filtro.incluir_archivadas }}
+                <label class="form-check-label" for="{{ formulario_filtro.incluir_archivadas.id_for_label }}">{{ formulario_filtro.incluir_archivadas.label }}</label>
+            </div>
+        </div>
+        <div class="campo">
+            <button type="submit" class="ph-btn"><i class="bi bi-funnel"></i> Filtrar</button>
+        </div>
+        <div class="campo">
+            <a class="ph-link" href="{% if cliente %}{% url 'expediente:cliente' cliente.pk %}{% else %}{% url 'expediente:lista' %}{% endif %}">Limpiar</a>
+        </div>
+    </form>
+
+    {% if anotaciones %}
+    <div class="tl">
+        {% for anotacion in anotaciones %}
+        {% include "expediente/_anotacion.html" with mostrar_cliente=cliente|yesno:",1" mostrar_acciones=True %}
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-center text-muted py-4 mb-0">No hay anotaciones que cumplan los filtros.</p>
+    {% endif %}
+</div>
+
+{% if is_paginated %}
+<div class="panel mt-3">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <nav aria-label="Paginación del expediente">
+            <ul class="pagination pagination-sm mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ querystring }}">Anterior</a></li>
+                {% endif %}
+                <li class="page-item active" aria-current="page"><span class="page-link">{{ page_obj.number }}</span></li>
+                {% if page_obj.has_next %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ querystring }}">Siguiente</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+        <span class="text-muted small">Página {{ page_obj.number }} de {{ paginator.num_pages }} · {{ paginator.count }} anotación(es)</span>
+    </div>
+</div>
+{% endif %}
+
+<datalist id="lista-tipos-anotacion">
+    {% for tipo in tipos_anotacion %}<option value="{{ tipo }}"></option>{% endfor %}
+</datalist>
+
+<!-- Modal vacío; el formulario de nueva anotación se carga vía AJAX -->
+<div class="modal fade" id="modalAnotacion" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content"></div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const modalAnotacion = document.getElementById('modalAnotacion');
+    if (!modalAnotacion) return;
+    modalAnotacion.addEventListener('show.bs.modal', function (event) {
+        const disparador = event.relatedTarget;
+        if (!disparador || !disparador.dataset.url) return;
+        const contenido = modalAnotacion.querySelector('.modal-content');
+        contenido.innerHTML = '<div class="modal-body text-center"><div class="spinner-border text-teal" role="status"></div><p class="mt-2 text-muted">Cargando...</p></div>';
+        fetch(disparador.dataset.url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then((respuesta) => {
+                if (!respuesta.ok) throw new Error('Error cargando el formulario');
+                return respuesta.text();
+            })
+            .then((html) => { contenido.innerHTML = html; })
+            .catch(() => {
+                contenido.innerHTML = '<div class="modal-body"><div class="alert alert-danger">No se pudo cargar el formulario. Intente de nuevo.</div></div>';
+            });
+    });
+    modalAnotacion.addEventListener('hidden.bs.modal', function () {
+        modalAnotacion.querySelector('.modal-content').innerHTML = '';
+    });
+});
+</script>
+{% endblock %}

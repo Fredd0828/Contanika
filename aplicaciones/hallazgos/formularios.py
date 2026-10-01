@@ -3,15 +3,12 @@
 from django import forms
 from django.contrib.auth import get_user_model
 
-from aplicaciones.comunes.formularios import FormularioBase, ModeloFormularioBase
+from aplicaciones.comunes.formularios import FormularioBase, ModeloFormularioBase, validar_archivo_adjunto
 
 from . import selectores
 from .models import Hallazgo
 
 Usuario = get_user_model()
-
-EXTENSIONES_PERMITIDAS = (".pdf", ".doc", ".docx", ".xls", ".xlsx", ".jpg", ".jpeg", ".png")
-TAMANO_MAXIMO_ADJUNTO = 10 * 1024 * 1024
 
 
 class HallazgoForm(ModeloFormularioBase):
@@ -70,12 +67,7 @@ class AdjuntoHallazgoForm(FormularioBase):
     archivo = forms.FileField(label="Archivo")
 
     def clean_archivo(self):
-        archivo = self.cleaned_data["archivo"]
-        if not archivo.name.lower().endswith(EXTENSIONES_PERMITIDAS):
-            raise forms.ValidationError("Formato no permitido. Use PDF, Word, Excel o una imagen (JPG/PNG).")
-        if archivo.size > TAMANO_MAXIMO_ADJUNTO:
-            raise forms.ValidationError("El archivo no debe superar los 10 MB.")
-        return archivo
+        return validar_archivo_adjunto(self.cleaned_data["archivo"])
 
 
 class FiltroHallazgosForm(FormularioBase):

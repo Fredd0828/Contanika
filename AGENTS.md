@@ -19,7 +19,7 @@ Contexto técnico y convenciones de trabajo para agentes de código que colabore
 | Calidad | `bash scripts/calidad.sh` |
 | Credenciales dev | `paula@befrec.co` / `Contanika2026*` |
 | Repositorio | https://github.com/fredd0828/Contanika |
-| Rama de trabajo | `feature/modulo-6-finanzas` |
+| Rama de trabajo | `feature/modulo-9-expediente` |
 | Rama principal | `main` |
 
 **Nota Git:** una rama por módulo, creada a partir de la última rama de trabajo (no siempre desde
@@ -320,7 +320,37 @@ Ninguna funcionalidad se da por terminada sin:
   fecha general. `cleaned_data["fechas"]` = `{id_cuenta: datetime}`. Opción
   `incluir_enviadas=1` para reenviar cuentas ya enviadas.
 
-### Módulos 7–10
+### Módulo 9 — Expediente y bitácora por cliente
+- Rama `feature/modulo-9-expediente`, creada desde `feature/modulo-6-finanzas`.
+- **Bitácora inmutable** (decisión del usuario, 1-oct-2026): no hay vistas ni
+  rutas para editar o eliminar anotaciones; `Anotacion.delete()` archiva. Solo
+  el Administrador archiva/restaura (`expediente:archivar`/`restaurar`). Las
+  archivadas se ocultan por defecto; cualquier rol las ve con el filtro
+  «Incluir archivadas». El admin de Django deja todo en solo lectura menos
+  `archivado`.
+- Columna nueva `anotacion.fecha` (DATE, editable, por defecto hoy): fecha del
+  evento anotado. `fecha_hora` sigue siendo el registro exacto automático
+  (HU025-2). Orden y filtros de rango usan `fecha`. Ampliación del diccionario
+  de datos pendiente de reflejar en el Word.
+- Permisos: los tres roles consultan, descargan y anotan; el Junior solo en
+  sus clientes asignados (`selectores.clientes_visibles`), pero ve las
+  anotaciones de todos los usuarios en esos clientes (HU027-5).
+- Adjuntos: máximo 5 por anotación (3 para el Junior), solo al crearla. Un
+  solo input múltiple con `comunes.formularios.CampoVariosArchivos`; la
+  validación de formato y tamaño (`validar_archivo_adjunto`) quedó en
+  `comunes` y la reutiliza Hallazgos. `Adjunto.archivo` usa
+  `comunes.models.ruta_adjunto`: `adjuntos/hallazgos/…` o
+  `adjuntos/anotaciones/…` según `tabla_origen`.
+- `selectores.con_adjuntos(anotaciones)` carga los adjuntos de la página en
+  una sola consulta (no hay FK real para `prefetch_related`) y los deja en
+  `anotacion.lista_adjuntos`.
+- Accesos: menú/panel → `expediente:lista` (bitácora general con filtro por
+  cliente); ficha del cliente → pestaña «Expediente» (últimas 10) y
+  `expediente:cliente`; Kanban → `clientes:detalle#tab-expediente`.
+- Tipos de anotación: `Anotacion.TIPOS_SUGERIDOS` (los 9 del spec) más los ya
+  usados, en un `datalist` (selección abierta).
+
+### Módulos 7, 8 y 10
 - Ver `PLAN_TRABAJO.md` y `md/Contanika_Especificaciones_Módulos.md`.
 
 ---
@@ -342,5 +372,5 @@ Ninguna funcionalidad se da por terminada sin:
 
 ---
 
-Última actualización: 25 de septiembre de 2026 (Módulo 6, bloque 3:
-abonos con disparador de PostgreSQL y panel de cartera).
+Última actualización: 1 de octubre de 2026 (Módulo 9: expediente y bitácora
+por cliente con adjuntos).

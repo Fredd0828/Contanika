@@ -1,0 +1,33 @@
+{# Una anotación de la bitácora (línea de tiempo). Se usa en el expediente y en la ficha del cliente. #}
+<div class="tl-item">
+    <div class="tl-dot"{% if anotacion.archivado %} style="background:var(--border2)"{% endif %}></div>
+    <div class="d-flex flex-wrap align-items-center gap-2">
+        <span class="fw-semibold">{{ anotacion.fecha|date:"d/m/Y" }}</span>
+        <span class="chip-servicio mb-0">{{ anotacion.tipo_anotacion }}</span>
+        {% if mostrar_cliente %}
+        <a class="small" href="{% url 'expediente:cliente' anotacion.cliente_id %}">{{ anotacion.cliente.nombre_razon_social }}</a>
+        {% endif %}
+        {% if anotacion.archivado %}<span class="badge-est be-n">Archivada</span>{% endif %}
+        {% if es_administrador and mostrar_acciones %}
+        <form method="post" class="ms-auto"
+              action="{% if anotacion.archivado %}{% url 'expediente:restaurar' anotacion.pk %}{% else %}{% url 'expediente:archivar' anotacion.pk %}{% endif %}"
+              onsubmit="return confirm('{% if anotacion.archivado %}¿Devolver esta anotación al expediente?{% else %}¿Archivar esta anotación? Se oculta del expediente, pero no se borra.{% endif %}')">
+            {% csrf_token %}
+            <button type="submit" class="ph-link">
+                {% if anotacion.archivado %}<i class="bi bi-arrow-counterclockwise"></i> Restaurar{% else %}<i class="bi bi-archive"></i> Archivar{% endif %}
+            </button>
+        </form>
+        {% endif %}
+    </div>
+    <div class="mt-1"{% if anotacion.archivado %} style="opacity:.6"{% endif %}>{{ anotacion.contenido|linebreaksbr }}</div>
+    {% if anotacion.lista_adjuntos %}
+    <div class="d-flex flex-wrap gap-2 mt-1">
+        {% for adjunto in anotacion.lista_adjuntos %}
+        <a class="ph-link" href="{% url 'expediente:descargar_adjunto' adjunto.pk %}" title="Descargar">
+            <i class="bi bi-paperclip"></i> {{ adjunto.nombre_archivo }}
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+    <div class="tl-date mt-1">Registró {{ anotacion.usuario.nombre }} · {{ anotacion.fecha_hora|date:"d/m/Y H:i" }}</div>
+</div>

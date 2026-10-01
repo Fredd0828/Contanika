@@ -215,7 +215,8 @@ CREATE TABLE public.anotacion (
     contenido text NOT NULL,
     archivado boolean NOT NULL,
     id_cliente integer NOT NULL,
-    id_usuario integer NOT NULL
+    id_usuario integer NOT NULL,
+    fecha date NOT NULL
 );
 
 
@@ -2021,7 +2022,7 @@ CREATE INDEX idx_adjunto_origen ON public.adjunto USING btree (tabla_origen, id_
 -- Name: idx_anotacion_cliente; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX idx_anotacion_cliente ON public.anotacion USING btree (id_cliente, fecha_hora DESC);
+CREATE INDEX idx_anotacion_cliente ON public.anotacion USING btree (id_cliente, fecha DESC, fecha_hora DESC);
 
 
 --

@@ -1,0 +1,35 @@
+{% csrf_token %}
+<div class="row g-3">
+    <div class="col-md-6">
+        <label for="{{ formulario.cliente.id_for_label }}" class="form-label">{{ formulario.cliente.label }}</label>
+        {{ formulario.cliente }}
+        {% if formulario.cliente.errors %}<div class="text-danger small">{{ formulario.cliente.errors }}</div>{% endif %}
+    </div>
+    <div class="col-md-3">
+        <label for="{{ formulario.tipo_anotacion.id_for_label }}" class="form-label">{{ formulario.tipo_anotacion.label }}</label>
+        {{ formulario.tipo_anotacion }}
+        {% if formulario.tipo_anotacion.errors %}<div class="text-danger small">{{ formulario.tipo_anotacion.errors }}</div>{% endif %}
+    </div>
+    <div class="col-md-3">
+        <label for="{{ formulario.fecha.id_for_label }}" class="form-label">{{ formulario.fecha.label }}</label>
+        {{ formulario.fecha }}
+        {% if formulario.fecha.errors %}<div class="text-danger small">{{ formulario.fecha.errors }}</div>{% endif %}
+    </div>
+    <div class="col-12">
+        <label for="{{ formulario.contenido.id_for_label }}" class="form-label">{{ formulario.contenido.label }}</label>
+        {{ formulario.contenido }}
+        {% if formulario.contenido.errors %}<div class="text-danger small">{{ formulario.contenido.errors }}</div>{% endif %}
+    </div>
+    <div class="col-12">
+        <label for="{{ formulario.archivos.id_for_label }}" class="form-label">{{ formulario.archivos.label }}</label>
+        {{ formulario.archivos }}
+        <div class="form-text">{{ formulario.archivos.help_text }}</div>
+        {% if formulario.archivos.errors %}<div class="text-danger small">{{ formulario.archivos.errors }}</div>{% endif %}
+    </div>
+    <div class="col-12">
+        <div class="alert alert-info small mb-0">
+            <i class="bi bi-info-circle"></i> Una vez guardada, la anotación no se puede editar ni eliminar.
+            Quedará registrada con su nombre y la fecha y hora exacta.
+        </div>
+    </div>
+</div>
