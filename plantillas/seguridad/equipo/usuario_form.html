@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block titulo %}{% if accion == "crear" %}Nuevo usuario{% else %}Editar usuario{% endif %}{% endblock %}
+
+{% block contenido %}
+{% include "seguridad/equipo/_pestanas.html" with pestana="usuarios" %}
+
+<div class="row g-3">
+    <div class="col-lg-8">
+        <div class="panel">
+            <div class="ph">
+                <div class="ph-title">
+                    {% if accion == "crear" %}<i class="bi bi-person-plus"></i> Nuevo usuario
+                    {% else %}<i class="bi bi-pencil"></i> Editar a {{ usuario_editado.nombre }}{% endif %}
+                </div>
+                <a class="ph-link" href="{% url 'seguridad:usuarios' %}"><i class="bi bi-arrow-left"></i> Volver</a>
+            </div>
+
+            <form method="post" autocomplete="off">
+                {% csrf_token %}
+                {% if formulario.non_field_errors %}
+                <div class="alert alert-danger">{% for error in formulario.non_field_errors %}{{ error }}{% endfor %}</div>
+                {% endif %}
+                <div class="row g-3">
+                    {% for campo in formulario %}
+                    {% if campo.name != "confirmar_otro_administrador" %}
+                    <div class="col-md-6">
+                        <label for="{{ campo.id_for_label }}" class="form-label">{{ campo.label }}</label>
+                        {{ campo }}
+                        {% if campo.help_text %}<div class="form-text">{{ campo.help_text }}</div>{% endif %}
+                        {% if campo.errors %}<div class="text-danger small">{{ campo.errors }}</div>{% endif %}
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                    <div class="col-12">
+                        <div class="form-check">
+                            {{ formulario.confirmar_otro_administrador }}
+                            <label class="form-check-label" for="{{ formulario.confirmar_otro_administrador.id_for_label }}">
+                                {{ formulario.confirmar_otro_administrador.label }}
+                            </label>
+                            <div class="form-text">Solo es necesario si el usuario será Administrador y ya hay otro Administrador activo.</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex gap-2 mt-4">
+                    <button type="submit" class="ph-btn">
+                        <i class="bi bi-save"></i> {% if accion == "crear" %}Crear usuario y enviar acceso{% else %}Guardar cambios{% endif %}
+                    </button>
+                    <a class="btn btn-outline-secondary" href="{% url 'seguridad:usuarios' %}">Cancelar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="panel">
+            <div class="ph"><div class="ph-title"><i class="bi bi-shield-check"></i> Módulos del rol</div></div>
+            <p class="text-muted small">Revise a qué módulos accederá el usuario con el rol elegido. Se configuran en «Módulos por rol».</p>
+            <div id="modulosRol"></div>
+        </div>
+    </div>
+</div>
+
+{{ modulos_por_rol|json_script:"datos-modulos-rol" }}
+<script>
+// Muestra los módulos habilitados del rol seleccionado (HU022-2).
+(function () {
+    const modulos = JSON.parse(document.getElementById('datos-modulos-rol').textContent);
+    const selector = document.getElementById('{{ formulario.rol.id_for_label }}');
+    const destino = document.getElementById('modulosRol');
+    function pintar() {
+        const lista = modulos[selector.value] || [];
+        destino.innerHTML = '';
+        if (!lista.length) {
+            destino.innerHTML = '<p class="text-muted small mb-0">Sin módulos habilitados.</p>';
+            return;
+        }
+        lista.forEach(function (nombre) {
+            const fila = document.createElement('div');
+            fila.className = 'small mb-1';
+            fila.innerHTML = '<i class="bi bi-check2 text-success"></i> ';
+            fila.appendChild(document.createTextNode(nombre));
+            destino.appendChild(fila);
+        });
+    }
+    selector.addEventListener('change', pintar);
+    pintar();
+})();
+</script>
+{% endblock %}

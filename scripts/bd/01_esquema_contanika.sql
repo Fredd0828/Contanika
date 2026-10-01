@@ -1197,7 +1197,7 @@ CREATE TABLE public.usuario (
     nombre character varying(150) NOT NULL,
     correo character varying(150) NOT NULL,
     telefono character varying(20) NOT NULL,
-    foto_url character varying(255) NOT NULL,
+    foto character varying(255) NOT NULL,
     password_hash character varying(255) NOT NULL,
     numero_tarjeta_profesional character varying(30) NOT NULL,
     estado character varying(15) NOT NULL,

@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block titulo %}Panel de equipo{% endblock %}
+
+{% block contenido %}
+{% include "seguridad/equipo/_pestanas.html" with pestana="panel" %}
+
+<div class="panel">
+    <div class="ph">
+        <div>
+            <div class="ph-title"><i class="bi bi-speedometer2"></i> Trabajo del equipo</div>
+            <div class="ph-meta mt-1">
+                Tareas activas, avance de las tareas que vencen este mes y vencimientos de los próximos 7 días.
+                Se actualiza solo cada minuto.
+            </div>
+        </div>
+        <span class="ph-meta" id="horaActualizacion">Actualizado {% now "H:i" %}</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="tbl">
+            <thead>
+                <tr>
+                    <th>Miembro</th>
+                    <th>Rol</th>
+                    <th class="text-center">Tareas activas</th>
+                    <th style="min-width:180px">Completado del mes</th>
+                    <th>Vencimientos próximos (7 días)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fila in resumen %}
+                <tr>
+                    <td>
+                        {{ fila.usuario.nombre }}
+                        {% if fila.alerta %}
+                        <span class="badge-est be-r" title="Más de {{ limite_pendientes }} tareas pendientes"><i class="bi bi-exclamation-triangle"></i> Sobrecarga</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ fila.usuario.rol.nombre_rol }}</td>
+                    <td class="text-center fw-semibold">{{ fila.tareas_activas }}</td>
+                    <td>
+                        {% if fila.porcentaje_mes is None %}
+                        <span class="text-muted small">Sin tareas que venzan este mes</span>
+                        {% else %}
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="progress flex-grow-1" style="height:8px" role="progressbar" aria-valuenow="{{ fila.porcentaje_mes }}" aria-valuemin="0" aria-valuemax="100">
+                                <div class="progress-bar" style="width:{{ fila.porcentaje_mes }}%;background:var(--teal)"></div>
+                            </div>
+                            <span class="small text-nowrap">{{ fila.porcentaje_mes }} % ({{ fila.terminadas_mes }}/{{ fila.tareas_mes }})</span>
+                        </div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% for vencimiento in fila.vencimientos %}
+                        <div class="small">
+                            <span class="fw-semibold">{{ vencimiento.fecha_vencimiento|date:"d/m" }}</span>
+                            {{ vencimiento.tipo_obligacion }} · {{ vencimiento.cliente.nombre_razon_social }}
+                        </div>
+                        {% empty %}
+                        <span class="text-muted small">Ninguno</span>
+                        {% endfor %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="text-center text-muted py-4">No hay miembros activos en el equipo.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <p class="text-muted small mt-3 mb-0">
+        Este panel es de consulta: las tareas se reasignan desde el tablero Kanban y los vencimientos desde el Calendario.
+    </p>
+</div>
+
+<script>
+// HU023-4: el panel se mantiene al día recargándose cada minuto.
+setTimeout(function () { window.location.reload(); }, 60000);
+</script>
+{% endblock %}

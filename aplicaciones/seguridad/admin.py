@@ -42,7 +42,7 @@ class UsuarioAdmin(UserAdminBase):
                 "fields": (
                     "nombre",
                     "telefono",
-                    "foto_url",
+                    "foto",
                     "identificacion",
                     "numero_tarjeta_profesional",
                     "firma",

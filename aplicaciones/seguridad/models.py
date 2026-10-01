@@ -128,7 +128,7 @@ class Usuario(AbstractBaseUser):
     nombre = models.CharField(max_length=150)
     correo = models.EmailField(max_length=150, unique=True)
     telefono = models.CharField(max_length=20, blank=True)
-    foto_url = models.URLField(max_length=255, blank=True)
+    foto = models.ImageField(upload_to="fotos/", max_length=255, blank=True)
     password = models.CharField(max_length=255, db_column="password_hash")
     firma = models.ImageField(upload_to="firmas/", blank=True)
     identificacion = models.CharField(max_length=20, blank=True)

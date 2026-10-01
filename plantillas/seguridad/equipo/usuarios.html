@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block titulo %}Usuarios del equipo{% endblock %}
+
+{% block contenido %}
+{% include "seguridad/equipo/_pestanas.html" with pestana="usuarios" %}
+
+<div class="panel">
+    <div class="ph">
+        <div class="ph-title"><i class="bi bi-person-gear"></i> Usuarios del equipo</div>
+        <div class="ph-actions">
+            <span class="ph-meta">{% if is_paginated %}{{ page_obj.paginator.count }}{% else %}{{ usuarios|length }}{% endif %} usuario(s)</span>
+            <a class="ph-btn" href="{% url 'seguridad:crear_usuario' %}"><i class="bi bi-plus-lg"></i> Nuevo usuario</a>
+        </div>
+    </div>
+
+    <form method="get" class="filters mb-3">
+        <div class="campo">
+            <label>{{ formulario_filtro.texto.label }}</label>
+            {{ formulario_filtro.texto }}
+        </div>
+        <div class="campo">
+            <label>{{ formulario_filtro.rol.label }}</label>
+            {{ formulario_filtro.rol }}
+        </div>
+        <div class="campo">
+            <label>{{ formulario_filtro.estado.label }}</label>
+            {{ formulario_filtro.estado }}
+        </div>
+        <div class="campo">
+            <button type="submit" class="ph-btn"><i class="bi bi-funnel"></i> Filtrar</button>
+        </div>
+        <div class="campo">
+            <a class="ph-link" href="{% url 'seguridad:usuarios' %}">Limpiar</a>
+        </div>
+    </form>
+
+    <div class="table-responsive">
+        <table class="tbl">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Correo</th>
+                    <th>Rol</th>
+                    <th>Teléfono</th>
+                    <th>Estado</th>
+                    <th>Creado</th>
+                    <th class="text-end">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for miembro in usuarios %}
+                <tr>
+                    <td>{{ miembro.nombre }}{% if miembro.pk == user.pk %} <span class="text-muted small">(usted)</span>{% endif %}</td>
+                    <td>{{ miembro.correo }}</td>
+                    <td>{{ miembro.rol.nombre_rol }}</td>
+                    <td>{{ miembro.telefono|default:"—" }}</td>
+                    <td>
+                        {% if miembro.estado == "Activo" %}<span class="badge-est be-g">Activo</span>
+                        {% else %}<span class="badge-est be-n">Inactivo</span>{% endif %}
+                    </td>
+                    <td class="text-nowrap">{{ miembro.fecha_creacion|date:"d/m/Y" }}</td>
+                    <td class="text-end text-nowrap">
+                        <a class="icon-btn" href="{% url 'seguridad:editar_usuario' miembro.pk %}" title="Editar"><i class="bi bi-pencil"></i></a>
+                        {% if miembro.pk != user.pk %}
+                        <form method="post" action="{% url 'seguridad:estado_usuario' miembro.pk %}" class="d-inline form-estado"
+                              data-nombre="{{ miembro.nombre }}" data-activo="{% if miembro.estado == 'Activo' %}1{% endif %}"
+                              data-admin="{% if miembro.rol.nombre_rol == 'Administrador' %}1{% endif %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="confirmar" value="">
+                            <button type="submit" class="icon-btn" title="{% if miembro.estado == 'Activo' %}Inactivar{% else %}Activar{% endif %}">
+                                <i class="bi {% if miembro.estado == 'Activo' %}bi-slash-circle{% else %}bi-check-circle{% endif %}"></i>
+                            </button>
+                        </form>
+                        <form method="post" action="{% url 'seguridad:eliminar_usuario' miembro.pk %}" class="d-inline"
+                              onsubmit="return confirm('¿Eliminar a {{ miembro.nombre|escapejs }}? Solo es posible si no tiene registros en el sistema; si los tiene, inactívelo.')">
+                            {% csrf_token %}
+                            <button type="submit" class="icon-btn" title="Eliminar"><i class="bi bi-trash"></i></button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" class="text-center text-muted py-4">No hay usuarios que cumplan los filtros.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if is_paginated %}
+<div class="panel mt-3">
+    <nav aria-label="Paginación de usuarios">
+        <ul class="pagination pagination-sm mb-0">
+            {% if page_obj.has_previous %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ querystring }}">Anterior</a></li>
+            {% endif %}
+            <li class="page-item active" aria-current="page"><span class="page-link">{{ page_obj.number }}</span></li>
+            {% if page_obj.has_next %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ querystring }}">Siguiente</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+</div>
+{% endif %}
+
+<script>
+// Confirmaciones al activar o inactivar; activar otro Administrador exige
+// confirmar que habrá más de uno activo (HU022-5).
+document.querySelectorAll('.form-estado').forEach(function (formulario) {
+    formulario.addEventListener('submit', function (evento) {
+        const nombre = formulario.dataset.nombre;
+        let mensaje = formulario.dataset.activo
+            ? '¿Inactivar a ' + nombre + '? No podrá iniciar sesión, pero se conserva su historial.'
+            : '¿Activar a ' + nombre + '?';
+        if (!formulario.dataset.activo && formulario.dataset.admin) {
+            mensaje = nombre + ' es Administrador. Al activarlo habrá más de un Administrador activo. ¿Desea continuar?';
+            formulario.querySelector('[name=confirmar]').value = '1';
+        }
+        if (!confirm(mensaje)) evento.preventDefault();
+    });
+});
+</script>
+{% endblock %}

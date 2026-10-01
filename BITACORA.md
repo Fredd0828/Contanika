@@ -1264,3 +1264,73 @@ python gestionar.py runserver
 - Cuando Calendario (alertas) o Documentos envíen por correo/WhatsApp, deben
   registrar su comunicación automática (hoy solo Honorarios envía).
 - Word: canal como selección abierta y criterio automática/manual.
+
+---
+
+## Jueves 1 de octubre de 2026 — Módulo 8: gestión de equipo y roles
+
+**Objetivo del bloque:** dejar navegable el Módulo 8 (HU022-HU024, HU050,
+RQF009, RQF029, RQF031): usuarios del equipo, módulos por rol, panel de
+trabajo del equipo y perfil propio. Rama `feature/modulo-8-equipo` (creada
+desde `feature/modulo-7-comunicaciones`).
+
+Decisiones del usuario en esta sesión:
+- **Correo de bienvenida** con el usuario (correo) y la contraseña temporal.
+- **Eliminar** solo usuarios sin historial; con historial se inactivan.
+
+### Trabajo realizado
+
+1. **Usuarios** (Equipo y roles → Usuarios, solo Administrador): listado con
+   filtros por nombre/correo, rol y estado; crear (nombre, correo, teléfono,
+   rol y contraseña temporal) mostrando los módulos del rol elegido antes de
+   confirmar; editar datos, correo, rol y asignar una nueva clave temporal;
+   activar/inactivar; eliminar solo si no tiene registros asociados.
+2. **Reglas de administradores:** siempre queda al menos un Administrador
+   activo; tener más de uno exige confirmarlo; nadie se inactiva ni se
+   elimina a sí mismo.
+3. **Módulos por rol** (HU050): tabla de interruptores módulo × rol. Un módulo
+   inhabilitado desaparece del menú y su URL muestra «Acceso no disponible»
+   (nueva página 403); los datos se conservan. El Administrador no puede
+   quitarse el módulo de equipo.
+4. **Panel de equipo** (Administrador y Senior, solo consulta): por miembro,
+   tareas activas, % completado de las tareas que vencen en el mes,
+   vencimientos de los próximos 7 días y alerta «Sobrecarga» con más de 10
+   pendientes; se recarga cada minuto.
+5. **Mi perfil** (clic en el nombre o el avatar; todos los roles): nombre,
+   teléfono y foto; firma, identificación y tarjeta profesional para
+   Administrador y Senior; cambio de contraseña exigiendo la actual. El correo
+   y el rol solo los cambia el Administrador. La foto aparece en la barra.
+6. `usuario.foto_url` (URL sin carga) pasa a `foto` (imagen), migración
+   `seguridad 0004`.
+7. **Corrección:** las tarjetas del panel principal de Comunicaciones y
+   Expediente salían como «Próximamente»; ahora las rutas se toman del menú.
+8. Menú: «Equipo y roles» se oculta al Contador Junior (no tiene funciones
+   ahí; su perfil está siempre disponible).
+
+### Cómo verificarlo (entorno local)
+
+```bash
+python gestionar.py migrate
+python gestionar.py runserver
+```
+
+1. **Equipo y roles → Usuarios → Nuevo usuario**: crear un Contador Junior
+   con una contraseña temporal (mínimo 10 caracteres). El correo de
+   bienvenida aparece en la consola de `runserver`.
+2. Cerrar sesión y entrar como ese Junior: no ve «Equipo y roles»; en **Mi
+   perfil** cambia su contraseña.
+3. Como Administrador, **Módulos por rol** → apagar Clientes para el Junior →
+   el Junior deja de verlo y la URL muestra «Acceso no disponible».
+4. **Panel de equipo**: tareas y vencimientos por miembro.
+
+### Resultado de las pruebas
+
+- 59 pruebas nuevas en `pruebas/seguridad/`.
+- `scripts/calidad.sh` completo en verde: **645 aprobadas**, cobertura 95 %,
+  ruff, bandit y pip-audit sin hallazgos.
+
+### Pendientes del Módulo 8
+
+- Aplicar la migración `seguridad 0004` en la BD local.
+- Word: `usuario.foto` en el diccionario de datos y las reglas de
+  administradores y de eliminación.

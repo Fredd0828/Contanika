@@ -8,7 +8,7 @@ RQF031). A medida que se desarrolla cada módulo se cambia su ruta de None al
 nombre real y deja de aparecer como "Próximamente".
 """
 
-from .models import Modulo
+from .models import Modulo, Rol
 
 SECCIONES_MENU = [
     (
@@ -39,7 +39,14 @@ SECCIONES_MENU = [
     (
         "Admin",
         [
-            ("Equipo y roles", None, "bi-people", Modulo.MOD08_EQUIPO),
+            ("Equipo y roles", "seguridad:equipo", "bi-people", Modulo.MOD08_EQUIPO),
         ],
     ),
 ]
+
+# Rutas del menú que, además del módulo habilitado, exigen ciertos roles. El
+# Contador Junior no tiene funciones en Equipo y roles (su perfil propio está
+# siempre disponible desde la barra lateral), así que no se le muestra.
+ROLES_POR_RUTA = {
+    "seguridad:equipo": (Rol.ADMINISTRADOR, Rol.CONTADOR_SENIOR),
+}

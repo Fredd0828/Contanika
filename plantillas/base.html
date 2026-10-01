@@ -37,11 +37,17 @@
         {% endfor %}
     </div>
     <div class="s-foot">
-        <div class="av-sb">{{ iniciales_usuario }}</div>
-        <div style="flex:1;min-width:0">
-            <div class="av-name">{{ user.nombre }}</div>
-            <div class="av-role">{{ user.rol.nombre_rol }}</div>
-        </div>
+        <a href="{% url 'seguridad:perfil' %}" class="d-flex align-items-center gap-2 text-decoration-none" style="flex:1;min-width:0;color:inherit" title="Mi perfil">
+            {% if user.foto %}
+            <img src="{{ user.foto.url }}" alt="" class="av-sb" style="object-fit:cover;padding:0">
+            {% else %}
+            <div class="av-sb">{{ iniciales_usuario }}</div>
+            {% endif %}
+            <div style="flex:1;min-width:0">
+                <div class="av-name">{{ user.nombre }}</div>
+                <div class="av-role">{{ user.rol.nombre_rol }}</div>
+            </div>
+        </a>
         <form method="post" action="{% url 'seguridad:cerrar_sesion' %}">
             {% csrf_token %}
             <button type="submit" class="btn-salir" title="Cerrar sesión"><i class="bi bi-box-arrow-right"></i></button>
@@ -60,7 +66,13 @@
             <i class="bi bi-search"></i>
             <input type="text" placeholder="Buscar cliente o empresa…" disabled title="Disponible al completar el módulo de clientes">
         </div>
-        <div class="av-top">{{ iniciales_usuario }}</div>
+        <a href="{% url 'seguridad:perfil' %}" class="text-decoration-none" title="Mi perfil">
+            {% if user.foto %}
+            <img src="{{ user.foto.url }}" alt="Mi perfil" class="av-top" style="object-fit:cover;padding:0">
+            {% else %}
+            <div class="av-top">{{ iniciales_usuario }}</div>
+            {% endif %}
+        </a>
     </header>
     <main class="content">
         {% if messages %}

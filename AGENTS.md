@@ -19,7 +19,7 @@ Contexto técnico y convenciones de trabajo para agentes de código que colabore
 | Calidad | `bash scripts/calidad.sh` |
 | Credenciales dev | `paula@befrec.co` / `Contanika2026*` |
 | Repositorio | https://github.com/fredd0828/Contanika |
-| Rama de trabajo | `feature/modulo-7-comunicaciones` |
+| Rama de trabajo | `feature/modulo-8-equipo` |
 | Rama principal | `main` |
 
 **Nota Git:** una rama por módulo, creada a partir de la última rama de trabajo (no siempre desde
@@ -374,7 +374,43 @@ Ninguna funcionalidad se da por terminada sin:
   envíen por correo/WhatsApp, deben crear su `Comunicacion` Automática con su
   `modulo_origen`, como hace `finanzas/envios.py`.
 
-### Módulos 8 y 10
+### Módulo 8 — Gestión de equipo y roles
+- Rama `feature/modulo-8-equipo`, creada desde `feature/modulo-7-comunicaciones`.
+  Vive en la app `seguridad` (sus tablas ya estaban ahí): `servicios.py`,
+  `selectores.py`, `formularios.py` y plantillas en `seguridad/equipo/`.
+- **Usuarios** (solo Administrador): crear con contraseña temporal (validada
+  con `AUTH_PASSWORD_VALIDATORS`) y correo de bienvenida con usuario y clave
+  (`seguridad/correos/acceso.txt`, decisión del usuario 1-oct-2026); editar
+  datos, correo, rol y opcionalmente una nueva clave temporal (también se
+  envía); activar/inactivar; eliminar **solo sin historial**
+  (`servicios.tiene_historial` recorre todas las relaciones inversas de
+  `Usuario`); con historial se ofrece inactivar. Si el correo falla, el
+  usuario queda creado y se muestra un aviso.
+- **Administradores** (`servicios.validar_administradores`): siempre queda al
+  menos uno activo; más de uno activo exige la casilla/confirmación
+  (`ConfirmacionRequerida`). Nadie se inactiva ni se elimina a sí mismo.
+- **Módulos por rol** (HU050): matriz de interruptores sobre
+  `PermisoRolModulo` (sin fila = habilitado). El par Administrador × MOD08 es
+  fijo (`PERMISOS_FIJOS`) para no bloquearse. Inicio de sesión y perfil no son
+  módulos, así que nunca se inhabilitan. Plantilla `403.html` amigable.
+- **Menú**: `menu.ROLES_POR_RUTA` restringe además por rol (Equipo y roles
+  oculto para el Junior). `vistas.RUTAS_MODULOS` del panel principal se
+  deriva ahora de `SECCIONES_MENU` (antes era una lista fija y M7/M9 salían
+  como «Próximamente»).
+- **Panel de equipo** (HU023, Administrador y Senior, solo consulta): tareas
+  activas, % completado de las tareas que vencen en el mes, vencimientos no
+  presentados de los próximos 7 días y alerta con más de 10 pendientes. Se
+  recarga cada minuto.
+- **Perfil propio** (HU024, cualquier usuario, solo `LoginRequiredMixin`):
+  nombre, teléfono, foto; firma, identificación y tarjeta profesional solo
+  para Administrador y Senior (firmantes del M4). Cambio de clave con
+  `PasswordChangeForm` + `update_session_auth_hash`. `Usuario.foto_url` →
+  `foto` (`ImageField`, `fotos/`, migración `seguridad 0004` con
+  `RenameField`). La vista `documentos:mi_firma` del M4 se conserva.
+- Pruebas: `client.login` falla con django-axes (exige `request`); usar
+  `force_login` o un POST al formulario de inicio de sesión.
+
+### Módulo 10
 - Ver `PLAN_TRABAJO.md` y `md/Contanika_Especificaciones_Módulos.md`.
 
 ---
@@ -396,5 +432,5 @@ Ninguna funcionalidad se da por terminada sin:
 
 ---
 
-Última actualización: 1 de octubre de 2026 (Módulo 7: comunicaciones
-integradas).
+Última actualización: 1 de octubre de 2026 (Módulo 8: gestión de equipo
+y roles).
