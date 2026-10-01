@@ -7,6 +7,7 @@ con su canal, estado de envío y usuario responsable.
 """
 
 from django.db import models
+from django.utils import timezone
 
 
 class Comunicacion(models.Model):
@@ -16,12 +17,9 @@ class Comunicacion(models.Model):
     WHATSAPP = "WhatsApp"
     LLAMADA = "Llamada"
     REUNION = "Reunión presencial"
-    OPCIONES_CANAL = [
-        (CORREO, CORREO),
-        (WHATSAPP, WHATSAPP),
-        (LLAMADA, LLAMADA),
-        (REUNION, REUNION),
-    ]
+    # El canal es de selección abierta (HU019-1: "llamada, presencial u otro"):
+    # estos son los sugeridos, pero se puede escribir otro (p. ej. videollamada).
+    CANALES_SUGERIDOS = [LLAMADA, REUNION, CORREO, WHATSAPP]
 
     AUTOMATICA = "Automática"
     MANUAL = "Manual"
@@ -32,6 +30,9 @@ class Comunicacion(models.Model):
     REINTENTANDO = "Reintentando"
     OPCIONES_ESTADO_ENVIO = [(EXITO, EXITO), (FALLO, FALLO), (REINTENTANDO, REINTENTANDO)]
 
+    # Valor de `modulo_origen` para los contactos registrados a mano.
+    ORIGEN_MANUAL = "Manual"
+
     id_comunicacion = models.AutoField(primary_key=True)
     cliente = models.ForeignKey(
         "clientes.Cliente",
@@ -39,10 +40,12 @@ class Comunicacion(models.Model):
         db_column="id_cliente",
         related_name="comunicaciones",
     )
-    canal = models.CharField(max_length=20, choices=OPCIONES_CANAL)
+    canal = models.CharField(max_length=20)
     tipo = models.CharField(max_length=15, choices=OPCIONES_TIPO, default=MANUAL)
     contenido_resumen = models.TextField(blank=True)
-    fecha_hora = models.DateTimeField(auto_now_add=True)
+    # Momento de la comunicación: las automáticas toman la hora del envío; en
+    # las manuales el usuario indica cuándo fue la llamada o la reunión.
+    fecha_hora = models.DateTimeField(default=timezone.now)
     usuario = models.ForeignKey(
         "seguridad.Usuario",
         on_delete=models.PROTECT,
@@ -66,3 +69,7 @@ class Comunicacion(models.Model):
 
     def __str__(self):
         return f"{self.canal} ({self.tipo}) - {self.cliente.nombre_razon_social}"
+
+    @property
+    def es_automatica(self):
+        return self.tipo == self.AUTOMATICA

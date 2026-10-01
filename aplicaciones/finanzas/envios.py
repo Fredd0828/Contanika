@@ -105,12 +105,18 @@ def texto_mensaje(cuenta, tipo, canal, hoy=None):
 # ---------------------------------------------------------------------------
 
 
-def registrar_comunicacion(cuenta, canal, tipo, usuario, exito, automatico=False, reintentos=0):
-    """Deja la traza del envío en el historial de comunicaciones del cliente (HU045-3)."""
+def registrar_comunicacion(cuenta, canal, tipo, usuario, exito, reintentos=0):
+    """
+    Deja la traza del envío en el historial de comunicaciones del cliente (HU045-3).
+
+    Todo envío hecho por el sistema queda como comunicación "Automática" (lo
+    haya disparado una persona o el proceso programado); "Manual" se reserva
+    para los contactos que el usuario registra a mano en el Módulo 7.
+    """
     return Comunicacion.objects.create(
         cliente=cuenta.cliente,
         canal=canal,
-        tipo=Comunicacion.AUTOMATICA if automatico else Comunicacion.MANUAL,
+        tipo=Comunicacion.AUTOMATICA,
         contenido_resumen=f"{tipo} No. {cuenta.pk} por {formato_pesos(cuenta.saldo_pendiente)}",
         usuario=usuario,
         estado_envio=Comunicacion.EXITO if exito else Comunicacion.FALLO,

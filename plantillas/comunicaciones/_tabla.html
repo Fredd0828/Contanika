@@ -1,0 +1,52 @@
+{# Tabla del historial de comunicaciones. Se usa en el historial y en la ficha del cliente. #}
+<div class="table-responsive">
+    <table class="tbl">
+        <thead>
+            <tr>
+                <th>Fecha y hora</th>
+                {% if mostrar_cliente %}<th>Cliente</th>{% endif %}
+                <th>Canal</th>
+                <th>Tipo</th>
+                <th>Contenido</th>
+                <th>Responsable</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for comunicacion in comunicaciones %}
+            <tr>
+                <td class="text-nowrap">{{ comunicacion.fecha_hora|date:"d/m/Y H:i" }}</td>
+                {% if mostrar_cliente %}
+                <td><a href="{% url 'comunicaciones:cliente' comunicacion.cliente_id %}">{{ comunicacion.cliente.nombre_razon_social }}</a></td>
+                {% endif %}
+                <td class="text-nowrap">
+                    {% if comunicacion.canal == "Correo" %}<i class="bi bi-envelope"></i>
+                    {% elif comunicacion.canal == "WhatsApp" %}<i class="bi bi-whatsapp"></i>
+                    {% elif comunicacion.canal == "Llamada" %}<i class="bi bi-telephone"></i>
+                    {% elif comunicacion.canal == "Reunión presencial" %}<i class="bi bi-people"></i>
+                    {% else %}<i class="bi bi-chat-dots"></i>{% endif %}
+                    {{ comunicacion.canal }}
+                </td>
+                <td class="text-nowrap">
+                    {% if comunicacion.es_automatica %}
+                    <span class="badge-est be-teal" title="Registrada por el sistema al enviar"><i class="bi bi-lightning-charge"></i> Automática</span>
+                    {% else %}
+                    <span class="badge-est be-n" title="Registrada a mano por el equipo"><i class="bi bi-pencil"></i> Manual</span>
+                    {% endif %}
+                    {% if comunicacion.estado_envio == "Fallo" %}<span class="badge-est be-r">Fallo</span>{% endif %}
+                </td>
+                <td>
+                    {{ comunicacion.contenido_resumen|linebreaksbr|default:"—" }}
+                    {% if comunicacion.es_automatica and comunicacion.modulo_origen %}
+                    <div class="text-muted small">Origen: {{ comunicacion.modulo_origen }}</div>
+                    {% endif %}
+                </td>
+                <td>{{ comunicacion.usuario.nombre|default:"Sistema (programado)" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="{% if mostrar_cliente %}6{% else %}5{% endif %}" class="text-center text-muted py-4">{{ texto_vacio|default:"No hay comunicaciones que cumplan los filtros." }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

@@ -121,6 +121,12 @@ class DetalleClienteView(ModuloHabilitadoMixin, DetailView):
         from aplicaciones.expediente.selectores import anotaciones_del_cliente
 
         contexto["anotaciones"] = anotaciones_del_cliente(self.request.user, self.object)
+        # Últimas comunicaciones con el cliente, automáticas y manuales (Módulo 7).
+        from aplicaciones.comunicaciones.selectores import comunicaciones_del_cliente
+        from aplicaciones.comunicaciones.vistas import ROLES_REGISTRAN
+
+        contexto["comunicaciones"] = comunicaciones_del_cliente(self.request.user, self.object)
+        contexto["puede_registrar_comunicacion"] = self.request.user.rol.nombre_rol in ROLES_REGISTRAN
         return contexto
 
 

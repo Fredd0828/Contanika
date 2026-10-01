@@ -435,7 +435,7 @@ def _actualizar_estado_envio_cuenta(envio, exito):
     cuenta.save(update_fields=["estado_envio"])
 
 
-def despachar_envio(envio, usuario=None, automatico=False, ahora=None):
+def despachar_envio(envio, usuario=None, ahora=None):
     """
     Ejecuta un envío. El correo se envía de inmediato y queda Enviado o
     Fallido (reintentable); el de WhatsApp pasa a la bandeja de pendientes,
@@ -459,7 +459,6 @@ def despachar_envio(envio, usuario=None, automatico=False, ahora=None):
         envio.tipo,
         usuario or envio.usuario,
         exito,
-        automatico=automatico,
         reintentos=reintentos,
     )
     envio.estado = EnvioProgramado.ENVIADO if exito else EnvioProgramado.FALLIDO
@@ -616,7 +615,7 @@ def despachar_programados(ahora):
     pendientes = EnvioProgramado.objects.filter(
         estado=EnvioProgramado.PROGRAMADO, fecha_programada__lte=ahora
     ).select_related("cuenta_cobro__cliente", "comunicacion", "usuario")
-    return [despachar_envio(envio, automatico=True, ahora=ahora) for envio in pendientes]
+    return [despachar_envio(envio, ahora=ahora) for envio in pendientes]
 
 
 def procesar_cobros(ahora=None):

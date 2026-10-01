@@ -32,7 +32,7 @@ SECCIONES_MENU = [
         "Finanzas",
         [
             ("Honorarios", "finanzas:historico", "bi-cash-coin", Modulo.MOD06_FINANZAS),
-            ("Comunicaciones", None, "bi-chat-dots-fill", Modulo.MOD07_COMUNICACIONES),
+            ("Comunicaciones", "comunicaciones:lista", "bi-chat-dots-fill", Modulo.MOD07_COMUNICACIONES),
             ("Reportes", None, "bi-bar-chart-line-fill", Modulo.MOD10_REPORTES),
         ],
     ),

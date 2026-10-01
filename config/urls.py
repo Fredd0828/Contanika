@@ -15,6 +15,7 @@ urlpatterns = [
     path("", include("aplicaciones.hallazgos.urls")),
     path("", include("aplicaciones.finanzas.urls")),
     path("", include("aplicaciones.expediente.urls")),
+    path("", include("aplicaciones.comunicaciones.urls")),
 ]
 
 if settings.DEBUG:

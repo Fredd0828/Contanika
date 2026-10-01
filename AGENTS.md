@@ -19,7 +19,7 @@ Contexto técnico y convenciones de trabajo para agentes de código que colabore
 | Calidad | `bash scripts/calidad.sh` |
 | Credenciales dev | `paula@befrec.co` / `Contanika2026*` |
 | Repositorio | https://github.com/fredd0828/Contanika |
-| Rama de trabajo | `feature/modulo-9-expediente` |
+| Rama de trabajo | `feature/modulo-7-comunicaciones` |
 | Rama principal | `main` |
 
 **Nota Git:** una rama por módulo, creada a partir de la última rama de trabajo (no siempre desde
@@ -350,7 +350,31 @@ Ninguna funcionalidad se da por terminada sin:
 - Tipos de anotación: `Anotacion.TIPOS_SUGERIDOS` (los 9 del spec) más los ya
   usados, en un `datalist` (selección abierta).
 
-### Módulos 7, 8 y 10
+### Módulo 7 — Comunicaciones integradas
+- Rama `feature/modulo-7-comunicaciones`, creada desde `feature/modulo-9-expediente`.
+- **Automática vs. manual** (según el spec): "Automática" = la registra el
+  sistema al enviar un correo o WhatsApp (aunque el envío lo dispare una
+  persona); "Manual" = contacto registrado a mano (llamada, reunión, otro).
+  En el M6 los envíos disparados por el usuario quedaban como "Manual": se
+  corrigió `finanzas.envios.registrar_comunicacion` (siempre Automática) y la
+  migración `comunicaciones 0002` actualiza los registros anteriores.
+- `Comunicacion.canal` es de selección abierta (sin `choices`;
+  `CANALES_SUGERIDOS` + los ya usados en un `datalist`). `fecha_hora` pasó de
+  `auto_now_add` a `default=timezone.now` para que el registro manual indique
+  cuándo fue el contacto (no se aceptan fechas futuras). Sin cambio de
+  columnas en la BD.
+- Permisos (HU019-HU021): los tres roles consultan; el Junior solo sus
+  clientes asignados. Solo Administrador y Senior registran manuales. Nadie
+  edita ni elimina (sin rutas; admin de Django en solo lectura).
+- Accesos: menú → `comunicaciones:lista` (filtro por cliente, canal, tipo y
+  fechas); ficha del cliente → pestaña «Comunicaciones» (últimas 10) y
+  `comunicaciones:cliente`. Distinción visual: etiqueta `be-teal`
+  «Automática» (con el módulo de origen) y `be-n` «Manual».
+- Pendiente para módulos futuros: cuando Calendario (alertas) o Documentos
+  envíen por correo/WhatsApp, deben crear su `Comunicacion` Automática con su
+  `modulo_origen`, como hace `finanzas/envios.py`.
+
+### Módulos 8 y 10
 - Ver `PLAN_TRABAJO.md` y `md/Contanika_Especificaciones_Módulos.md`.
 
 ---
@@ -372,5 +396,5 @@ Ninguna funcionalidad se da por terminada sin:
 
 ---
 
-Última actualización: 1 de octubre de 2026 (Módulo 9: expediente y bitácora
-por cliente con adjuntos).
+Última actualización: 1 de octubre de 2026 (Módulo 7: comunicaciones
+integradas).

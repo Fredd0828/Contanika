@@ -1,0 +1,21 @@
+{# Panel de comunicaciones del cliente: se incluye en clientes/detalle.html #}
+<div class="panel">
+    <div class="ph">
+        <div class="ph-title"><i class="bi bi-chat-dots-fill"></i> Comunicaciones</div>
+        <div class="d-flex gap-2">
+            <a class="ph-link" href="{% url 'comunicaciones:cliente' cliente.pk %}">
+                <i class="bi bi-funnel"></i> Historial completo y filtros
+            </a>
+            {% if puede_registrar_comunicacion %}
+            <a class="ph-btn" href="{% url 'comunicaciones:registrar' %}?cliente={{ cliente.pk }}">
+                <i class="bi bi-plus-lg"></i> Registrar comunicación
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    {% include "comunicaciones/_tabla.html" with texto_vacio="No hay comunicaciones registradas con este cliente." %}
+    {% if comunicaciones|length == 10 %}
+    <p class="text-muted small mt-3 mb-0">Se muestran las 10 comunicaciones más recientes; abra el historial completo para ver las anteriores.</p>
+    {% endif %}
+</div>

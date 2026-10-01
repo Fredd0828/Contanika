@@ -1204,3 +1204,63 @@ python gestionar.py runserver
 - Word: columna `fecha` en el diccionario de datos de `anotacion` y decisión
   de bitácora inmutable (HU026-4 decía «de otros usuarios»).
 - Evidencias: capturas del expediente, filtros y archivado.
+
+---
+
+## Jueves 1 de octubre de 2026 — Módulo 7: comunicaciones integradas
+
+**Objetivo del bloque:** dejar navegable el Módulo 7 (HU019-HU021, RQF008,
+CU008): historial de comunicaciones por cliente con distinción visual entre
+automáticas y manuales, filtros y registro manual de contactos hechos por
+fuera de la plataforma. Rama `feature/modulo-7-comunicaciones` (creada desde
+`feature/modulo-9-expediente`).
+
+### Trabajo realizado
+
+1. **Historial general** (menú → Comunicaciones): comunicaciones de todos los
+   clientes visibles, de la más reciente a la más antigua, con filtros por
+   cliente, canal, tipo y rango de fechas; paginado.
+2. **Historial del cliente** (`/comunicaciones/cliente/<id>/`) y pestaña
+   **Comunicaciones** en la ficha del cliente (últimas 10).
+3. **Distinción visual:** etiqueta verde azulada «Automática» (con el módulo
+   de origen, p. ej. Honorarios) y gris «Manual»; ícono por canal; los envíos
+   fallidos se marcan en rojo.
+4. **Registro manual** (Administrador y Senior; el Junior solo consulta):
+   cliente, canal (llamada, reunión presencial o uno escrito, p. ej.
+   videollamada), fecha y hora del contacto (por defecto ahora, no futura) y
+   resumen obligatorio.
+5. Nadie edita ni elimina comunicaciones; el admin de Django queda en solo
+   lectura.
+6. **Corrección del Módulo 6:** los envíos que el Administrador disparaba con
+   un clic quedaban como «Manual». Según el spec, todo lo que envía el sistema
+   es «Automática» y «Manual» es solo lo registrado a mano. Se corrigió el
+   registro y la migración `comunicaciones 0002` actualiza los 2 registros
+   existentes en la BD local.
+7. Modelo: `canal` pasa a selección abierta y `fecha_hora` deja de fijarse
+   sola para poder indicar cuándo fue la llamada (sin cambio de columnas).
+
+### Cómo verificarlo (entorno local)
+
+```bash
+python gestionar.py migrate
+python gestionar.py runserver
+```
+
+1. **Comunicaciones** en el menú: los 2 envíos del M6 aparecen como
+   «Automática · Origen: Honorarios».
+2. **Registrar comunicación** → Llamada, fecha de ayer, resumen → aparece como
+   «Manual» en el historial y en la pestaña Comunicaciones del cliente.
+3. Filtrar por canal «Llamada» y por tipo «Manual».
+
+### Resultado de las pruebas
+
+- 33 pruebas nuevas en `pruebas/comunicaciones/` y 1 en finanzas.
+- `scripts/calidad.sh` completo en verde: **592 aprobadas**, cobertura 95 %,
+  ruff, bandit y pip-audit sin hallazgos.
+
+### Pendientes del Módulo 7
+
+- Aplicar la migración `comunicaciones 0002` en la BD local.
+- Cuando Calendario (alertas) o Documentos envíen por correo/WhatsApp, deben
+  registrar su comunicación automática (hoy solo Honorarios envía).
+- Word: canal como selección abierta y criterio automática/manual.

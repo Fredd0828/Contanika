@@ -236,3 +236,15 @@ def test_saldo_del_mensaje_descuenta_abonos(cuenta_cliente, usuario_administrado
     )
     servicios.enviar_ahora([cuenta_cliente], EnvioProgramado.RECORDATORIO, CORREO, usuario_administrador)
     assert "$ 600.000" in mail.outbox[0].body
+
+
+def test_envio_disparado_por_usuario_queda_como_comunicacion_automatica(
+    cuenta_cliente, usuario_administrador
+):
+    # Módulo 7: "Automática" = registrada por el sistema al enviar; "Manual" es
+    # solo lo que el usuario registra a mano (llamadas, reuniones).
+    [envio] = servicios.enviar_ahora(
+        [cuenta_cliente], EnvioProgramado.CUENTA_COBRO, CORREO, usuario_administrador
+    )
+    assert envio.comunicacion.tipo == Comunicacion.AUTOMATICA
+    assert envio.comunicacion.usuario == usuario_administrador

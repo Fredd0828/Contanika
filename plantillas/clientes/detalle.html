@@ -64,6 +64,11 @@
             <i class="bi bi-journal-text"></i> Expediente
         </button>
     </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-comunicaciones-btn" data-bs-toggle="tab" data-bs-target="#tab-comunicaciones" type="button" role="tab" aria-controls="tab-comunicaciones" aria-selected="false">
+            <i class="bi bi-chat-dots-fill"></i> Comunicaciones
+        </button>
+    </li>
 </ul>
 
 <div class="tab-content" id="tabsClienteContenido">
@@ -151,6 +156,10 @@
 
     <div class="tab-pane fade" id="tab-expediente" role="tabpanel" aria-labelledby="tab-expediente-btn">
         {% include "clientes/expediente_panel.html" with anotaciones=anotaciones cliente=cliente %}
+    </div>
+
+    <div class="tab-pane fade" id="tab-comunicaciones" role="tabpanel" aria-labelledby="tab-comunicaciones-btn">
+        {% include "clientes/comunicaciones_panel.html" with comunicaciones=comunicaciones cliente=cliente %}
     </div>
 </div>
 
