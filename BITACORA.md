@@ -1799,3 +1799,54 @@ sin honorarios y valores iniciales de permisos (sin pisar cambios).
   se ocultan igual que «Honorarios».
 - Siguen abiertos: instalar el cron, capturas, vencimientos pasados en
   «Pendiente» y **pr01**.
+
+
+---
+
+## Miércoles 7 de octubre de 2026 — Visibilidad por rol configurable y ayuda en tres columnas
+
+### Qué se hizo
+Aclaración del usuario: lo que ven los roles no administradores lo debe poder
+activar o desactivar él, no quedar fijo en el código. Rama
+`feature/visibilidad-por-rol`, creada desde `main`.
+- **Panel principal configurable:** en el bloque anterior quedó oculto para el
+  Junior de forma fija; ahora es una fila más de Equipo y roles → «Módulos por
+  rol» («Panel principal», código `PANEL` en el catálogo `modulo`). Vale para
+  cualquier rol. Migración `seguridad 0005` (cambia las opciones del campo y,
+  en instalaciones con datos, crea la fila y sus permisos: habilitado para
+  todos menos para el Junior).
+- **Pestañas de la ficha del cliente:** Vencimientos, Documentos, Hallazgos,
+  Honorarios, Expediente y Comunicaciones aparecen solo si el rol tiene
+  habilitado el módulo correspondiente; si no, tampoco se consultan sus datos.
+- **Matriz de módulos:** texto que explica qué oculta cada interruptor y botón
+  «Reportes por rol» hacia la visibilidad de reportes.
+- **Ayuda en tres columnas** (pedido del usuario): las guías ocupan todo el
+  ancho y los módulos se reparten en tres columnas (dos en tableta, una en
+  teléfono), cada módulo con sus guías apiladas; debajo, tres columnas parejas
+  con la guía rápida, las preguntas frecuentes y el soporte.
+- Datos iniciales (`cargar_datos_iniciales` y `02_datos_iniciales.sql`) con la
+  fila del panel. Se aplicó la migración en la BD local.
+- **Tareas visibles para todo el equipo** (regla del usuario: clientes,
+  vencimientos y tareas se ven completos para que la información esté
+  sincronizada). Clientes y vencimientos ya lo estaban desde el 1-oct; faltaban
+  las tareas, que el Junior solo veía si eran suyas o de sus clientes. Ahora ve
+  el tablero completo y el filtro le ofrece todos los clientes; sigue pudiendo
+  mover y comentar solo las tareas asignadas a él.
+- **Reportes de clientes, vencimientos y tareas** con la información de todo el
+  despacho para Senior y Junior (antes, solo sus clientes asignados), para que
+  coincidan con lo que ven en los módulos. Modifica HU029-1 y HU051-4. Cartera
+  y cuentas de cobro siguen limitados a los clientes asignados.
+
+### Cómo verificarlo (entorno local)
+Como Paula, en Equipo y roles → «Módulos por rol», activar «Panel principal»
+para el Contador Junior y guardar: el Junior vuelve a ver el panel. Desactivar
+«Hallazgos» para un rol: desaparece del menú, de la ficha del cliente y del
+panel de ese rol.
+
+### Resultado de las pruebas
+`pruebas/seguridad/test_panel.py`: panel por rol desde la matriz, pantalla de
+inicio sin panel y una prueba por cada pestaña de la ficha. Ayuda y matriz
+revisadas en 360, 768, 1024 y 1440 px.
+
+### Pendientes
+- Los mismos del bloque anterior (cron, capturas, vencimientos pasados, **pr01**).

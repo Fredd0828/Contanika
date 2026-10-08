@@ -133,11 +133,11 @@ def test_tareas_sin_propias_muestra_las_del_equipo(usuario_administrador, usuari
     assert len(seccion["lista"]) == 2
 
 
-def test_junior_solo_cuenta_las_tareas_que_puede_ver(usuario_junior, usuario_senior, cliente, cliente_junior):
+def test_junior_cuenta_todas_las_tareas_del_equipo(usuario_junior, usuario_senior, cliente, cliente_junior):
     _tarea(cliente, "De otro cliente", responsable=usuario_senior)
     _tarea(cliente_junior, "De su cliente", responsable=usuario_senior)
 
-    assert panel.seccion_tareas(usuario_junior, HOY)["total"] == 1
+    assert panel.seccion_tareas(usuario_junior, HOY)["total"] == 2
 
 
 # ---------------------------------------------------------------------------
@@ -296,8 +296,8 @@ def test_panel_sin_datos_muestra_estados_vacios(client, usuario_senior):
 
 def test_panel_sin_modulos_habilitados(client, usuario_senior):
     for codigo, nombre in Modulo.OPCIONES_CODIGO:
-        modulo = Modulo.objects.create(codigo_modulo=codigo, nombre_modulo=nombre)
-        PermisoRolModulo.objects.create(rol=usuario_senior.rol, modulo=modulo, habilitado=False)
+        if codigo != Modulo.SEC_PANEL:
+            _inhabilitar(usuario_senior.rol, codigo, nombre)
     client.force_login(usuario_senior)
 
     contenido = client.get(reverse("seguridad:panel")).content.decode()
@@ -306,12 +306,36 @@ def test_panel_sin_modulos_habilitados(client, usuario_senior):
 
 
 # ---------------------------------------------------------------------------
-# El Contador Junior no usa el panel (decisión del usuario, 7-oct-2026)
+# Panel, menú y pestañas según lo que el Administrador habilite por rol
 # ---------------------------------------------------------------------------
 
 
-def test_junior_no_ve_el_panel_y_empieza_en_el_calendario(client, usuario_junior):
-    client.force_login(usuario_junior)
+def _inhabilitar(rol, codigo, nombre="Módulo"):
+    modulo, _ = Modulo.objects.get_or_create(codigo_modulo=codigo, defaults={"nombre_modulo": nombre})
+    PermisoRolModulo.objects.update_or_create(rol=rol, modulo=modulo, defaults={"habilitado": False})
+
+
+def _releer(usuario):
+    """Los módulos habilitados se guardan en caché por instancia: se vuelve a leer el usuario."""
+    return type(usuario).objects.get(pk=usuario.pk)
+
+
+@pytest.mark.parametrize("nombre_usuario", ["usuario_junior", "usuario_senior", "usuario_administrador"])
+def test_por_defecto_todos_los_roles_ven_el_panel(client, request, nombre_usuario):
+    client.force_login(request.getfixturevalue(nombre_usuario))
+    respuesta = client.get(reverse("seguridad:panel"))
+    assert respuesta.status_code == 200
+    etiquetas = [
+        item["etiqueta"] for seccion in respuesta.context["menu_lateral"] for item in seccion["items"]
+    ]
+    assert "Panel" in etiquetas
+
+
+@pytest.mark.parametrize("nombre_usuario", ["usuario_junior", "usuario_senior"])
+def test_rol_sin_panel_empieza_en_el_calendario(client, request, nombre_usuario):
+    usuario = request.getfixturevalue(nombre_usuario)
+    _inhabilitar(usuario.rol, Modulo.SEC_PANEL)
+    client.force_login(usuario)
 
     respuesta = client.get(reverse("seguridad:panel"))
 
@@ -322,20 +346,43 @@ def test_junior_no_ve_el_panel_y_empieza_en_el_calendario(client, usuario_junior
     assert "Panel" not in etiquetas and "Calendario" in etiquetas
 
 
-def test_junior_sin_calendario_empieza_en_tareas_y_sin_modulos_en_la_ayuda(client, usuario_junior):
-    calendario = Modulo.objects.create(codigo_modulo=Modulo.MOD02_CALENDARIO, nombre_modulo="Calendario")
-    PermisoRolModulo.objects.create(rol=usuario_junior.rol, modulo=calendario, habilitado=False)
+def test_rol_sin_panel_ni_calendario_empieza_en_tareas_y_sin_modulos_en_la_ayuda(client, usuario_junior):
+    _inhabilitar(usuario_junior.rol, Modulo.SEC_PANEL)
+    _inhabilitar(usuario_junior.rol, Modulo.MOD02_CALENDARIO)
     client.force_login(usuario_junior)
     assert client.get(reverse("seguridad:panel")).url == reverse("tareas:tablero")
 
     for codigo, nombre in Modulo.OPCIONES_CODIGO:
-        modulo, _ = Modulo.objects.get_or_create(codigo_modulo=codigo, defaults={"nombre_modulo": nombre})
-        PermisoRolModulo.objects.update_or_create(
-            rol=usuario_junior.rol, modulo=modulo, defaults={"habilitado": False}
-        )
-    # Se vuelve a leer el usuario: los módulos habilitados se guardan en caché por instancia.
-    client.force_login(type(usuario_junior).objects.get(pk=usuario_junior.pk))
+        _inhabilitar(usuario_junior.rol, codigo, nombre)
+    client.force_login(_releer(usuario_junior))
     assert client.get(reverse("seguridad:panel")).url == reverse("seguridad:ayuda")
+
+
+def test_el_administrador_habilita_y_quita_el_panel_desde_la_matriz(
+    client, usuario_administrador, usuario_junior
+):
+    panel_principal = Modulo.objects.create(codigo_modulo=Modulo.SEC_PANEL, nombre_modulo="Panel principal")
+    client.force_login(usuario_administrador)
+    contenido = client.get(reverse("seguridad:permisos")).content.decode()
+    assert "Panel principal" in contenido and reverse("reportes:visibilidad") in contenido
+
+    # Se guarda la matriz con el panel marcado solo para el Administrador.
+    client.post(
+        reverse("seguridad:permisos"), {f"permiso_{usuario_administrador.rol.pk}_{panel_principal.pk}": "on"}
+    )
+    client.force_login(usuario_junior)
+    assert client.get(reverse("seguridad:panel")).status_code == 302
+
+    client.force_login(usuario_administrador)
+    client.post(
+        reverse("seguridad:permisos"),
+        {
+            f"permiso_{usuario_administrador.rol.pk}_{panel_principal.pk}": "on",
+            f"permiso_{usuario_junior.rol.pk}_{panel_principal.pk}": "on",
+        },
+    )
+    client.force_login(_releer(usuario_junior))
+    assert client.get(reverse("seguridad:panel")).status_code == 200
 
 
 def test_la_ayuda_esta_en_el_menu_lateral_de_todos(client, usuario_junior, usuario_administrador):
@@ -346,30 +393,37 @@ def test_la_ayuda_esta_en_el_menu_lateral_de_todos(client, usuario_junior, usuar
         assert ayuda and ayuda[0]["url"] == reverse("seguridad:ayuda") and ayuda[0]["activo"]
 
 
-def test_senior_y_administrador_siguen_entrando_al_panel(client, usuario_senior, usuario_administrador):
-    for usuario in (usuario_senior, usuario_administrador):
-        client.force_login(usuario)
-        assert client.get(reverse("seguridad:panel")).status_code == 200
-
-
-def test_ficha_del_cliente_oculta_honorarios_con_el_modulo_inhabilitado(
-    client, usuario_junior, cliente_junior, modulo_finanzas
+@pytest.mark.parametrize(
+    ("pestana", "codigo", "dato"),
+    [
+        ("vencimientos", Modulo.MOD02_CALENDARIO, "vencimientos"),
+        ("documentos", Modulo.MOD04_DOCUMENTOS, "documentos"),
+        ("hallazgos", Modulo.MOD05_HALLAZGOS, "hallazgos"),
+        ("honorarios", Modulo.MOD06_FINANZAS, "cuentas_cobro"),
+        ("expediente", Modulo.MOD09_EXPEDIENTE, "anotaciones"),
+        ("comunicaciones", Modulo.MOD07_COMUNICACIONES, "comunicaciones"),
+    ],
+)
+def test_ficha_del_cliente_oculta_la_pestana_del_modulo_inhabilitado(
+    client, usuario_senior, cliente, pestana, codigo, dato
 ):
-    client.force_login(usuario_junior)
-    assert (
-        'id="tab-honorarios"'
-        in client.get(reverse("clientes:detalle", args=[cliente_junior.pk])).content.decode()
-    )
+    url = reverse("clientes:detalle", args=[cliente.pk])
+    client.force_login(usuario_senior)
+    respuesta = client.get(url)
+    assert f'id="tab-{pestana}"' in respuesta.content.decode() and dato in respuesta.context
 
-    PermisoRolModulo.objects.create(rol=usuario_junior.rol, modulo=modulo_finanzas, habilitado=False)
-    client.force_login(type(usuario_junior).objects.get(pk=usuario_junior.pk))
-    respuesta = client.get(reverse("clientes:detalle", args=[cliente_junior.pk]))
-    assert 'id="tab-honorarios' not in respuesta.content.decode()
-    assert "cuentas_cobro" not in respuesta.context
-    assert client.get(reverse("finanzas:historico")).status_code == 403
+    _inhabilitar(usuario_senior.rol, codigo)
+    client.force_login(_releer(usuario_senior))
+    respuesta = client.get(url)
+    contenido = respuesta.content.decode()
+    assert respuesta.status_code == 200
+    assert f'id="tab-{pestana}' not in contenido
+    assert dato not in respuesta.context
+    # Las demás pestañas siguen ahí.
+    assert contenido.count('class="tab-pane') >= 6
 
 
-def test_datos_iniciales_dejan_al_junior_sin_honorarios_ni_reportes_financieros(db):
+def test_datos_iniciales_dejan_al_junior_sin_panel_honorarios_ni_reportes_financieros(db):
     from django.core.management import call_command
 
     from aplicaciones.reportes.models import PermisoReporteRol, Reporte
@@ -385,7 +439,7 @@ def test_datos_iniciales_dejan_al_junior_sin_honorarios_ni_reportes_financieros(
         permisos = PermisoReporteRol.objects.filter(rol__nombre_rol=nombre_rol, habilitado=False)
         return set(permisos.values_list("reporte__nombre_reporte", flat=True))
 
-    assert modulos_inhabilitados(Rol.CONTADOR_JUNIOR) == {Modulo.MOD06_FINANZAS}
+    assert modulos_inhabilitados(Rol.CONTADOR_JUNIOR) == {Modulo.MOD06_FINANZAS, Modulo.SEC_PANEL}
     assert reportes_inhabilitados(Rol.CONTADOR_JUNIOR) == {
         Reporte.CARTERA,
         Reporte.CUENTAS_COBRO,

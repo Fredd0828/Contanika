@@ -36,11 +36,13 @@
             <i class="bi bi-person-vcard"></i> Datos generales
         </button>
     </li>
+    {% if pestanas.vencimientos %}
     <li class="nav-item" role="presentation">
         <button class="nav-link" id="tab-vencimientos-btn" data-bs-toggle="tab" data-bs-target="#tab-vencimientos" type="button" role="tab" aria-controls="tab-vencimientos" aria-selected="false">
             <i class="bi bi-calendar2-check"></i> Vencimientos
         </button>
     </li>
+    {% endif %}
     {% if puede_ver_credenciales %}
     <li class="nav-item" role="presentation">
         <button class="nav-link" id="tab-credenciales-btn" data-bs-toggle="tab" data-bs-target="#tab-credenciales" type="button" role="tab" aria-controls="tab-credenciales" aria-selected="false">
@@ -48,33 +50,41 @@
         </button>
     </li>
     {% endif %}
+    {% if pestanas.documentos %}
     <li class="nav-item" role="presentation">
         <button class="nav-link" id="tab-documentos-btn" data-bs-toggle="tab" data-bs-target="#tab-documentos" type="button" role="tab" aria-controls="tab-documentos" aria-selected="false">
             <i class="bi bi-file-earmark-text-fill"></i> Documentos
         </button>
     </li>
+    {% endif %}
+    {% if pestanas.hallazgos %}
     <li class="nav-item" role="presentation">
         <button class="nav-link" id="tab-hallazgos-btn" data-bs-toggle="tab" data-bs-target="#tab-hallazgos" type="button" role="tab" aria-controls="tab-hallazgos" aria-selected="false">
             <i class="bi bi-search-heart-fill"></i> Hallazgos
         </button>
     </li>
-    {% if ve_honorarios %}
+    {% endif %}
+    {% if pestanas.honorarios %}
     <li class="nav-item" role="presentation">
         <button class="nav-link" id="tab-honorarios-btn" data-bs-toggle="tab" data-bs-target="#tab-honorarios" type="button" role="tab" aria-controls="tab-honorarios" aria-selected="false">
             <i class="bi bi-cash-coin"></i> Honorarios
         </button>
     </li>
     {% endif %}
+    {% if pestanas.expediente %}
     <li class="nav-item" role="presentation">
         <button class="nav-link" id="tab-expediente-btn" data-bs-toggle="tab" data-bs-target="#tab-expediente" type="button" role="tab" aria-controls="tab-expediente" aria-selected="false">
             <i class="bi bi-journal-text"></i> Expediente
         </button>
     </li>
+    {% endif %}
+    {% if pestanas.comunicaciones %}
     <li class="nav-item" role="presentation">
         <button class="nav-link" id="tab-comunicaciones-btn" data-bs-toggle="tab" data-bs-target="#tab-comunicaciones" type="button" role="tab" aria-controls="tab-comunicaciones" aria-selected="false">
             <i class="bi bi-chat-dots-fill"></i> Comunicaciones
         </button>
     </li>
+    {% endif %}
 </ul>
 
 <div class="tab-content" id="tabsClienteContenido">
@@ -140,9 +150,11 @@
         </div>
     </div>
 
+    {% if pestanas.vencimientos %}
     <div class="tab-pane fade" id="tab-vencimientos" role="tabpanel" aria-labelledby="tab-vencimientos-btn">
         {% include "clientes/vencimientos_panel.html" with vencimientos=vencimientos puede_editar=puede_editar cliente=cliente %}
     </div>
+    {% endif %}
 
     {% if puede_ver_credenciales %}
     <div class="tab-pane fade" id="tab-credenciales" role="tabpanel" aria-labelledby="tab-credenciales-btn">
@@ -150,27 +162,35 @@
     </div>
     {% endif %}
 
+    {% if pestanas.documentos %}
     <div class="tab-pane fade" id="tab-documentos" role="tabpanel" aria-labelledby="tab-documentos-btn">
         {% include "clientes/documentos_panel.html" with documentos=documentos cliente=cliente %}
     </div>
+    {% endif %}
 
+    {% if pestanas.hallazgos %}
     <div class="tab-pane fade" id="tab-hallazgos" role="tabpanel" aria-labelledby="tab-hallazgos-btn">
         {% include "clientes/hallazgos_panel.html" with hallazgos=hallazgos cliente=cliente %}
     </div>
+    {% endif %}
 
-    {% if ve_honorarios %}
+    {% if pestanas.honorarios %}
     <div class="tab-pane fade" id="tab-honorarios" role="tabpanel" aria-labelledby="tab-honorarios-btn">
         {% include "clientes/honorarios_panel.html" with honorario=honorario cuentas_cobro=cuentas_cobro cliente=cliente %}
     </div>
     {% endif %}
 
+    {% if pestanas.expediente %}
     <div class="tab-pane fade" id="tab-expediente" role="tabpanel" aria-labelledby="tab-expediente-btn">
         {% include "clientes/expediente_panel.html" with anotaciones=anotaciones cliente=cliente %}
     </div>
+    {% endif %}
 
+    {% if pestanas.comunicaciones %}
     <div class="tab-pane fade" id="tab-comunicaciones" role="tabpanel" aria-labelledby="tab-comunicaciones-btn">
         {% include "clientes/comunicaciones_panel.html" with comunicaciones=comunicaciones cliente=cliente %}
     </div>
+    {% endif %}
 </div>
 
 <script>

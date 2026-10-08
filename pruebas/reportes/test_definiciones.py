@@ -24,12 +24,23 @@ def test_hay_seis_reportes():
     assert len(REPORTES) == 6
 
 
-def test_clientes_administrador_ve_todos_y_junior_los_suyos(
-    usuario_administrador, usuario_junior, datos_reportes
+@pytest.mark.parametrize("slug", ["clientes", "vencimientos", "tareas"])
+def test_reportes_del_equipo_traen_lo_mismo_para_todos_los_roles(
+    slug, usuario_administrador, usuario_senior, usuario_junior, datos_reportes
 ):
-    assert _generar("clientes", usuario_administrador).total_filas == 2
-    resultado = _generar("clientes", usuario_junior)
-    assert [fila[0] for fila in resultado.secciones[0].filas] == ["Papelería El Lápiz"]
+    """Clientes, vencimientos y tareas se ven completos, como en sus módulos."""
+    completo = _generar(slug, usuario_administrador).total_filas
+    assert completo >= 2
+    assert _generar(slug, usuario_senior).total_filas == completo
+    assert _generar(slug, usuario_junior).total_filas == completo
+
+
+@pytest.mark.parametrize("slug", ["cartera", "cuentas-cobro"])
+def test_reportes_financieros_siguen_limitados_a_los_clientes_asignados(
+    slug, usuario_administrador, usuario_senior, datos_reportes
+):
+    assert _generar(slug, usuario_administrador).total_filas > 0
+    assert _generar(slug, usuario_senior).total_filas == 0
 
 
 def test_clientes_filtra_por_regimen_y_estado(usuario_administrador, datos_reportes, cliente):
@@ -43,13 +54,6 @@ def test_vencimientos_marca_en_rojo_los_vencidos_sin_presentar(usuario_administr
     seccion = _generar("vencimientos", usuario_administrador).secciones[0]
     assert [fila[1] for fila in seccion.filas] == ["IVA bimestral", "Retención en la fuente"]
     assert seccion.resaltadas == {0}
-
-
-def test_vencimientos_del_senior_solo_de_sus_clientes(usuario_senior, datos_reportes, cliente):
-    assert _generar("vencimientos", usuario_senior).total_filas == 0
-    cliente.responsable = usuario_senior
-    cliente.save()
-    assert _generar("vencimientos", usuario_senior).total_filas == 1
 
 
 def test_cartera_con_honorario_deuda_y_abonos(usuario_administrador, datos_reportes):

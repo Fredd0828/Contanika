@@ -19,7 +19,7 @@ Contexto técnico y convenciones de trabajo para agentes de código que colabore
 | Calidad | `bash scripts/calidad.sh` |
 | Credenciales dev | `paula@befrec.co` / `Contanika2026*` |
 | Repositorio | https://github.com/fredd0828/Contanika |
-| Rama de trabajo | `feature/modulo-10-reportes` |
+| Rama de trabajo | `feature/visibilidad-por-rol` |
 | Rama principal | `main` |
 
 **Nota Git:** una rama por módulo, creada a partir de la última rama de trabajo (no siempre desde
@@ -121,22 +121,44 @@ models.py → servicios.py → selectores.py → formularios.py → vistas.py �
     (Equipo, su rol o etiquetadas). No edita ni valida vencimientos, pero marca el
     avance (En progreso/Presentada) de los de sus clientes o los que tiene como
     responsable (`calendario.servicios.puede_actualizar_estado`).
-  - **Tareas:** ve las asignadas a él y las de sus clientes; solo cambia el estado
-    y agrega observaciones a las suyas (`tareas.selectores.puede_actualizar_tarea`).
+  - **Tareas:** ve el tablero completo, como todo el equipo (7-oct-2026); solo
+    cambia el estado y agrega observaciones a las suyas
+    (`tareas.selectores.puede_actualizar_tarea`).
+  - **Regla del usuario (7-oct-2026):** clientes, vencimientos y tareas los ve
+    completos **todo el equipo**, para que la información esté sincronizada. No
+    filtrar esas tres consultas por rol ni por cliente asignado; lo que se
+    restringe por rol es quién puede modificar.
   - **Hallazgos, documentos, expediente y comunicaciones:** LECTURA de todos los
     clientes (los `*_visibles` no filtran por rol). La ESCRITURA sigue limitada a
     sus clientes asignados con selectores aparte: `hallazgos_gestionables`,
     `clientes_para_generar`, `expediente.clientes_anotables`. En la ficha de un
     cliente ajeno los botones de crear se ocultan con `a_cargo`.
   - **Finanzas y reportes:** solo sus clientes asignados (sin cambios).
-  - **Desde el 7-oct-2026 (decisión del usuario):** no ve el panel principal
-    (`menu.ROLES_POR_RUTA`; `PanelView` lo lleva a `menu.ruta_de_inicio`:
-    Calendario, Tareas o su primera entrada del menú). Empieza con el Módulo 6
-    y los reportes de Cartera, Cuentas de cobro e Ingresos inhabilitados
-    (`MODULOS_SIN_JUNIOR`/`REPORTES_SIN_JUNIOR` en `cargar_datos_iniciales`,
-    solo al crear la fila; el Administrador puede habilitarlos). La pestaña
-    «Honorarios» de la ficha del cliente depende de `ve_honorarios` (Módulo 6).
-- Menú lateral: sección «Soporte» → «Ayuda», para todos los roles.
+  - **Valores iniciales desde el 7-oct-2026 (decisión del usuario):** empieza
+    sin panel principal, sin el Módulo 6 y sin los reportes de Cartera, Cuentas
+    de cobro e Ingresos (`MODULOS_SIN_JUNIOR`/`REPORTES_SIN_JUNIOR` en
+    `cargar_datos_iniciales`, solo al crear la fila). Son valores iniciales:
+    el Administrador los cambia cuando quiera.
+- **Visibilidad configurable (regla del usuario, 7-oct-2026):** lo que ven
+  los roles no administradores **no se fija en el código**; lo activa o
+  desactiva el Administrador. Antes de ocultar algo por rol con un `if`,
+  hacerlo depender de un interruptor:
+  - Módulos y **panel principal**: Equipo y roles → «Módulos por rol»
+    (`PermisoRolModulo`). El panel es la fila `Modulo.SEC_PANEL` ("PANEL") del
+    catálogo `modulo` (migración `seguridad 0005`, que también crea la fila en
+    instalaciones con datos). Sin panel, `PanelView` lleva a
+    `menu.ruta_de_inicio` (Calendario, Tareas o la primera entrada del menú).
+  - Secciones del panel y **pestañas de la ficha del cliente**: siguen al
+    módulo dueño (`clientes.vistas.PESTANAS_POR_MODULO` → `pestanas.<nombre>`
+    en la plantilla); con el módulo inhabilitado no aparecen ni se consultan.
+  - Reportes: Reportes → «Visibilidad por rol» (`PermisoReporteRol`), enlazado
+    desde la matriz de módulos.
+  - Una sección nueva que deba poder ocultarse por rol: agregarla como fila
+    del catálogo `modulo` (constante `SEC_*`, `OPCIONES_CODIGO`, migración y
+    datos iniciales) y consultarla con `tiene_modulo_habilitado`.
+- Menú lateral: sección «Soporte» → «Ayuda», para todos los roles. La ayuda
+  reparte los módulos en tres columnas (`.ay-grupos`, dos en tableta, una en
+  teléfono).
 - CSRF: todos los POST deben incluir `{% csrf_token %}`.
 - XSS: escapar contenido en templates; no render HTML desde el usuario sin sanitizar.
 - Inyección SQL: usar ORM; nunca concatenar SQL manualmente.
@@ -511,8 +533,11 @@ Ninguna funcionalidad se da por terminada sin:
   barras y tablas).
 - Para agregar un reporte: crear su clase en `definiciones.py`, agregarla a
   `REPORTES`, sembrar la fila en `reporte` (`cargar_datos_iniciales`).
-- Datos por rol: Senior y Junior solo sus clientes asignados (HU029-1,
-  HU051-4). Ingresos es siempre el consolidado del despacho (spec), usa
+- Datos por rol: los reportes de clientes, vencimientos y tareas traen todo el
+  despacho para cualquier rol (7-oct-2026, modifica HU029-1 y HU051-4;
+  `todo_el_equipo = True` en su formulario de filtros). En cartera y cuentas
+  de cobro, Senior y Junior solo sus clientes asignados (`_restringir`).
+  Ingresos es siempre el consolidado del despacho (spec), usa
   `_UsuarioConsolidado` para leer la cartera completa.
 - Ingresos: facturado = cuentas generadas en el mes; cobrado = abonos
   recibidos en el mes; pendiente/en mora = saldo actual de las cuentas del

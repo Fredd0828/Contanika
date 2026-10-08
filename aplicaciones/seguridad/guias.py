@@ -788,8 +788,8 @@ GUIAS = (
     ),
     Guia(
         slug="modulos-por-rol",
-        titulo="Habilitar o inhabilitar módulos por rol",
-        resumen="Decida qué módulos ve cada rol en el menú.",
+        titulo="Habilitar o inhabilitar módulos y secciones por rol",
+        resumen="Decida qué módulos, pestañas, reportes y panel ve cada rol.",
         icono="bi-toggles",
         modulo=Modulo.MOD08_EQUIPO,
         roles=SOLO_ADMINISTRADOR,
@@ -799,15 +799,17 @@ GUIAS = (
             Paso("Abra la matriz", "En «Equipo y roles» entre a la pestaña «Módulos por rol»."),
             Paso(
                 "Active o desactive",
-                "Cada interruptor corresponde a un módulo y un rol.",
+                "Cada interruptor corresponde a un módulo y un rol. La fila «Panel principal» "
+                "decide si el rol ve el panel; sin él, entra directo a su primer módulo.",
             ),
             Paso("Guarde", "Pulse «Guardar configuración». El cambio aplica de inmediato."),
         ),
         notas=(
-            "Un módulo inhabilitado desaparece del menú y tampoco abre por dirección directa, pero "
-            "sus datos no se borran.",
+            "Un módulo inhabilitado desaparece del menú, de la ficha del cliente (su pestaña) y del "
+            "panel principal (su sección), y tampoco abre por dirección directa. Sus datos no se borran.",
             "El Administrador siempre conserva «Equipo y roles», para no quedar bloqueado.",
-            "La visibilidad de cada reporte se configura aparte, en Reportes → «Visibilidad por rol».",
+            "Cada reporte se habilita aparte con el botón «Reportes por rol» de esa misma pantalla "
+            "(o en Reportes → «Visibilidad por rol»).",
         ),
         relacionadas=("crear-usuario",),
     ),

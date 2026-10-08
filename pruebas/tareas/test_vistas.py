@@ -68,11 +68,11 @@ def test_tablero_carga_y_agrupa_por_estado(client, usuario_administrador, tarea_
     assert tarea_admin in tablero[Tarea.POR_HACER]
 
 
-def test_tablero_junior_no_ve_tareas_ajenas(client, usuario_junior, tarea_admin, tarea_junior):
+def test_tablero_junior_ve_todas_las_tareas_del_equipo(client, usuario_junior, tarea_admin, tarea_junior):
     client.force_login(usuario_junior)
     contenido = client.get(reverse("tareas:tablero")).content.decode()
     assert "Reunir soportes de renta" in contenido
-    assert "Preparar retención en la fuente" not in contenido
+    assert "Preparar retención en la fuente" in contenido
 
 
 # ---------------------------------------------------------------------------
@@ -140,10 +140,12 @@ def test_junior_no_puede_eliminar_tarea(client, usuario_junior, tarea_junior):
 # ---------------------------------------------------------------------------
 
 
-def test_detalle_junior_tarea_ajena_devuelve_404(client, usuario_junior, tarea_admin):
+def test_detalle_junior_tarea_ajena_carga_sin_poder_actualizarla(client, usuario_junior, tarea_admin):
     client.force_login(usuario_junior)
     respuesta = client.get(reverse("tareas:detalle", args=[tarea_admin.pk]))
-    assert respuesta.status_code == 404
+    assert respuesta.status_code == 200
+    assert respuesta.context["puede_actualizar"] is False
+    assert f"/tareas/{tarea_admin.pk}/estado/" not in respuesta.content.decode()
 
 
 def test_detalle_junior_su_tarea_carga(client, usuario_junior, tarea_junior):
@@ -169,12 +171,16 @@ def test_junior_cambia_estado_de_su_tarea(client, usuario_junior, tarea_junior):
 
 
 def test_junior_no_cambia_estado_de_tarea_ajena(client, usuario_junior, tarea_admin):
-    """IDOR: el Junior no encuentra (404) una tarea que no tiene asignada."""
+    """El Junior ve la tarea ajena, pero no puede moverla: se rechaza y no cambia."""
     client.force_login(usuario_junior)
-    respuesta = client.post(
-        reverse("tareas:cambiar_estado", args=[tarea_admin.pk]), {"estado": Tarea.EN_PROGRESO}
-    )
-    assert respuesta.status_code == 404
+    url = reverse("tareas:cambiar_estado", args=[tarea_admin.pk])
+    respuesta = client.post(url, {"estado": Tarea.EN_PROGRESO})
+    assert respuesta.status_code == 302
+    por_ajax = client.post(url, {"estado": Tarea.EN_PROGRESO}, HTTP_X_REQUESTED_WITH="XMLHttpRequest")
+    assert por_ajax.status_code == 403
+    tarea_admin.refresh_from_db()
+    assert tarea_admin.estado == Tarea.POR_HACER
+    assert not HistorialTarea.objects.filter(tarea=tarea_admin).exists()
 
 
 def test_cambiar_estado_via_ajax_devuelve_json(client, usuario_administrador, tarea_admin):
@@ -205,7 +211,7 @@ def test_tablero_junior_ve_tareas_de_sus_clientes_asignadas_a_otros(
     client.force_login(usuario_junior)
     contenido = client.get(reverse("tareas:tablero")).content.decode()
     assert "Conciliación bancaria del cliente" in contenido
-    assert "Preparar retención en la fuente" not in contenido
+    assert "Preparar retención en la fuente" in contenido
 
 
 def test_junior_ve_el_detalle_de_la_tarea_de_su_cliente_sin_poder_actualizarla(
@@ -262,13 +268,14 @@ def test_agregar_observacion_en_tarea_propia(client, usuario_junior, tarea_junio
     assert ObservacionTarea.objects.filter(tarea=tarea_junior).count() == 1
 
 
-def test_agregar_observacion_en_tarea_ajena_devuelve_404(client, usuario_junior, tarea_admin):
+def test_agregar_observacion_en_tarea_ajena_se_rechaza(client, usuario_junior, tarea_admin):
     client.force_login(usuario_junior)
     respuesta = client.post(
         reverse("tareas:agregar_observacion", args=[tarea_admin.pk]),
         {"contenido": "Intento no autorizado."},
     )
-    assert respuesta.status_code == 404
+    assert respuesta.status_code == 302
+    assert not ObservacionTarea.objects.filter(tarea=tarea_admin).exists()
 
 
 # ---------------------------------------------------------------------------

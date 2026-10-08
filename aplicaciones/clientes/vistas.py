@@ -71,6 +71,17 @@ class ListaClientesView(ModuloHabilitadoMixin, ListView):
         return contexto
 
 
+# Pestañas de la ficha del cliente que dependen de otro módulo.
+PESTANAS_POR_MODULO = {
+    "vencimientos": Modulo.MOD02_CALENDARIO,
+    "documentos": Modulo.MOD04_DOCUMENTOS,
+    "hallazgos": Modulo.MOD05_HALLAZGOS,
+    "honorarios": Modulo.MOD06_FINANZAS,
+    "expediente": Modulo.MOD09_EXPEDIENTE,
+    "comunicaciones": Modulo.MOD07_COMUNICACIONES,
+}
+
+
 class DetalleClienteView(ModuloHabilitadoMixin, DetailView):
     """Ficha completa del cliente con sus servicios, municipios y credenciales."""
 
@@ -97,44 +108,47 @@ class DetalleClienteView(ModuloHabilitadoMixin, DetailView):
             not usuario.es_contador_junior or self.object.responsable_id == usuario.id_usuario
         )
         contexto["puede_ver_credenciales"] = contexto["a_cargo"]
-        # Vencimientos del cliente visibles desde su perfil (Módulo 2).
-        from aplicaciones.calendario.selectores import vencimientos_por_cliente
+        contexto["es_administrador"] = usuario.es_administrador
+        # Cada pestaña pertenece a un módulo: si el Administrador lo inhabilita
+        # para el rol, la pestaña no aparece y sus datos no se consultan.
+        pestanas = {
+            nombre: usuario.tiene_modulo_habilitado(codigo) for nombre, codigo in PESTANAS_POR_MODULO.items()
+        }
+        contexto["pestanas"] = pestanas
+        if pestanas["vencimientos"]:
+            from aplicaciones.calendario.selectores import vencimientos_por_cliente
 
-        contexto["vencimientos"] = vencimientos_por_cliente(self.request.user, self.object)
-        # Documentos generados para el cliente, visibles desde su perfil (Módulo 4).
-        from aplicaciones.documentos.selectores import documentos_del_cliente
+            contexto["vencimientos"] = vencimientos_por_cliente(usuario, self.object)
+        if pestanas["documentos"]:
+            from aplicaciones.documentos.selectores import documentos_del_cliente
 
-        contexto["documentos"] = documentos_del_cliente(self.request.user, self.object)
-        # Hallazgos y revisiones del cliente, visibles desde su perfil (Módulo 5).
-        from aplicaciones.hallazgos.selectores import hallazgos_del_cliente
+            contexto["documentos"] = documentos_del_cliente(usuario, self.object)
+        if pestanas["hallazgos"]:
+            from aplicaciones.hallazgos.selectores import hallazgos_del_cliente
 
-        contexto["hallazgos"] = hallazgos_del_cliente(self.request.user, self.object)
-        # Honorario y cuentas de cobro del cliente, visibles desde su perfil (Módulo 6).
-        from aplicaciones.finanzas.selectores import (
-            abonos_del_cliente,
-            cuentas_del_cliente,
-            honorario_del_cliente,
-            saldo_del_cliente,
-        )
+            contexto["hallazgos"] = hallazgos_del_cliente(usuario, self.object)
+        if pestanas["honorarios"]:
+            from aplicaciones.finanzas.selectores import (
+                abonos_del_cliente,
+                cuentas_del_cliente,
+                honorario_del_cliente,
+                saldo_del_cliente,
+            )
 
-        # Con el módulo inhabilitado para el rol, la pestaña «Honorarios» no aparece.
-        contexto["ve_honorarios"] = usuario.tiene_modulo_habilitado(Modulo.MOD06_FINANZAS)
-        if contexto["ve_honorarios"]:
             contexto["honorario"] = honorario_del_cliente(self.object)
-            contexto["cuentas_cobro"] = cuentas_del_cliente(self.request.user, self.object)
-            contexto["abonos"] = abonos_del_cliente(self.request.user, self.object)
+            contexto["cuentas_cobro"] = cuentas_del_cliente(usuario, self.object)
+            contexto["abonos"] = abonos_del_cliente(usuario, self.object)
             contexto["saldo_cliente"] = saldo_del_cliente(self.object)
-        contexto["es_administrador"] = self.request.user.es_administrador
-        # Últimas anotaciones del expediente y bitácora del cliente (Módulo 9).
-        from aplicaciones.expediente.selectores import anotaciones_del_cliente
+        if pestanas["expediente"]:
+            from aplicaciones.expediente.selectores import anotaciones_del_cliente
 
-        contexto["anotaciones"] = anotaciones_del_cliente(self.request.user, self.object)
-        # Últimas comunicaciones con el cliente, automáticas y manuales (Módulo 7).
-        from aplicaciones.comunicaciones.selectores import comunicaciones_del_cliente
-        from aplicaciones.comunicaciones.vistas import ROLES_REGISTRAN
+            contexto["anotaciones"] = anotaciones_del_cliente(usuario, self.object)
+        if pestanas["comunicaciones"]:
+            from aplicaciones.comunicaciones.selectores import comunicaciones_del_cliente
+            from aplicaciones.comunicaciones.vistas import ROLES_REGISTRAN
 
-        contexto["comunicaciones"] = comunicaciones_del_cliente(self.request.user, self.object)
-        contexto["puede_registrar_comunicacion"] = self.request.user.rol.nombre_rol in ROLES_REGISTRAN
+            contexto["comunicaciones"] = comunicaciones_del_cliente(usuario, self.object)
+            contexto["puede_registrar_comunicacion"] = usuario.rol.nombre_rol in ROLES_REGISTRAN
         return contexto
 
 

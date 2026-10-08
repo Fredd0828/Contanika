@@ -130,6 +130,7 @@ COPY public.modulo (id_modulo, nombre_modulo, codigo_modulo) FROM stdin;
 18	Gestión de equipo y roles	MOD08
 19	Expediente y bitácora por cliente	MOD09
 20	Reportes y análisis	MOD10
+21	Panel principal	PANEL
 \.
 
 
@@ -219,6 +220,9 @@ COPY public.permiso_rol_modulo (id_permiso, habilitado, id_modulo, id_rol) FROM 
 28	t	18	6
 29	t	19	6
 30	t	20	6
+31	t	21	4
+32	t	21	5
+33	f	21	6
 \.
 
 
@@ -726,7 +730,7 @@ SELECT pg_catalog.setval('public.metodo_pago_id_metodo_pago_seq', 5, true);
 -- Name: modulo_id_modulo_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.modulo_id_modulo_seq', 20, true);
+SELECT pg_catalog.setval('public.modulo_id_modulo_seq', 21, true);
 
 
 --
@@ -740,7 +744,7 @@ SELECT pg_catalog.setval('public.permiso_reporte_rol_id_permiso_reporte_seq', 18
 -- Name: permiso_rol_modulo_id_permiso_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.permiso_rol_modulo_id_permiso_seq', 30, true);
+SELECT pg_catalog.setval('public.permiso_rol_modulo_id_permiso_seq', 33, true);
 
 
 --
