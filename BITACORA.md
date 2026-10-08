@@ -1850,3 +1850,35 @@ revisadas en 360, 768, 1024 y 1440 px.
 
 ### Pendientes
 - Los mismos del bloque anterior (cron, capturas, vencimientos pasados, **pr01**).
+
+
+---
+
+## Miércoles 7 de octubre de 2026 — Fase 4: pase de calidad, matriz CRUD y seguridad transversal
+
+### Qué se hizo
+Rama `feature/fase-4-calidad`, creada desde `main`.
+- **Pase de calidad completo:** `ruff`, `bandit` y `pip-audit` sin hallazgos;
+  cobertura del 96 % (el archivo más bajo, 77 %). `check --deploy` con la
+  configuración de producción deja un solo aviso: la `SECRET_KEY` es la de
+  desarrollo.
+- **Matriz CRUD y de seguridad:** `documentacion/MATRIZ_CRUD_SEGURIDAD.md`.
+  Por módulo, quién crea, consulta, actualiza y elimina cada entidad; por
+  riesgo, su control y dónde se prueba; y el resultado del pase de calidad.
+- **Pruebas de seguridad sobre todas las rutas**
+  (`pruebas/seguridad/test_seguridad_transversal.py`): toman las rutas del
+  recorrido del mapa de navegación y comprueban, en cada una, acceso sin
+  sesión, POST sin token CSRF, rol no permitido y módulo inhabilitado. Además,
+  el bloqueo por fuerza bruta de django-axes, que no tenía prueba, y que las
+  únicas rutas públicas sean el inicio de sesión y el PDF firmado. Una ruta
+  nueva queda cubierta sin escribir su prueba.
+
+### Cómo verificarlo
+`bash scripts/calidad.sh` y
+`pytest pruebas/seguridad/test_seguridad_transversal.py`.
+
+### Pendientes
+- Generar una `SECRET_KEY` real en el `.env` del servidor al desplegar.
+- Pruebas de aceptación con Paula (diciembre) y **pr01**.
+- Siguen abiertos: instalar el cron, capturas y vencimientos pasados en
+  «Pendiente».
