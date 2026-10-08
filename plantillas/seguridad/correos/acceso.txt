@@ -1,0 +1,15 @@
+{% autoescape off %}Hola, {{ usuario.nombre }}:
+{% if nuevo %}
+Se creó su usuario en Contanika con el rol {{ usuario.rol.nombre_rol }}.
+{% else %}
+El Administrador le asignó una nueva contraseña temporal en Contanika.
+{% endif %}
+Datos de acceso:
+- Usuario (correo): {{ usuario.correo }}
+- Contraseña temporal: {{ clave }}
+{% if url_sitio %}- Ingreso: {{ url_sitio }}
+{% endif %}
+Por seguridad, cambie la contraseña temporal al ingresar, en «Mi perfil».
+
+Contanika
+{% endautoescape %}

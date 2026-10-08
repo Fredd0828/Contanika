@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block titulo %}{% if accion == "crear" %}Nuevo vencimiento{% else %}Editar vencimiento{% endif %}{% endblock %}
+
+{% block contenido %}
+<div class="panel">
+    <div class="ph">
+        <div class="ph-title">
+            <i class="bi bi-calendar2-plus"></i>
+            {% if accion == "crear" %}Nuevo vencimiento{% else %}Editar vencimiento{% endif %}
+        </div>
+        <a class="ph-link" href="{% url 'calendario:lista' %}">
+            <i class="bi bi-arrow-left"></i> Volver
+        </a>
+    </div>
+
+    <form method="post" class="row g-3">
+        {% csrf_token %}
+        {% if formulario.non_field_errors %}
+        <div class="alert alert-danger">{{ formulario.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="col-md-6">
+            <label class="form-label">{{ formulario.cliente.label }}</label>
+            {{ formulario.cliente }}
+            {{ formulario.cliente.errors }}
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">{{ formulario.tipo_obligacion.label }}</label>
+            {{ formulario.tipo_obligacion }}
+            {{ formulario.tipo_obligacion.errors }}
+            <datalist id="lista-obligaciones">
+                {% for tipo in opciones.tipos_obligacion %}<option value="{{ tipo }}">{% endfor %}
+            </datalist>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">{{ formulario.ambito.label }}</label>
+            {{ formulario.ambito }}
+            {{ formulario.ambito.errors }}
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">{{ formulario.municipio.label }}</label>
+            {{ formulario.municipio }}
+            {{ formulario.municipio.errors }}
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">{{ formulario.fecha_vencimiento.label }}</label>
+            {{ formulario.fecha_vencimiento }}
+            {{ formulario.fecha_vencimiento.errors }}
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">{{ formulario.responsable.label }}</label>
+            {{ formulario.responsable }}
+            {{ formulario.responsable.errors }}
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">{{ formulario.estado_presentacion.label }}</label>
+            {{ formulario.estado_presentacion }}
+            {{ formulario.estado_presentacion.errors }}
+        </div>
+
+        <div class="col-12 d-flex gap-2">
+            <button type="submit" class="ph-btn">
+                <i class="bi bi-check2"></i>
+                {% if accion == "crear" %}Registrar vencimiento{% else %}Guardar cambios{% endif %}
+            </button>
+            <a class="ph-link" href="{% url 'calendario:lista' %}">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

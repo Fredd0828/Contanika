@@ -1,0 +1,999 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Agencia de Publicidad CreativeWorks | Contanika</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Open+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="/estaticos/css/contanika.css" rel="stylesheet">
+</head>
+<body>
+
+<aside id="sidebar">
+    <div class="s-logo">
+        <div class="s-logo-wrap">
+            <div class="s-logo-icon"><i class="bi bi-grid-3x3-gap-fill"></i></div>
+            <div class="s-name"><span class="w">Conta</span><span class="o">nika</span></div>
+        </div>
+    </div>
+    <div class="s-menu">
+        
+        <div class="nl">Principal</div>
+        
+            
+            <a class="ni " href="/">
+                <i class="bi bi-grid-fill"></i> Panel
+            </a>
+            
+        
+            
+            <a class="ni active" href="/clientes/">
+                <i class="bi bi-people-fill"></i> Clientes
+            </a>
+            
+        
+        
+        <div class="nl">Operaciones</div>
+        
+            
+            <a class="ni " href="/calendario/">
+                <i class="bi bi-calendar2-check-fill"></i> Calendario
+            </a>
+            
+        
+            
+            <button class="ni deshabilitado" type="button" title="Módulo en construcción">
+                <i class="bi bi-kanban-fill"></i> Tareas <span class="np">Pronto</span>
+            </button>
+            
+        
+            
+            <button class="ni deshabilitado" type="button" title="Módulo en construcción">
+                <i class="bi bi-file-earmark-text-fill"></i> Documentos <span class="np">Pronto</span>
+            </button>
+            
+        
+            
+            <button class="ni deshabilitado" type="button" title="Módulo en construcción">
+                <i class="bi bi-search-heart-fill"></i> Hallazgos <span class="np">Pronto</span>
+            </button>
+            
+        
+            
+            <button class="ni deshabilitado" type="button" title="Módulo en construcción">
+                <i class="bi bi-journal-text"></i> Expediente <span class="np">Pronto</span>
+            </button>
+            
+        
+        
+        <div class="nl">Finanzas</div>
+        
+            
+            <button class="ni deshabilitado" type="button" title="Módulo en construcción">
+                <i class="bi bi-cash-coin"></i> Honorarios <span class="np">Pronto</span>
+            </button>
+            
+        
+            
+            <button class="ni deshabilitado" type="button" title="Módulo en construcción">
+                <i class="bi bi-chat-dots-fill"></i> Comunicaciones <span class="np">Pronto</span>
+            </button>
+            
+        
+            
+            <button class="ni deshabilitado" type="button" title="Módulo en construcción">
+                <i class="bi bi-bar-chart-line-fill"></i> Reportes <span class="np">Pronto</span>
+            </button>
+            
+        
+        
+        <div class="nl">Admin</div>
+        
+            
+            <button class="ni deshabilitado" type="button" title="Módulo en construcción">
+                <i class="bi bi-people"></i> Equipo y roles <span class="np">Pronto</span>
+            </button>
+            
+        
+        
+    </div>
+    <div class="s-foot">
+        <div class="av-sb">PA</div>
+        <div style="flex:1;min-width:0">
+            <div class="av-name">Paula Andrea Blanco</div>
+            <div class="av-role">Administrador</div>
+        </div>
+        <form method="post" action="/cerrar-sesion/">
+            <input type="hidden" name="csrfmiddlewaretoken" value="danyGtj6yCQTCZLiH3J0k7Gni86YUT7mmlhxAcbLdgCUN8wmEt0eWgcSLfZgnv1m">
+            <button type="submit" class="btn-salir" title="Cerrar sesión"><i class="bi bi-box-arrow-right"></i></button>
+        </form>
+    </div>
+</aside>
+
+<div id="main">
+    <header class="topbar">
+        <button class="hbg" id="btnMenu" type="button" aria-label="Abrir menú"><i class="bi bi-list"></i></button>
+        <div>
+            <div class="page-title">Hola, Paula</div>
+            <div class="page-sub">Miércoles, 23 de Septiembre de 2026</div>
+        </div>
+        <div class="tb-search">
+            <i class="bi bi-search"></i>
+            <input type="text" placeholder="Buscar cliente o empresa…" disabled title="Disponible al completar el módulo de clientes">
+        </div>
+        <div class="av-top">PA</div>
+    </header>
+    <main class="content">
+        
+        
+<div class="panel">
+    <div class="ph mb-0">
+        <div>
+            <div class="ph-title" style="font-size:18px">Agencia de Publicidad CreativeWorks</div>
+            <div class="ph-meta mt-1">
+                NIT 910912345 · Jurídica ·
+                
+                <span class="badge-est be-g">Activo</span>
+                
+            </div>
+        </div>
+        <div class="ph-actions">
+            
+            <a class="ph-link" href="/clientes/12/editar/"><i class="bi bi-pencil"></i> Editar</a>
+            
+            <button type="button" class="ph-link" data-bs-toggle="modal" data-bs-target="#modalInactivar"><i class="bi bi-slash-circle"></i> Inactivar</button>
+            
+            
+            <a class="ph-link" href="/clientes/"><i class="bi bi-arrow-left"></i> Volver</a>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-6">
+        <div class="panel mb-3">
+            <div class="ph"><div class="ph-title"><i class="bi bi-person-vcard"></i> Identificación</div></div>
+            <dl class="row mb-0">
+                <dt class="col-sm-5 text-muted fw-normal">Tipo de documento</dt><dd class="col-sm-7">NIT</dd>
+                <dt class="col-sm-5 text-muted fw-normal">Número de documento</dt><dd class="col-sm-7">910912345</dd>
+                <dt class="col-sm-5 text-muted fw-normal">Tipo de persona</dt><dd class="col-sm-7">Jurídica</dd>
+            </dl>
+        </div>
+
+        <div class="panel mb-3">
+            <div class="ph"><div class="ph-title"><i class="bi bi-receipt"></i> Información fiscal</div></div>
+            <dl class="row mb-0">
+                <dt class="col-sm-5 text-muted fw-normal">Régimen tributario</dt><dd class="col-sm-7">Régimen ordinario</dd>
+                <dt class="col-sm-5 text-muted fw-normal">Responsable de IVA</dt><dd class="col-sm-7">Sí</dd>
+            </dl>
+        </div>
+
+        <div class="panel mb-3">
+            <div class="ph"><div class="ph-title"><i class="bi bi-geo-alt"></i> Ubicación</div></div>
+            <dl class="row mb-0">
+                <dt class="col-sm-5 text-muted fw-normal">Ciudad</dt><dd class="col-sm-7">Bogotá D.C.</dd>
+                <dt class="col-sm-5 text-muted fw-normal">Municipio principal</dt><dd class="col-sm-7">Bogotá D.C.</dd>
+            </dl>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="panel mb-3">
+            <div class="ph"><div class="ph-title"><i class="bi bi-envelope"></i> Contacto</div></div>
+            <dl class="row mb-0">
+                <dt class="col-sm-5 text-muted fw-normal">Teléfono</dt><dd class="col-sm-7">3014567890</dd>
+                <dt class="col-sm-5 text-muted fw-normal">Correo del cliente</dt><dd class="col-sm-7">info@creativeworks.co</dd>
+            </dl>
+        </div>
+
+        <div class="panel mb-3">
+            <div class="ph"><div class="ph-title"><i class="bi bi-person-check"></i> Asignación</div></div>
+            <dl class="row mb-0">
+                <dt class="col-sm-5 text-muted fw-normal">Responsable asignado</dt><dd class="col-sm-7">Paula Andrea Blanco</dd>
+                <dt class="col-sm-5 text-muted fw-normal">Fecha de registro</dt><dd class="col-sm-7">21 de Septiembre de 2026</dd>
+            </dl>
+        </div>
+
+        <div class="panel mb-3">
+            <div class="ph"><div class="ph-title"><i class="bi bi-briefcase"></i> Tipos de servicio contable</div></div>
+            
+            <span class="chip-servicio">Declaración de renta</span>
+            
+            <span class="chip-servicio">Declaración de IVA</span>
+            
+        </div>
+        <div class="panel">
+            <div class="ph"><div class="ph-title"><i class="bi bi-geo-alt"></i> Municipios adicionales (multi-ICA)</div></div>
+            
+            <span class="chip-servicio">La Calera</span>
+            
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        
+
+<div class="panel">
+    <div class="ph">
+        <div class="ph-title"><i class="bi bi-calendar2-check"></i> Vencimientos del cliente</div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a class="ph-link" href="/calendario/vencimientos/?cliente=12">
+                <i class="bi bi-list-ul"></i> Ver en la lista
+            </a>
+            
+            <form method="post" action="/calendario/clientes/12/calcular/" class="d-inline">
+                <input type="hidden" name="csrfmiddlewaretoken" value="danyGtj6yCQTCZLiH3J0k7Gni86YUT7mmlhxAcbLdgCUN8wmEt0eWgcSLfZgnv1m">
+                <button type="submit" class="ph-btn"
+                        onclick="return confirm('¿Calcular los vencimientos DIAN de este cliente?')">
+                    <i class="bi bi-arrow-repeat"></i> Calcular vencimientos DIAN
+                </button>
+            </form>
+            <a class="ph-btn" href="/calendario/vencimientos/nuevo/?cliente=12">
+                <i class="bi bi-plus-lg"></i> Agregar vencimiento
+            </a>
+            
+        </div>
+    </div>
+
+    <table class="tbl">
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Obligación</th>
+                <th>Ámbito</th>
+                <th>Municipio</th>
+                <th>Estado</th>
+                <th>Validación</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            
+            <tr>
+                <td>16/02/2026</td>
+                <td>Retención en la fuente</td>
+                <td><span class="badge-tipo bt-emp">Nacional</span></td>
+                <td>—</td>
+                <td>
+                    
+                    <span class="badge-est be-r">Pendiente</span>
+                    
+                </td>
+                <td>
+                    
+                        
+                        <span class="badge-est be-n">Pendiente de validar</span>
+                        
+                    
+                </td>
+                <td>
+                    <a class="icon-btn" href="/calendario/vencimientos/2/" title="Ver detalle">
+                        <i class="bi bi-eye"></i>
+                    </a>
+                </td>
+            </tr>
+            
+            <tr>
+                <td>16/03/2026</td>
+                <td>IVA bimestral</td>
+                <td><span class="badge-tipo bt-emp">Nacional</span></td>
+                <td>—</td>
+                <td>
+                    
+                    <span class="badge-est be-r">Pendiente</span>
+                    
+                </td>
+                <td>
+                    
+                        
+                        <span class="badge-est be-n">Pendiente de validar</span>
+                        
+                    
+                </td>
+                <td>
+                    <a class="icon-btn" href="/calendario/vencimientos/1/" title="Ver detalle">
+                        <i class="bi bi-eye"></i>
+                    </a>
+                </td>
+            </tr>
+            
+            <tr>
+                <td>16/03/2026</td>
+                <td>Retención en la fuente</td>
+                <td><span class="badge-tipo bt-emp">Nacional</span></td>
+                <td>—</td>
+                <td>
+                    
+                    <span class="badge-est be-r">Pendiente</span>
+                    
+                </td>
+                <td>
+                    
+                        
+                        <span class="badge-est be-n">Pendiente de validar</span>
+                        
+                    
+                </td>
+                <td>
+                    <a class="icon-btn" href="/calendario/vencimientos/4/" title="Ver detalle">
+                        <i class="bi bi-eye"></i>
+                    </a>
+                </td>
+            </tr>
+            
+            <tr>
+                <td>20/04/2026</td>
+                <td>Retención en la fuente</td>
+                <td><span class="badge-tipo bt-emp">Nacional</span></td>
+                <td>—</td>
+                <td>
+                    
+                    <span class="badge-est be-r">Pendiente</span>
+                    
+                </td>
+                <td>
+                    
+                        
+                        <span class="badge-est be-n">Pendiente de validar</span>
+                        
+                    
+                </td>
+                <td>
+                    <a class="icon-btn" href="/calendario/vencimientos/6/" title="Ver detalle">
+                        <i class="bi bi-eye"></i>
+                    </a>
+                </td>
+            </tr>
+            
+            <tr>
+                <td>19/05/2026</td>
+                <td>Retención en la fuente</td>
+                <td><span class="badge-tipo bt-emp">Nacional</span></td>
+                <td>—</td>
+                <td>
+                    
+                    <span class="badge-est be-r">Pendiente</span>
+                    
+                </td>
+                <td>
+                    
+                        
+                        <span class="badge-est be-n">Pendiente de validar</span>
+                        
+                    
+                </td>
+                <td>
+                    <a class="icon-btn" href="/calendario/vencimientos/8/" title="Ver detalle">
+                        <i class="bi bi-eye"></i>
+                    </a>
+                </td>
+            </tr>
+            
+            <tr>
+                <td>19/05/2026</td>
+                <td>IVA bimestral</td>
+                <td><span class="badge-tipo bt-emp">Nacional</span></td>
+                <td>—</td>
+                <td>
+                    
+                    <span class="badge-est be-r">Pendiente</span>
+                    
+                </td>
+                <td>
+                    
+                        
+                        <span class="badge-est be-n">Pendiente de validar</span>
+                        
+                    
+                </td>
+                <td>
+                    <a class="icon-btn" href="/calendario/vencimientos/3/" title="Ver detalle">
+                        <i class="bi bi-eye"></i>
+                    </a>
+                </td>
+            </tr>
+            
+            <tr>
+                <td>19/05/2026</td>
+                <td>Renta personas jurídicas</td>
+                <td><span class="badge-tipo bt-emp">Nacional</span></td>
+                <td>—</td>
+                <td>
+                    
+                    <span class="badge-est be-r">Pendiente</span>
+                    
+                </td>
+                <td>
+                    
+                        
+                        <span class="badge-est be-n">Pendiente de validar</span>
+                        
+                    
+                </td>
+                <td>
+                    <a class="icon-btn" href="/calendario/vencimientos/19/" title="Ver detalle">
+                        <i class="bi bi-eye"></i>
+                    </a>
+                </td>
+            </tr>
+            
+            <tr>
+                <td>17/06/2026</td>
+                <td>Retención en la fuente</td>
+                <td><span class="badge-tipo bt-emp">Nacional</span></td>
+                <td>—</td>
+                <td>
+                    
+                    <span class="badge-est be-r">Pendiente</span>
+                    
+                </td>
+                <td>
+                    
+                        
+                        <span class="badge-est be-n">Pendiente de validar</span>
+                        
+                    
+                </td>
+                <td>
+                    <a class="icon-btn" href="/calendario/vencimientos/10/" title="Ver detalle">
+                        <i class="bi bi-eye"></i>
+                    </a>
+                </td>
+            </tr>
+            
+            <tr>
+                <td>16/07/2026</td>
+                <td>Retención en la fuente</td>
+                <td><span class="badge-tipo bt-emp">Nacional</span></td>
+                <td>—</td>
+                <td>
+                    
+                    <span class="badge-est be-r">Pendiente</span>
+                    
+                </td>
+                <td>
+                    
+                        
+                        <span class="badge-est be-n">Pendiente de validar</span>
+                        
+                    
+                </td>
+                <td>
+                    <a class="icon-btn" href="/calendario/vencimientos/12/" title="Ver detalle">
+                        <i class="bi bi-eye"></i>
+                    </a>
+                </td>
+            </tr>
+            
+            <tr>
+                <td>16/07/2026</td>
+                <td>IVA bimestral</td>
+                <td><span class="badge-tipo bt-emp">Nacional</span></td>
+                <td>—</td>
+                <td>
+                    
+                    <span class="badge-est be-r">Pendiente</span>
+                    
+                </td>
+                <td>
+                    
+                        
+                        <span class="badge-est be-n">Pendiente de validar</span>
+                        
+                    
+                </td>
+                <td>
+                    <a class="icon-btn" href="/calendario/vencimientos/5/" title="Ver detalle">
+                        <i class="bi bi-eye"></i>
+                    </a>
+                </td>
+            </tr>
+            
+            <tr>
+                <td>16/07/2026</td>
+                <td>Renta personas jurídicas</td>
+                <td><span class="badge-tipo bt-emp">Nacional</span></td>
+                <td>—</td>
+                <td>
+                    
+                    <span class="badge-est be-r">Pendiente</span>
+                    
+                </td>
+                <td>
+                    
+                        
+                        <span class="badge-est be-n">Pendiente de validar</span>
+                        
+                    
+                </td>
+                <td>
+                    <a class="icon-btn" href="/calendario/vencimientos/20/" title="Ver detalle">
+                        <i class="bi bi-eye"></i>
+                    </a>
+                </td>
+            </tr>
+            
+            <tr>
+                <td>19/08/2026</td>
+                <td>Retención en la fuente</td>
+                <td><span class="badge-tipo bt-emp">Nacional</span></td>
+                <td>—</td>
+                <td>
+                    
+                    <span class="badge-est be-r">Pendiente</span>
+                    
+                </td>
+                <td>
+                    
+                        
+                        <span class="badge-est be-n">Pendiente de validar</span>
+                        
+                    
+                </td>
+                <td>
+                    <a class="icon-btn" href="/calendario/vencimientos/13/" title="Ver detalle">
+                        <i class="bi bi-eye"></i>
+                    </a>
+                </td>
+            </tr>
+            
+            <tr>
+                <td>15/09/2026</td>
+                <td>Retención en la fuente</td>
+                <td><span class="badge-tipo bt-emp">Nacional</span></td>
+                <td>—</td>
+                <td>
+                    
+                    <span class="badge-est be-r">Pendiente</span>
+                    
+                </td>
+                <td>
+                    
+                        
+                        <span class="badge-est be-teal">Validado</span>
+                        
+                    
+                </td>
+                <td>
+                    <a class="icon-btn" href="/calendario/vencimientos/14/" title="Ver detalle">
+                        <i class="bi bi-eye"></i>
+                    </a>
+                </td>
+            </tr>
+            
+            <tr>
+                <td>15/09/2026</td>
+                <td>IVA bimestral</td>
+                <td><span class="badge-tipo bt-emp">Nacional</span></td>
+                <td>—</td>
+                <td>
+                    
+                    <span class="badge-est be-r">Pendiente</span>
+                    
+                </td>
+                <td>
+                    
+                        
+                        <span class="badge-est be-n">Pendiente de validar</span>
+                        
+                    
+                </td>
+                <td>
+                    <a class="icon-btn" href="/calendario/vencimientos/7/" title="Ver detalle">
+                        <i class="bi bi-eye"></i>
+                    </a>
+                </td>
+            </tr>
+            
+            <tr>
+                <td>16/10/2026</td>
+                <td>Retención en la fuente</td>
+                <td><span class="badge-tipo bt-emp">Nacional</span></td>
+                <td>—</td>
+                <td>
+                    
+                    <span class="badge-est be-r">Pendiente</span>
+                    
+                </td>
+                <td>
+                    
+                        
+                        <span class="badge-est be-n">Pendiente de validar</span>
+                        
+                    
+                </td>
+                <td>
+                    <a class="icon-btn" href="/calendario/vencimientos/15/" title="Ver detalle">
+                        <i class="bi bi-eye"></i>
+                    </a>
+                </td>
+            </tr>
+            
+            <tr>
+                <td>18/11/2026</td>
+                <td>Retención en la fuente</td>
+                <td><span class="badge-tipo bt-emp">Nacional</span></td>
+                <td>—</td>
+                <td>
+                    
+                    <span class="badge-est be-r">Pendiente</span>
+                    
+                </td>
+                <td>
+                    
+                        
+                        <span class="badge-est be-n">Pendiente de validar</span>
+                        
+                    
+                </td>
+                <td>
+                    <a class="icon-btn" href="/calendario/vencimientos/16/" title="Ver detalle">
+                        <i class="bi bi-eye"></i>
+                    </a>
+                </td>
+            </tr>
+            
+            <tr>
+                <td>18/11/2026</td>
+                <td>IVA bimestral</td>
+                <td><span class="badge-tipo bt-emp">Nacional</span></td>
+                <td>—</td>
+                <td>
+                    
+                    <span class="badge-est be-r">Pendiente</span>
+                    
+                </td>
+                <td>
+                    
+                        
+                        <span class="badge-est be-n">Pendiente de validar</span>
+                        
+                    
+                </td>
+                <td>
+                    <a class="icon-btn" href="/calendario/vencimientos/9/" title="Ver detalle">
+                        <i class="bi bi-eye"></i>
+                    </a>
+                </td>
+            </tr>
+            
+            <tr>
+                <td>16/12/2026</td>
+                <td>Retención en la fuente</td>
+                <td><span class="badge-tipo bt-emp">Nacional</span></td>
+                <td>—</td>
+                <td>
+                    
+                    <span class="badge-est be-r">Pendiente</span>
+                    
+                </td>
+                <td>
+                    
+                        
+                        <span class="badge-est be-n">Pendiente de validar</span>
+                        
+                    
+                </td>
+                <td>
+                    <a class="icon-btn" href="/calendario/vencimientos/17/" title="Ver detalle">
+                        <i class="bi bi-eye"></i>
+                    </a>
+                </td>
+            </tr>
+            
+            <tr>
+                <td>19/01/2027</td>
+                <td>Retención en la fuente</td>
+                <td><span class="badge-tipo bt-emp">Nacional</span></td>
+                <td>—</td>
+                <td>
+                    
+                    <span class="badge-est be-r">Pendiente</span>
+                    
+                </td>
+                <td>
+                    
+                        
+                        <span class="badge-est be-n">Pendiente de validar</span>
+                        
+                    
+                </td>
+                <td>
+                    <a class="icon-btn" href="/calendario/vencimientos/18/" title="Ver detalle">
+                        <i class="bi bi-eye"></i>
+                    </a>
+                </td>
+            </tr>
+            
+            <tr>
+                <td>19/01/2027</td>
+                <td>IVA bimestral</td>
+                <td><span class="badge-tipo bt-emp">Nacional</span></td>
+                <td>—</td>
+                <td>
+                    
+                    <span class="badge-est be-r">Pendiente</span>
+                    
+                </td>
+                <td>
+                    
+                        
+                        <span class="badge-est be-n">Pendiente de validar</span>
+                        
+                    
+                </td>
+                <td>
+                    <a class="icon-btn" href="/calendario/vencimientos/11/" title="Ver detalle">
+                        <i class="bi bi-eye"></i>
+                    </a>
+                </td>
+            </tr>
+            
+        </tbody>
+    </table>
+</div>
+
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        
+<div class="panel">
+    <div class="ph d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div class="ph-title"><i class="bi bi-key"></i> Credenciales y accesos a portales</div>
+        <div class="d-flex gap-2">
+            <a class="ph-link" href="/clientes/12/credenciales/reporte/">
+                <i class="bi bi-list-check"></i> Ver reporte
+            </a>
+            
+            <button type="button" class="ph-btn" data-bs-toggle="modal" data-bs-target="#modalCredencial"
+                    data-url="/clientes/12/credenciales/nueva/">
+                <i class="bi bi-plus-lg"></i> Agregar credencial
+            </button>
+            
+        </div>
+    </div>
+
+    
+    <div class="table-responsive">
+        <table class="tbl">
+            <thead>
+                <tr>
+                    <th>Concepto</th>
+                    <th>Usuario</th>
+                    <th>Contraseña</th>
+                    <th>Última actualización</th>
+                    <th>Estado</th>
+                    
+                    <th class="text-end">Acciones</th>
+                    
+                </tr>
+            </thead>
+            <tbody>
+                
+                <tr>
+                    <td>correo empresa</td>
+                    <td>dsad</td>
+                    <td>
+                        <div class="input-group" style="max-width: 200px;">
+                            <input type="password" class="form-control form-control-sm" value="sfsf" readonly id="pass-3">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="togglePass(this)" title="Mostrar/ocultar">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                    </td>
+                    <td>23/09/2026 11:17</td>
+                    <td>
+                        
+                        <span class="badge-est be-g">Actualizada</span>
+                        
+                    </td>
+                    
+                    <td class="text-end">
+                        <button type="button" class="icon-btn" data-bs-toggle="modal" data-bs-target="#modalCredencial" 
+                                data-url="/clientes/12/credenciales/3/editar/"
+                                title="Editar">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button type="button" class="icon-btn danger" 
+                                data-bs-toggle="modal" data-bs-target="#modalEliminarCredencial"
+                                data-url="/clientes/12/credenciales/3/eliminar/"
+                                data-concepto="correo empresa"
+                                title="Eliminar">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                    
+                </tr>
+                
+                <tr>
+                    <td>siigo nube</td>
+                    <td>dadddass@fdfgdf.com</td>
+                    <td>
+                        <div class="input-group" style="max-width: 200px;">
+                            <input type="password" class="form-control form-control-sm" value="fsdfsfsf" readonly id="pass-2">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="togglePass(this)" title="Mostrar/ocultar">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                    </td>
+                    <td>23/09/2026 10:48</td>
+                    <td>
+                        
+                        <span class="badge-est be-g">Actualizada</span>
+                        
+                    </td>
+                    
+                    <td class="text-end">
+                        <button type="button" class="icon-btn" data-bs-toggle="modal" data-bs-target="#modalCredencial" 
+                                data-url="/clientes/12/credenciales/2/editar/"
+                                title="Editar">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button type="button" class="icon-btn danger" 
+                                data-bs-toggle="modal" data-bs-target="#modalEliminarCredencial"
+                                data-url="/clientes/12/credenciales/2/eliminar/"
+                                data-concepto="siigo nube"
+                                title="Eliminar">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                    
+                </tr>
+                
+            </tbody>
+        </table>
+    </div>
+    
+
+    
+    <div class="modal fade" id="modalEliminarCredencial" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Eliminar credencial</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    ¿Está seguro de eliminar la credencial <strong id="eliminarCredencialConcepto"></strong>?<br>
+                    <span class="text-danger">Esta acción no se puede deshacer.</span>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <form id="formEliminarCredencial" method="post">
+                        <input type="hidden" name="csrfmiddlewaretoken" value="danyGtj6yCQTCZLiH3J0k7Gni86YUT7mmlhxAcbLdgCUN8wmEt0eWgcSLfZgnv1m">
+                        <button type="submit" class="btn btn-danger">Sí, eliminar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+</div>
+
+<script>
+    // Toggle password visibility
+    function togglePass(btn) {
+        const input = btn.parentElement.querySelector('input[type="password"], input[type="text"]');
+        const icon = btn.querySelector('i');
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.remove('bi-eye');
+            icon.classList.add('bi-eye-slash');
+        } else {
+            input.type = 'password';
+            icon.classList.remove('bi-eye-slash');
+            icon.classList.add('bi-eye');
+        }
+    }
+
+    // Handle credential modal loading via data-url
+    document.addEventListener('DOMContentLoaded', function() {
+        const modalCredencial = document.getElementById('modalCredencial');
+        if (modalCredencial) {
+            modalCredencial.addEventListener('show.bs.modal', function(event) {
+                const button = event.relatedTarget;
+                if (button && button.dataset.url) {
+                    const modalContent = modalCredencial.querySelector('.modal-content');
+                    modalContent.innerHTML = '<div class="modal-body text-center"><div class="spinner-border text-teal" role="status"></div><p class="mt-2 text-muted">Cargando...</p></div>';
+                    fetch(button.dataset.url, {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Error cargando el formulario');
+                        }
+                        return response.text();
+                    })
+                    .then(html => {
+                        modalContent.innerHTML = html;
+                        modalCredencial.querySelectorAll('.input-group button').forEach(btn => {
+                            btn.onclick = function() { togglePass(this); };
+                        });
+                    })
+                    .catch(error => {
+                        modalContent.innerHTML = '<div class="modal-body"><div class="alert alert-danger">No se pudo cargar el formulario. Intente de nuevo.</div></div>';
+                        console.error('Error cargando credencial:', error);
+                    });
+                }
+            });
+
+            // Limpiar modal al cerrarse para evitar contenido viejo
+            modalCredencial.addEventListener('hidden.bs.modal', function() {
+                modalCredencial.querySelector('.modal-content').innerHTML = '';
+            });
+        }
+
+        // Handle delete confirmation
+        const modalEliminar = document.getElementById('modalEliminarCredencial');
+        if (modalEliminar) {
+            modalEliminar.addEventListener('show.bs.modal', function(event) {
+                const button = event.relatedTarget;
+                if (button) {
+                    const concepto = button.dataset.concepto;
+                    const url = button.dataset.url;
+                    document.getElementById('eliminarCredencialConcepto').textContent = concepto;
+                    document.getElementById('formEliminarCredencial').action = url;
+                }
+            });
+        }
+    });
+</script>
+    </div>
+</div>
+
+
+<!-- Modal vacío para credenciales; el contenido se carga vía AJAX -->
+<div class="modal fade" id="modalCredencial" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <!-- Contenido cargado dinámicamente -->
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalInactivar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Inactivar cliente</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                El cliente quedará como <strong>Inactivo</strong> y conservará todo su historial.
+                ¿Desea continuar?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form method="post" action="/clientes/12/inactivar/">
+                    <input type="hidden" name="csrfmiddlewaretoken" value="danyGtj6yCQTCZLiH3J0k7Gni86YUT7mmlhxAcbLdgCUN8wmEt0eWgcSLfZgnv1m">
+                    <button type="submit" class="btn btn-danger">Sí, inactivar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+    </main>
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    var btnMenu = document.getElementById("btnMenu");
+    if (btnMenu) {
+        btnMenu.addEventListener("click", function () {
+            document.getElementById("sidebar").classList.toggle("open");
+        });
+    }
+</script>
+</body>
+</html>

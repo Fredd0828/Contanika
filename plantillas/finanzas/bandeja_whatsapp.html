@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% load finanzas_tags %}
+
+{% block titulo %}WhatsApp pendientes{% endblock %}
+
+{% block contenido %}
+<div class="panel">
+    <div class="ph mb-0">
+        <div class="ph-title" style="font-size:18px"><i class="bi bi-whatsapp"></i> WhatsApp pendientes</div>
+        <a class="ph-link" href="{% url 'finanzas:historico' %}"><i class="bi bi-arrow-left"></i> Volver</a>
+    </div>
+</div>
+
+<div class="panel">
+    <p class="text-muted small">
+        Mensajes de WhatsApp que ya llegaron a su hora (programados o de un envío masivo). WhatsApp no
+        permite enviarlos solos: pulse «Abrir WhatsApp», revise el mensaje ya escrito y presione Enviar.
+        Al abrirlo, el envío queda registrado en el historial de comunicaciones del cliente.
+    </p>
+    <div class="table-responsive">
+        <table class="tbl">
+            <thead><tr><th>Cliente</th><th>Qué</th><th>Cuenta</th><th class="text-end">Saldo</th><th>Celular</th><th>Desde</th><th></th></tr></thead>
+            <tbody>
+                {% for fila in pendientes %}
+                {% with envio=fila.envio %}
+                <tr>
+                    <td>{{ envio.cuenta_cobro.cliente.nombre_razon_social }}</td>
+                    <td>{{ envio.tipo }}</td>
+                    <td><a href="{% url 'finanzas:detalle' envio.cuenta_cobro_id %}">No. {{ envio.cuenta_cobro_id }}</a></td>
+                    <td class="text-end">{{ envio.cuenta_cobro.saldo_pendiente|pesos }}</td>
+                    <td>{% if fila.numero %}+{{ fila.numero }}{% else %}<span class="text-danger small">Sin celular válido</span>{% endif %}</td>
+                    <td>{{ envio.fecha_programada|date:"d/m/Y H:i" }}</td>
+                    <td class="text-end text-nowrap">{% include "finanzas/_acciones_envio.html" with siguiente=request.path %}</td>
+                </tr>
+                {% endwith %}
+                {% empty %}
+                <tr><td colspan="7" class="text-center text-muted py-4">No hay mensajes de WhatsApp pendientes.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% include "finanzas/_script_whatsapp.html" %}
+{% endblock %}

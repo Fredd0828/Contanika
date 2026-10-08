@@ -1,0 +1,61 @@
+{% if plantilla_seleccionada %}
+<div class="panel mb-3">
+    <div class="ph"><div class="ph-title"><i class="bi bi-input-cursor-text"></i> Campos de {{ plantilla_seleccionada.nombre_plantilla }}</div></div>
+
+    {% if formulario_campos %}
+    <div class="row g-3">
+        {% for campo in formulario_campos %}
+        <div class="col-md-6">
+            <label class="form-label" for="{{ campo.id_for_label }}">{{ campo.label }}</label>
+            {{ campo }}
+            {% if campo.errors %}<div class="text-danger small">{{ campo.errors }}</div>{% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if formset_filas %}
+    <div class="{% if formulario_campos %}mt-3{% endif %}">
+        <div class="ph-title mb-2" style="font-size:14px">Filas repetibles</div>
+        {{ formset_filas.management_form }}
+        <div id="filas-repetibles">
+            {% for fila in formset_filas %}
+            <div class="row g-2 align-items-center mb-2 fila-repetible">
+                {% for campo in fila %}
+                    {% if campo.name == "DELETE" %}
+                    {% elif campo.is_hidden %}
+                        {{ campo }}
+                    {% else %}
+                    <div class="col-md-5">
+                        {{ campo }}
+                        {% if campo.errors %}<div class="text-danger small">{{ campo.errors }}</div>{% endif %}
+                    </div>
+                    {% endif %}
+                {% endfor %}
+                <div class="col-md-2">
+                    <div class="form-check">
+                        {{ fila.DELETE }}
+                        <label class="form-check-label" for="{{ fila.DELETE.id_for_label }}">Quitar</label>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <button type="button" class="ph-link mt-2" id="agregar-fila-repetible"><i class="bi bi-plus-lg"></i> Agregar fila</button>
+
+        <div id="plantilla-fila-repetible" class="d-none">
+            <div class="row g-2 align-items-center mb-2 fila-repetible">
+                {% for campo in formset_filas.empty_form %}
+                    {% if campo.name == "DELETE" %}
+                    {% elif campo.is_hidden %}
+                        {{ campo }}
+                    {% else %}
+                    <div class="col-md-5">{{ campo }}</div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endif %}

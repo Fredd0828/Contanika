@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block titulo %}Resumen del envío masivo{% endblock %}
+
+{% block contenido %}
+<div class="panel">
+    <div class="ph mb-0">
+        <div class="ph-title" style="font-size:18px"><i class="bi bi-clipboard-check"></i> Resumen del envío masivo</div>
+        <a class="ph-link" href="{% url 'finanzas:historico' %}"><i class="bi bi-arrow-left"></i> Volver a Honorarios</a>
+    </div>
+</div>
+
+<div class="panel">
+    <div class="d-flex flex-wrap gap-3 mb-3">
+        <span class="badge-est be-g">Enviados: {{ conteo.enviados }}</span>
+        <span class="badge-est be-r">Fallidos: {{ conteo.fallidos }}</span>
+        <span class="badge-est be-teal">WhatsApp por abrir: {{ conteo.whatsapp }}</span>
+        <span class="badge-est be-w">Programados: {{ conteo.programados }}</span>
+    </div>
+    <div class="table-responsive">
+        <table class="tbl">
+            <thead><tr><th>Cliente</th><th>Cuenta</th><th>Canal</th><th>Resultado</th><th></th></tr></thead>
+            <tbody>
+                {% for envio in envios %}
+                <tr>
+                    <td>{{ envio.cuenta_cobro.cliente.nombre_razon_social }}</td>
+                    <td><a href="{% url 'finanzas:detalle' envio.cuenta_cobro_id %}">No. {{ envio.cuenta_cobro_id }}</a></td>
+                    <td>{{ envio.canal }}</td>
+                    <td>
+                        {% include "finanzas/_estado_envio.html" %}
+                        {% if envio.detalle_error %}<div class="small text-danger">{{ envio.detalle_error }}</div>{% endif %}
+                        {% if envio.estado == "Programado" %}<div class="small text-muted">{{ envio.fecha_programada|date:"d/m/Y H:i" }}</div>{% endif %}
+                    </td>
+                    <td class="text-end text-nowrap">{% include "finanzas/_acciones_envio.html" with siguiente=request.path %}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="text-center text-muted py-4">No hay un envío masivo reciente.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% include "finanzas/_script_whatsapp.html" %}
+{% endblock %}

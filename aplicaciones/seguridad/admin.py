@@ -33,7 +33,7 @@ class UsuarioAdmin(UserAdminBase):
     filter_horizontal = ()
     list_display = ["correo", "nombre", "rol", "estado", "is_staff"]
     list_filter = ["rol", "estado", "is_staff"]
-    search_fields = ["correo", "nombre", "numero_tarjeta_profesional"]
+    search_fields = ["correo", "nombre", "numero_tarjeta_profesional", "identificacion"]
     fieldsets = (
         (None, {"fields": ("correo", "password")}),
         (
@@ -42,9 +42,10 @@ class UsuarioAdmin(UserAdminBase):
                 "fields": (
                     "nombre",
                     "telefono",
-                    "foto_url",
+                    "foto",
+                    "identificacion",
                     "numero_tarjeta_profesional",
-                    "firma_url",
+                    "firma",
                 )
             },
         ),

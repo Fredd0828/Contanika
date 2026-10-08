@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block titulo %}{% if accion == "crear" %}Nueva tarea{% else %}Editar tarea{% endif %}{% endblock %}
+
+{% block contenido %}
+<div class="panel">
+    <div class="ph">
+        <div class="ph-title">
+            <i class="bi bi-kanban-fill"></i>
+            {% if accion == "crear" %}Nueva tarea{% else %}Editar tarea{% endif %}
+        </div>
+        <a class="ph-link" href="{% url 'tareas:tablero' %}"><i class="bi bi-arrow-left"></i> Volver al tablero</a>
+    </div>
+
+    <form method="post" action="{% if accion == 'crear' %}{% url 'tareas:crear' %}{% else %}{% url 'tareas:editar' tarea.pk %}{% endif %}">
+        {% csrf_token %}
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label for="{{ formulario.cliente.id_for_label }}" class="form-label">{{ formulario.cliente.label }}</label>
+                {{ formulario.cliente }}
+                {% if formulario.cliente.errors %}<div class="text-danger small">{{ formulario.cliente.errors }}</div>{% endif %}
+            </div>
+            <div class="col-md-6">
+                <label for="{{ formulario.titulo.id_for_label }}" class="form-label">{{ formulario.titulo.label }}</label>
+                {{ formulario.titulo }}
+                {% if formulario.titulo.errors %}<div class="text-danger small">{{ formulario.titulo.errors }}</div>{% endif %}
+            </div>
+            <div class="col-md-6">
+                <label for="{{ formulario.tipo_tarea.id_for_label }}" class="form-label">{{ formulario.tipo_tarea.label }}</label>
+                {{ formulario.tipo_tarea }}
+                <datalist id="lista-tipos-tarea">
+                    {% for tipo in opciones.tipos_tarea %}<option value="{{ tipo }}"></option>{% endfor %}
+                </datalist>
+            </div>
+            <div class="col-md-6">
+                <label for="{{ formulario.responsable.id_for_label }}" class="form-label">{{ formulario.responsable.label }}</label>
+                {{ formulario.responsable }}
+            </div>
+            <div class="col-md-6">
+                <label for="{{ formulario.prioridad.id_for_label }}" class="form-label">{{ formulario.prioridad.label }}</label>
+                {{ formulario.prioridad }}
+            </div>
+            <div class="col-md-6">
+                <label for="{{ formulario.fecha_vencimiento.id_for_label }}" class="form-label">{{ formulario.fecha_vencimiento.label }}</label>
+                {{ formulario.fecha_vencimiento }}
+                {% if formulario.fecha_vencimiento.errors %}<div class="text-danger small">{{ formulario.fecha_vencimiento.errors }}</div>{% endif %}
+            </div>
+            <div class="col-12">
+                <label for="{{ formulario.descripcion.id_for_label }}" class="form-label">{{ formulario.descripcion.label }}</label>
+                {{ formulario.descripcion }}
+            </div>
+            <div class="col-12 form-check">
+                {{ formulario.mostrar_en_calendario }}
+                <label for="{{ formulario.mostrar_en_calendario.id_for_label }}" class="form-check-label">
+                    {{ formulario.mostrar_en_calendario.label }}
+                </label>
+                <div class="form-text">La fecha de vencimiento también aparecerá en el Módulo 2 · Calendario.</div>
+            </div>
+        </div>
+        <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="ph-btn">
+                <i class="bi bi-save"></i> {% if accion == "crear" %}Crear tarea{% else %}Guardar cambios{% endif %}
+            </button>
+            <a class="btn btn-outline-secondary" href="{% url 'tareas:tablero' %}">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block titulo %}Nueva anotación{% endblock %}
+
+{% block contenido %}
+<div class="panel">
+    <div class="ph">
+        <div class="ph-title"><i class="bi bi-sticky"></i> Nueva anotación del calendario</div>
+        <a class="ph-link" href="{% url 'calendario:calendario' %}">
+            <i class="bi bi-arrow-left"></i> Volver al calendario
+        </a>
+    </div>
+
+    <form method="post" class="row g-3">
+        {% csrf_token %}
+        {% if formulario.non_field_errors %}
+        <div class="alert alert-danger">{{ formulario.non_field_errors }}</div>
+        {% endif %}
+        <div class="col-md-4">
+            <label class="form-label">{{ formulario.fecha.label }}</label>
+            {{ formulario.fecha }}
+            {{ formulario.fecha.errors }}
+        </div>
+        <div class="col-md-8">
+            <label class="form-label">{{ formulario.visibilidad.label }}</label>
+            {{ formulario.visibilidad }}
+            {{ formulario.visibilidad.errors }}
+        </div>
+        <div class="col-12">
+            <label class="form-label">{{ formulario.contenido.label }}</label>
+            {{ formulario.contenido }}
+            {{ formulario.contenido.errors }}
+        </div>
+        <div class="col-12">
+            <label class="form-label">{{ formulario.destinatarios.label }}</label>
+            <div class="form-text mb-1">{{ formulario.destinatarios.help_text }}</div>
+            {{ formulario.destinatarios }}
+            {{ formulario.destinatarios.errors }}
+        </div>
+        <div class="col-12 d-flex gap-2">
+            <button type="submit" class="ph-btn"><i class="bi bi-check2"></i> Guardar anotación</button>
+            <a class="ph-link" href="{% url 'calendario:calendario' %}">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

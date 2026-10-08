@@ -1,0 +1,111 @@
+{# Panel de honorario y cuentas de cobro del cliente: se incluye en clientes/detalle.html #}
+{% load finanzas_tags %}
+<div class="panel">
+    <div class="ph">
+        <div class="ph-title"><i class="bi bi-cash-coin"></i> Honorario</div>
+        {% if es_administrador %}
+        <a class="ph-link" href="{% url 'finanzas:honorario' cliente.pk %}">
+            <i class="bi bi-pencil"></i> {% if honorario %}Editar honorario{% else %}Configurar honorario{% endif %}
+        </a>
+        {% endif %}
+    </div>
+    {% if honorario %}
+    <div class="row g-3">
+        <div class="col-md-4">
+            <div class="text-muted small">Tipo</div>
+            <div class="fw-semibold">{{ honorario.tipo }}</div>
+        </div>
+        <div class="col-md-4">
+            <div class="text-muted small">{% if honorario.tipo == "Por servicio" %}Total por servicios{% else %}Monto mensual{% endif %}</div>
+            <div class="fw-semibold">{{ honorario.monto|pesos }}</div>
+        </div>
+        <div class="col-md-4">
+            <div class="text-muted small">Último cambio</div>
+            <div>{{ honorario.fecha_actualizacion|date:"d/m/Y H:i" }}{% if honorario.usuario_actualizacion %} · {{ honorario.usuario_actualizacion.nombre }}{% endif %}</div>
+        </div>
+    </div>
+    {% if honorario.tipo == "Por servicio" %}
+    <table class="tbl mt-3">
+        <thead><tr><th>Servicio</th><th class="text-end">Monto</th></tr></thead>
+        <tbody>
+            {% for linea in honorario.servicios.all %}
+            <tr><td>{{ linea.tipo_servicio.nombre_servicio }}</td><td class="text-end">{{ linea.monto|pesos }}</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+    {% else %}
+    <p class="text-muted mb-0">El cliente todavía no tiene un honorario configurado.</p>
+    {% endif %}
+</div>
+
+<div class="panel">
+    <div class="ph">
+        <div class="ph-title"><i class="bi bi-wallet2"></i> Historial de abonos</div>
+        <div class="text-end">
+            <div class="text-muted small">Saldo pendiente actual</div>
+            <div class="fw-bold fs-5 {% if saldo_cliente > 0 %}text-danger{% else %}text-success{% endif %}">{{ saldo_cliente|pesos }}</div>
+        </div>
+    </div>
+    {% if abonos %}
+    <div class="table-responsive">
+        <table class="tbl">
+            <thead>
+                <tr><th>Fecha</th><th>Cuenta</th><th class="text-end">Monto</th><th class="text-end">Saldo anterior</th><th class="text-end">Saldo resultante</th><th>Medio</th><th>Registró</th></tr>
+            </thead>
+            <tbody>
+                {% for abono in abonos %}
+                <tr>
+                    <td>{{ abono.fecha|date:"d/m/Y" }}</td>
+                    <td><a href="{% url 'finanzas:detalle' abono.cuenta_cobro_id %}">No. {{ abono.cuenta_cobro_id }}</a></td>
+                    <td class="text-end">{{ abono.monto|pesos }}</td>
+                    <td class="text-end">{{ abono.saldo_anterior|pesos }}</td>
+                    <td class="text-end">{{ abono.saldo_resultante|pesos }}</td>
+                    <td>{{ abono.metodo_pago|default:"—" }}</td>
+                    <td>{{ abono.responsable.nombre }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="text-muted mb-0">El cliente no tiene abonos registrados.</p>
+    {% endif %}
+</div>
+
+<div class="panel">
+    <div class="ph">
+        <div class="ph-title"><i class="bi bi-receipt"></i> Cuentas de cobro</div>
+        <div class="d-flex gap-2">
+            <a class="ph-link" href="{% url 'finanzas:historico' %}?cliente={{ cliente.pk }}"><i class="bi bi-list-ul"></i> Ver todas</a>
+            {% if es_administrador and cliente.estado == "Activo" %}
+            <a class="ph-btn" href="{% url 'finanzas:generar' %}?cliente={{ cliente.pk }}"><i class="bi bi-plus-lg"></i> Generar cuenta de cobro</a>
+            {% endif %}
+        </div>
+    </div>
+    {% if cuentas_cobro %}
+    <div class="table-responsive">
+        <table class="tbl">
+            <thead>
+                <tr><th>No.</th><th>Período</th><th class="text-end">Valor</th><th class="text-end">Abonado</th><th class="text-end">Saldo</th><th>Vence</th><th>Estado de pago</th><th></th></tr>
+            </thead>
+            <tbody>
+                {% for cuenta in cuentas_cobro %}
+                <tr>
+                    <td>{{ cuenta.pk }}</td>
+                    <td>{{ cuenta.periodo_facturado }}</td>
+                    <td class="text-end">{{ cuenta.valor_total|pesos }}</td>
+                    {% include "finanzas/_celdas_abonos.html" %}
+                    <td>{{ cuenta.fecha_vencimiento_pago|date:"d/m/Y" }}</td>
+                    <td>{% include "finanzas/_estado_pago.html" %}</td>
+                    <td class="text-end"><a class="icon-btn" href="{% url 'finanzas:detalle' cuenta.pk %}" title="Ver detalle"><i class="bi bi-eye"></i></a></td>
+                </tr>
+                {% include "finanzas/_fila_abonos.html" with columnas=8 %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="text-muted mb-0">El cliente no tiene cuentas de cobro generadas.</p>
+    {% endif %}
+</div>

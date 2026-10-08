@@ -9,7 +9,8 @@ barra lateral sin repetir lógica.
 
 from django.urls import NoReverseMatch, reverse
 
-from .menu import SECCIONES_MENU
+from .menu import ROLES_POR_RUTA, SECCIONES_MENU
+from .models import Modulo
 
 
 def _iniciales(nombre):
@@ -33,6 +34,9 @@ def menu_lateral(request):
         visibles = []
         for etiqueta, nombre_ruta, icono, codigo_modulo in elementos:
             if codigo_modulo and not usuario.tiene_modulo_habilitado(codigo_modulo):
+                continue
+            roles = ROLES_POR_RUTA.get(nombre_ruta)
+            if roles and usuario.rol.nombre_rol not in roles:
                 continue
             url = None
             if nombre_ruta:
@@ -60,4 +64,6 @@ def menu_lateral(request):
         "menu_lateral": secciones,
         "iniciales_usuario": _iniciales(usuario.nombre),
         "nombre_corto": usuario.nombre.split()[0] if usuario.nombre else usuario.correo,
+        # El buscador de la barra superior lleva al listado de clientes (M1).
+        "puede_buscar_clientes": usuario.tiene_modulo_habilitado(Modulo.MOD01_CLIENTES),
     }

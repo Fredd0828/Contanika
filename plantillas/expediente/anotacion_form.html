@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block titulo %}Nueva anotación{% endblock %}
+
+{% block contenido %}
+<div class="panel">
+    <div class="ph">
+        <div class="ph-title"><i class="bi bi-journal-plus"></i> Nueva anotación</div>
+        <a class="ph-link" href="{% url 'expediente:lista' %}"><i class="bi bi-arrow-left"></i> Volver al expediente</a>
+    </div>
+
+    <form method="post" action="{% url 'expediente:crear' %}" enctype="multipart/form-data">
+        {% include "expediente/_anotacion_form_campos.html" %}
+        <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="ph-btn"><i class="bi bi-save"></i> Registrar anotación</button>
+            <a class="btn btn-outline-secondary" href="{% url 'expediente:lista' %}">Cancelar</a>
+        </div>
+    </form>
+</div>
+
+<datalist id="lista-tipos-anotacion">
+    {% for tipo in tipos_anotacion %}<option value="{{ tipo }}"></option>{% endfor %}
+</datalist>
+{% endblock %}

@@ -1,40 +1,438 @@
 {% extends "base.html" %}
+{% load finanzas_tags %}
 
 {% block titulo %}Panel principal{% endblock %}
 
 {% block contenido %}
-<div class="kpi-strip">
-    {% for indicador in indicadores %}
-    <div class="kpi">
-        <div class="kpi-label">{{ indicador.etiqueta }}</div>
-        <div class="kpi-num {{ indicador.color }}">{{ indicador.valor }}</div>
-    </div>
+{% if tablero.indicadores %}
+<div class="pp-kpis">
+    {% for indicador in tablero.indicadores %}
+    <a class="pp-kpi pp-tono-{{ indicador.tono }}" href="{{ indicador.url }}">
+        <div class="pp-kpi-cabeza">
+            <div class="pp-kpi-etq">{{ indicador.etiqueta }}</div>
+            <div class="pp-kpi-icono"><i class="bi {{ indicador.icono }}"></i></div>
+        </div>
+        <div class="pp-kpi-num"{% if indicador.exacto %} title="{{ indicador.exacto }}"{% endif %}>{{ indicador.valor }}</div>
+        <div class="pp-kpi-det">{{ indicador.detalle }}</div>
+    </a>
     {% endfor %}
 </div>
+{% else %}
+<div class="alert alert-warning mb-0">Su rol no tiene módulos habilitados. Contacte al Administrador.</div>
+{% endif %}
 
-<div class="panel">
-    <div class="ph">
-        <div class="ph-title"><i class="bi bi-grid-3x3-gap-fill"></i> Módulos del sistema</div>
-        <div class="ph-meta">Solo se muestran los módulos habilitados para su rol</div>
-    </div>
-    <div class="grid-tarjetas">
-        {% for entrada in modulos %}
-            {% if entrada.url %}
-            <a class="tarjeta-modulo" href="{% url entrada.url %}">
-                <div class="codigo">{{ entrada.modulo.codigo_modulo }}</div>
-                <div class="nombre">{{ entrada.modulo.nombre_modulo }}</div>
-                <span class="badge-est be-teal mt-2">Disponible</span>
-            </a>
-            {% else %}
-            <div class="tarjeta-modulo deshabilitada">
-                <div class="codigo">{{ entrada.modulo.codigo_modulo }}</div>
-                <div class="nombre">{{ entrada.modulo.nombre_modulo }}</div>
-                <span class="badge-est be-n mt-2">Próximamente</span>
+<div class="pp-grid">
+    {# ───────────── Vencimientos ───────────── #}
+    {% with seccion=tablero.vencimientos %}
+    {% if seccion %}
+    <section class="panel">
+        <div class="ph">
+            <div>
+                <div class="ph-title"><i class="bi bi-calendar2-check-fill"></i> Vencimientos</div>
+                <div class="ph-meta mt-1">Por semana y lo más urgente</div>
             </div>
-            {% endif %}
-        {% empty %}
-        <div class="alert alert-warning mb-0">Su rol no tiene módulos habilitados. Contacte al Administrador.</div>
-        {% endfor %}
-    </div>
+            <div class="ph-actions">
+                <a class="ph-link" href="{% url 'calendario:lista' %}"><i class="bi bi-list-ul"></i> Listado</a>
+                <a class="ph-link" href="{% url 'calendario:calendario' %}"><i class="bi bi-calendar3"></i> Calendario</a>
+            </div>
+        </div>
+
+        <div class="pp-cifras">
+            <div class="pp-cifra">
+                <div class="pp-cifra-etq">Vencen esta semana</div>
+                <div class="pp-cifra-num">{{ seccion.semanas.0.por_presentar }}</div>
+            </div>
+            <div class="pp-cifra">
+                <div class="pp-cifra-etq">Vencen la próxima</div>
+                <div class="pp-cifra-num">{{ seccion.semanas.1.por_presentar }}</div>
+            </div>
+            <div class="pp-cifra">
+                <div class="pp-cifra-etq">Presentados del mes</div>
+                <div class="pp-cifra-num">
+                    {{ seccion.presentados_mes }} de {{ seccion.del_mes }}{% if seccion.cumplimiento_mes is not None %} · {{ seccion.cumplimiento_mes }} %{% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="sec-lbl">Vencimientos por semana, próximas {{ seccion.semanas|length }} semanas</div>
+        {% if seccion.hay_semanas %}
+        <div class="pp-lienzo" style="height:190px">
+            <canvas id="graficoVencimientos" role="img" aria-label="Vencimientos por semana: por presentar y presentados"></canvas>
+        </div>
+        <details class="pp-tabla">
+            <summary>Ver los datos en tabla</summary>
+            <table class="tbl">
+                <thead><tr><th>Semana</th><th class="text-end">Por presentar</th><th class="text-end">Presentados</th></tr></thead>
+                <tbody>
+                    {% for semana in seccion.semanas %}
+                    <tr>
+                        <td>{{ semana.inicio|date:"d/m" }} – {{ semana.fin|date:"d/m" }}</td>
+                        <td class="text-end">{{ semana.por_presentar }}</td>
+                        <td class="text-end">{{ semana.presentados }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </details>
+        {% else %}
+        <div class="pp-vacio"><i class="bi bi-calendar2-x"></i> No hay vencimientos registrados para las próximas semanas.</div>
+        {% endif %}
+
+        <div class="sec-lbl mt-3">Lo más urgente</div>
+        <div class="pp-lista">
+            {% for item in seccion.lista %}
+            <a class="pp-item" href="{% url 'calendario:detalle' item.vencimiento.pk %}">
+                <div class="pp-fecha">
+                    <b>{{ item.vencimiento.fecha_vencimiento|date:"j" }}</b>
+                    <span>{{ item.vencimiento.fecha_vencimiento|date:"M" }}</span>
+                </div>
+                <div class="pp-item-cuerpo">
+                    <div class="pp-item-titulo">{{ item.vencimiento.tipo_obligacion }}</div>
+                    <div class="pp-item-sub">{{ item.vencimiento.cliente.nombre_razon_social }}</div>
+                </div>
+                {% if item.dias_atraso %}
+                <span class="badge-est be-r"><i class="bi bi-exclamation-triangle"></i> Hace {{ item.dias_atraso }} día{{ item.dias_atraso|pluralize }}</span>
+                {% elif item.dias == 0 %}
+                <span class="badge-est be-w">Hoy</span>
+                {% elif item.dias == 1 %}
+                <span class="badge-est be-w">Mañana</span>
+                {% else %}
+                <span class="badge-est be-n">En {{ item.dias }} días</span>
+                {% endif %}
+            </a>
+            {% empty %}
+            <div class="pp-vacio"><i class="bi bi-check2-circle"></i> No hay obligaciones pendientes.</div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+    {% endwith %}
+
+    {# ───────────── Finanzas ───────────── #}
+    {% with seccion=tablero.finanzas %}
+    {% if seccion %}
+    <section class="panel">
+        <div class="ph">
+            <div>
+                <div class="ph-title"><i class="bi bi-cash-coin"></i> Finanzas</div>
+                <div class="ph-meta mt-1">{% if seccion.consolidado %}Consolidado del despacho{% else %}Solo sus clientes asignados{% endif %}</div>
+            </div>
+            <a class="ph-link" href="{% url 'finanzas:cartera' %}"><i class="bi bi-wallet2"></i> Cartera</a>
+        </div>
+
+        <div class="pp-cifras">
+            <div class="pp-cifra">
+                <div class="pp-cifra-etq">Facturado este mes</div>
+                <div class="pp-cifra-num">{{ seccion.facturado_mes|pesos }}</div>
+            </div>
+            <div class="pp-cifra">
+                <div class="pp-cifra-etq">Cobrado este mes</div>
+                <div class="pp-cifra-num">{{ seccion.cobrado_mes|pesos }}</div>
+            </div>
+            <div class="pp-cifra">
+                <div class="pp-cifra-etq">{% if seccion.en_mora %}<i class="bi bi-exclamation-triangle c-red"></i> {% endif %}En mora</div>
+                <div class="pp-cifra-num">{{ seccion.en_mora|pesos }}</div>
+            </div>
+        </div>
+
+        <div class="sec-lbl">Facturado y cobrado, últimos {{ seccion.meses|length }} meses</div>
+        {% if seccion.hay_meses %}
+        <div class="pp-lienzo" style="height:190px">
+            <canvas id="graficoFinanzas" role="img" aria-label="Facturado y cobrado por mes"></canvas>
+        </div>
+        <details class="pp-tabla">
+            <summary>Ver los datos en tabla</summary>
+            <table class="tbl">
+                <thead><tr><th>Mes</th><th class="text-end">Facturado</th><th class="text-end">Cobrado</th></tr></thead>
+                <tbody>
+                    {% for mes in seccion.meses %}
+                    <tr>
+                        <td>{{ mes.etiqueta }}</td>
+                        <td class="text-end">{{ mes.facturado|pesos }}</td>
+                        <td class="text-end">{{ mes.cobrado|pesos }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </details>
+        {% else %}
+        <div class="pp-vacio"><i class="bi bi-receipt"></i> Sin cuentas de cobro ni abonos en este período.</div>
+        {% endif %}
+
+        {% if seccion.recaudo is not None %}
+        <div class="sec-lbl mt-3">Recaudo acumulado</div>
+        <div class="pp-medidor-fila">
+            <div class="pp-medidor" role="progressbar" aria-valuenow="{{ seccion.recaudo }}" aria-valuemin="0" aria-valuemax="100" aria-label="Recaudo acumulado">
+                <span style="width:{{ seccion.recaudo }}%"></span>
+            </div>
+            <strong>{{ seccion.recaudo }} %</strong>
+        </div>
+        <p class="pp-nota">De todo lo facturado, lo que ya se cobró. Por cobrar: {{ seccion.saldo|pesos }}</p>
+        {% endif %}
+
+        {% if seccion.deudores %}
+        <div class="sec-lbl mt-3">Clientes con saldo pendiente</div>
+        <div class="pp-lista">
+            {% for fila in seccion.deudores %}
+            <a class="pp-item pp-item-doble" href="{% url 'clientes:detalle' fila.cliente.pk %}#tab-honorarios">
+                <div class="pp-item-cuerpo">
+                    <div class="pp-item-titulo">{{ fila.cliente.nombre_razon_social }}</div>
+                    <div class="pp-item-sub">{{ fila.cuentas_pendientes }} cuenta{{ fila.cuentas_pendientes|pluralize }} pendiente{{ fila.cuentas_pendientes|pluralize }}</div>
+                </div>
+                {% if fila.mora_critica %}
+                <span class="badge-est be-r"><i class="bi bi-exclamation-triangle"></i> {{ fila.dias_mora }} días de mora</span>
+                {% elif fila.dias_mora %}
+                <span class="badge-est be-w">{{ fila.dias_mora }} día{{ fila.dias_mora|pluralize }} de mora</span>
+                {% else %}
+                <span class="badge-est be-g">Al día</span>
+                {% endif %}
+                <strong class="pp-monto">{{ fila.saldo|pesos }}</strong>
+            </a>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </section>
+    {% endif %}
+    {% endwith %}
+
+    {# ───────────── Tareas ───────────── #}
+    {% with seccion=tablero.tareas %}
+    {% if seccion %}
+    <section class="panel">
+        <div class="ph">
+            <div>
+                <div class="ph-title"><i class="bi bi-kanban-fill"></i> Tareas</div>
+                <div class="ph-meta mt-1">
+                    {{ seccion.activas }} activa{{ seccion.activas|pluralize }}
+                    {% if seccion.atrasadas %}· <span class="badge-est be-r"><i class="bi bi-exclamation-triangle"></i> {{ seccion.atrasadas }} atrasada{{ seccion.atrasadas|pluralize }}</span>{% endif %}
+                </div>
+            </div>
+            <a class="ph-link" href="{% url 'tareas:tablero' %}"><i class="bi bi-kanban"></i> Tablero</a>
+        </div>
+
+        <div class="sec-lbl">Tareas por estado</div>
+        {% if seccion.total %}
+        <div class="pp-barras">
+            {% for fila in seccion.por_estado %}
+            <div class="pp-barra">
+                <span class="pp-barra-etq">{{ fila.estado }}</span>
+                <span class="pp-barra-pista"><span class="pp-barra-relleno" style="width:{{ fila.ancho }}%"></span></span>
+                <span class="pp-barra-num">{{ fila.cantidad }}</span>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="sec-lbl mt-3">Avance del tablero</div>
+        <div class="pp-medidor-fila">
+            <div class="pp-medidor" role="progressbar" aria-valuenow="{{ seccion.avance }}" aria-valuemin="0" aria-valuemax="100" aria-label="Avance del tablero">
+                <span style="width:{{ seccion.avance }}%"></span>
+            </div>
+            <strong>{{ seccion.avance }} %</strong>
+        </div>
+        <p class="pp-nota">Tareas terminadas sobre el total del tablero ({{ seccion.total }})</p>
+        {% else %}
+        <div class="pp-vacio"><i class="bi bi-kanban"></i> Todavía no hay tareas en el tablero.</div>
+        {% endif %}
+
+        {% if seccion.lista %}
+        <div class="sec-lbl mt-3">{% if seccion.lista_propia %}Mis próximas tareas{% else %}Próximas tareas del equipo{% endif %}</div>
+        <div class="pp-lista">
+            {% for item in seccion.lista %}
+            <a class="pp-item" href="{% url 'tareas:detalle' item.tarea.pk %}">
+                <div class="pp-item-cuerpo">
+                    <div class="pp-item-titulo">{{ item.tarea.titulo }}</div>
+                    <div class="pp-item-sub">
+                        {{ item.tarea.cliente.nombre_razon_social }}
+                        {% if not seccion.lista_propia %}· {{ item.tarea.responsable.nombre|default:"Sin asignar" }}{% endif %}
+                    </div>
+                </div>
+                <span class="kb-prio kb-prio-{{ item.tarea.prioridad|lower }}">{{ item.tarea.prioridad }}</span>
+                {% if item.atrasada %}
+                <span class="badge-est be-r"><i class="bi bi-exclamation-triangle"></i> {{ item.tarea.fecha_vencimiento|date:"d/m" }}</span>
+                {% elif item.tarea.fecha_vencimiento %}
+                <span class="badge-est be-n">{{ item.tarea.fecha_vencimiento|date:"d/m" }}</span>
+                {% endif %}
+            </a>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </section>
+    {% endif %}
+    {% endwith %}
+
+    {# ───────────── Hallazgos ───────────── #}
+    {% with seccion=tablero.hallazgos %}
+    {% if seccion %}
+    <section class="panel">
+        <div class="ph">
+            <div>
+                <div class="ph-title"><i class="bi bi-search-heart-fill"></i> Hallazgos</div>
+                <div class="ph-meta mt-1">{{ seccion.abiertos }} sin cerrar</div>
+            </div>
+            <a class="ph-link" href="{% url 'hallazgos:lista' %}"><i class="bi bi-list-ul"></i> Ver todos</a>
+        </div>
+
+        {% if seccion.abiertos %}
+        <div class="sec-lbl">Sin cerrar, por estado</div>
+        <div class="pp-barras">
+            {% for fila in seccion.por_estado %}
+            <div class="pp-barra">
+                <span class="pp-barra-etq">{{ fila.estado }}</span>
+                <span class="pp-barra-pista"><span class="pp-barra-relleno" style="width:{{ fila.ancho }}%"></span></span>
+                <span class="pp-barra-num">{{ fila.cantidad }}</span>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="sec-lbl mt-3">Por prioridad</div>
+        <div class="pp-chips">
+            {% for fila in seccion.por_prioridad %}
+            <span class="kb-prio kb-prio-{{ fila.prioridad|lower }}">{{ fila.prioridad }}: {{ fila.cantidad }}</span>
+            {% endfor %}
+        </div>
+
+        <div class="sec-lbl mt-3">Los más prioritarios</div>
+        <div class="pp-lista">
+            {% for hallazgo in seccion.lista %}
+            <a class="pp-item" href="{% url 'hallazgos:detalle' hallazgo.pk %}">
+                <div class="pp-item-cuerpo">
+                    <div class="pp-item-titulo">{{ hallazgo.tipo_hallazgo }}</div>
+                    <div class="pp-item-sub">{{ hallazgo.cliente.nombre_razon_social }} · {{ hallazgo.estado }}</div>
+                </div>
+                <span class="kb-prio kb-prio-{{ hallazgo.prioridad|lower }}">{{ hallazgo.prioridad }}</span>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="pp-vacio"><i class="bi bi-check2-circle"></i> No hay hallazgos abiertos.</div>
+        {% endif %}
+    </section>
+    {% endif %}
+    {% endwith %}
+
+    {# ───────────── Equipo ───────────── #}
+    {% with seccion=tablero.equipo %}
+    {% if seccion %}
+    <section class="panel">
+        <div class="ph">
+            <div>
+                <div class="ph-title"><i class="bi bi-people-fill"></i> Carga del equipo</div>
+                <div class="ph-meta mt-1">Tareas activas por miembro y vencimientos de los próximos 7 días</div>
+            </div>
+            <a class="ph-link" href="{% url 'seguridad:equipo' %}"><i class="bi bi-speedometer2"></i> Panel de equipo</a>
+        </div>
+        <div class="pp-barras pp-barras-equipo">
+            {% for fila in seccion.miembros %}
+            <div class="pp-barra pp-barra-equipo">
+                <span class="pp-barra-etq" title="{{ fila.usuario.nombre }}">{{ fila.usuario.nombre }}</span>
+                <span class="pp-barra-pista"><span class="pp-barra-relleno{% if fila.alerta %} pp-relleno-rojo{% endif %}" style="width:{{ fila.ancho }}%"></span></span>
+                <span class="pp-barra-num">{{ fila.tareas_activas }}</span>
+                <span class="pp-barra-extra">
+                    {% if fila.alerta %}<span class="badge-est be-r" title="Más de {{ seccion.limite_pendientes }} tareas pendientes"><i class="bi bi-exclamation-triangle"></i> Sobrecarga</span>{% endif %}
+                    {% if fila.vencimientos %}<span class="badge-est be-w" title="Vencimientos por presentar en los próximos 7 días"><i class="bi bi-calendar2-week"></i> {{ fila.vencimientos|length }}</span>{% endif %}
+                </span>
+            </div>
+            {% empty %}
+            <div class="pp-vacio">No hay miembros activos en el equipo.</div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+    {% endwith %}
 </div>
+
+{% if tablero.vencimientos.hay_semanas %}{{ tablero.vencimientos.grafico|json_script:"datos-vencimientos" }}{% endif %}
+{% if tablero.finanzas.hay_meses %}{{ tablero.finanzas.grafico|json_script:"datos-finanzas" }}{% endif %}
+
+{% if tablero.vencimientos.hay_semanas or tablero.finanzas.hay_meses %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+    // Sin la librería (sin conexión), los datos siguen disponibles en «Ver los datos en tabla».
+    if (!window.Chart) { return; }
+    const estilo = getComputedStyle(document.documentElement);
+    const color = function (nombre) { return estilo.getPropertyValue(nombre).trim(); };
+    const superficie = color('--card');
+    const pesos = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
+    const compacto = new Intl.NumberFormat('es-CO', { notation: 'compact', maximumFractionDigits: 1 });
+    const sinMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    Chart.defaults.font.family = '"Open Sans", sans-serif';
+    Chart.defaults.font.size = 11;
+    Chart.defaults.color = color('--muted');
+
+    function graficoBarras(idLienzo, idDatos, opciones) {
+        const lienzo = document.getElementById(idLienzo);
+        const fuente = document.getElementById(idDatos);
+        if (!lienzo || !fuente) { return; }
+        const datos = JSON.parse(fuente.textContent);
+        new Chart(lienzo, {
+            type: 'bar',
+            data: {
+                labels: datos.etiquetas,
+                datasets: datos.series.map(function (serie) {
+                    return {
+                        label: serie.nombre,
+                        data: serie.valores,
+                        backgroundColor: serie.color,
+                        maxBarThickness: 22,
+                        borderRadius: { topLeft: 4, topRight: 4 },
+                        // Separación de 2 px entre segmentos apilados, en el color del fondo.
+                        borderColor: superficie,
+                        borderWidth: opciones.apiladas ? { top: 2 } : 0,
+                        borderSkipped: false
+                    };
+                })
+            },
+            options: {
+                maintainAspectRatio: false,
+                animation: sinMovimiento ? false : { duration: 400 },
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        align: 'start',
+                        labels: { boxWidth: 10, boxHeight: 10, color: color('--dim') }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function (ctx) { return ctx.dataset.label + ': ' + opciones.valor(ctx.raw); }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        stacked: opciones.apiladas,
+                        grid: { display: false },
+                        border: { color: color('--border2') },
+                        // En pantallas estrechas se omiten etiquetas en vez de girarlas.
+                        ticks: { maxRotation: 0, autoSkipPadding: 6 }
+                    },
+                    y: {
+                        stacked: opciones.apiladas,
+                        beginAtZero: true,
+                        grid: { color: color('--border') },
+                        border: { display: false },
+                        ticks: { maxTicksLimit: 5, precision: opciones.enteros ? 0 : undefined, callback: opciones.eje }
+                    }
+                }
+            }
+        });
+    }
+
+    graficoBarras('graficoVencimientos', 'datos-vencimientos', {
+        apiladas: true,
+        enteros: true,
+        valor: function (v) { return v; },
+        eje: function (v) { return v; }
+    });
+    graficoBarras('graficoFinanzas', 'datos-finanzas', {
+        apiladas: false,
+        enteros: false,
+        valor: function (v) { return pesos.format(v); },
+        eje: function (v) { return '$ ' + compacto.format(v); }
+    });
+})();
+</script>
+{% endif %}
 {% endblock %}

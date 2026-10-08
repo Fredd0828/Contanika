@@ -1,0 +1,50 @@
+{# Panel de documentos generados del cliente: se incluye en clientes/detalle.html #}
+<div class="panel">
+    <div class="ph">
+        <div class="ph-title"><i class="bi bi-file-earmark-text-fill"></i> Documentos generados</div>
+        <div class="d-flex gap-2">
+            <a class="ph-link" href="{% url 'documentos:historico' %}">
+                <i class="bi bi-list-ul"></i> Ver histórico completo
+            </a>
+            {% if a_cargo %}
+            <a class="ph-btn" href="{% url 'documentos:generar' %}?cliente={{ cliente.pk }}">
+                <i class="bi bi-plus-lg"></i> Generar documento
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if documentos %}
+    <div class="table-responsive">
+        <table class="tbl">
+            <thead>
+                <tr>
+                    <th>Tipo de documento</th>
+                    <th>Período</th>
+                    <th>Fecha de generación</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for documento in documentos %}
+                <tr>
+                    <td>{{ documento.plantilla.nombre_plantilla }}</td>
+                    <td>{{ documento.periodo|default:"—" }}</td>
+                    <td>{{ documento.fecha_generacion|date:"d/m/Y H:i" }}</td>
+                    <td>
+                        <a class="icon-btn" href="{% url 'documentos:detalle' documento.pk %}" title="Ver detalle">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                        <a class="icon-btn" href="{% url 'documentos:descargar' documento.pk %}" title="Descargar PDF">
+                            <i class="bi bi-download"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="text-muted mb-0">El cliente no tiene documentos generados.</p>
+    {% endif %}
+</div>

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block titulo %}Registrar comunicación{% endblock %}
+
+{% block contenido %}
+<div class="panel">
+    <div class="ph">
+        <div class="ph-title"><i class="bi bi-telephone-plus"></i> Registrar comunicación</div>
+        <a class="ph-link" href="{% url 'comunicaciones:lista' %}"><i class="bi bi-arrow-left"></i> Volver al historial</a>
+    </div>
+
+    <form method="post" action="{% url 'comunicaciones:registrar' %}">
+        {% include "comunicaciones/_comunicacion_form_campos.html" %}
+        <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="ph-btn"><i class="bi bi-save"></i> Registrar comunicación</button>
+            <a class="btn btn-outline-secondary" href="{% url 'comunicaciones:lista' %}">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

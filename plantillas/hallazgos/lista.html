@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block titulo %}Hallazgos{% endblock %}
+
+{% block contenido %}
+<div class="panel">
+    <div class="ph">
+        <div class="ph-title"><i class="bi bi-search-heart-fill"></i> Hallazgos y revisiones</div>
+        <div class="ph-actions">
+            <span class="ph-meta">{% if is_paginated %}{{ page_obj.paginator.count }}{% else %}{{ hallazgos|length }}{% endif %} registro(s)</span>
+            <button type="button" class="ph-btn" data-bs-toggle="modal" data-bs-target="#modalHallazgo"
+                    data-url="{% url 'hallazgos:crear' %}">
+                <i class="bi bi-plus-lg"></i> Registrar hallazgo
+            </button>
+        </div>
+    </div>
+
+    <form method="get" class="filters mb-3">
+        <div class="campo">
+            <label>{{ formulario_filtro.tipo.label }}</label>
+            {{ formulario_filtro.tipo }}
+        </div>
+        <div class="campo">
+            <label>{{ formulario_filtro.estado.label }}</label>
+            {{ formulario_filtro.estado }}
+        </div>
+        <div class="campo">
+            <label>{{ formulario_filtro.responsable.label }}</label>
+            {{ formulario_filtro.responsable }}
+        </div>
+        <div class="campo">
+            <label>{{ formulario_filtro.desde.label }}</label>
+            {{ formulario_filtro.desde }}
+        </div>
+        <div class="campo">
+            <label>{{ formulario_filtro.hasta.label }}</label>
+            {{ formulario_filtro.hasta }}
+        </div>
+        <div class="campo">
+            <button type="submit" class="ph-btn"><i class="bi bi-funnel"></i> Filtrar</button>
+        </div>
+        <div class="campo">
+            <a class="ph-link" href="{% url 'hallazgos:lista' %}">Limpiar</a>
+        </div>
+    </form>
+
+    <div class="table-responsive">
+        <table class="tbl">
+            <thead>
+                <tr>
+                    <th>Cliente</th>
+                    <th>Tipo</th>
+                    <th>Período revisado</th>
+                    <th>Responsable</th>
+                    <th>Prioridad</th>
+                    <th>Estado</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for hallazgo in hallazgos %}
+                <tr data-bs-toggle="modal" data-bs-target="#modalHallazgo"
+                    data-url="{% url 'hallazgos:detalle' hallazgo.pk %}" style="cursor:pointer">
+                    <td>{{ hallazgo.cliente.nombre_razon_social }}</td>
+                    <td><span class="chip-servicio">{{ hallazgo.tipo_hallazgo }}</span></td>
+                    <td>{{ hallazgo.fecha_inicio_periodo|date:"d/m/Y" }} – {{ hallazgo.fecha_fin_periodo|date:"d/m/Y" }}</td>
+                    <td>{{ hallazgo.responsable.nombre|default:"Sin asignar" }}</td>
+                    <td><span class="kb-prio kb-prio-{{ hallazgo.prioridad|lower }}">{{ hallazgo.prioridad }}</span></td>
+                    <td>
+                        {% if hallazgo.estado == "Abierto" %}<span class="badge-est be-r">{{ hallazgo.estado }}</span>
+                        {% elif hallazgo.estado == "En proceso" %}<span class="badge-est be-w">{{ hallazgo.estado }}</span>
+                        {% elif hallazgo.estado == "Pendiente cliente" %}<span class="badge-est be-teal">{{ hallazgo.estado }}</span>
+                        {% else %}<span class="badge-est be-g">{{ hallazgo.estado }}</span>{% endif %}
+                    </td>
+                    <td class="text-end"><i class="bi bi-chevron-right text-muted"></i></td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-4">No hay hallazgos registrados que cumplan los filtros.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if is_paginated %}
+<div class="panel mt-3">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <nav aria-label="Paginación de hallazgos">
+            <ul class="pagination pagination-sm mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ querystring }}">Anterior</a></li>
+                {% endif %}
+                <li class="page-item active" aria-current="page"><span class="page-link">{{ page_obj.number }}</span></li>
+                {% if page_obj.has_next %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ querystring }}">Siguiente</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+        <span class="text-muted small">Página {{ page_obj.number }} de {{ paginator.num_pages }} · {{ paginator.count }} registro(s)</span>
+    </div>
+</div>
+{% endif %}
+
+<datalist id="lista-tipos-hallazgo">
+    {% for tipo in opciones.tipos_hallazgo %}<option value="{{ tipo }}"></option>{% endfor %}
+</datalist>
+
+<!-- Modal vacío; el contenido (crear o detalle de hallazgo) se carga vía AJAX -->
+<div class="modal fade" id="modalHallazgo" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content"></div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const modalHallazgo = document.getElementById('modalHallazgo');
+    if (!modalHallazgo) return;
+    modalHallazgo.addEventListener('show.bs.modal', function (event) {
+        const disparador = event.relatedTarget;
+        if (!disparador || !disparador.dataset.url) return;
+        const contenido = modalHallazgo.querySelector('.modal-content');
+        contenido.innerHTML = '<div class="modal-body text-center"><div class="spinner-border text-teal" role="status"></div><p class="mt-2 text-muted">Cargando...</p></div>';
+        fetch(disparador.dataset.url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then((respuesta) => {
+                if (!respuesta.ok) throw new Error('Error cargando el hallazgo');
+                return respuesta.text();
+            })
+            .then((html) => { contenido.innerHTML = html; })
+            .catch(() => {
+                contenido.innerHTML = '<div class="modal-body"><div class="alert alert-danger">No se pudo cargar el hallazgo. Intente de nuevo.</div></div>';
+            });
+    });
+    modalHallazgo.addEventListener('hidden.bs.modal', function () {
+        modalHallazgo.querySelector('.modal-content').innerHTML = '';
+    });
+});
+</script>
+{% endblock %}

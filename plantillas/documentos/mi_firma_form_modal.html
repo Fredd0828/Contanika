@@ -1,0 +1,32 @@
+{% load static %}
+<div class="modal-header">
+    <h5 class="modal-title"><i class="bi bi-pen"></i> Mi firma</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+</div>
+<form method="post" action="{% url 'documentos:mi_firma' %}" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="modal-body">
+        {% if user.firma %}
+        <img src="{{ user.firma.url }}" alt="Firma actual" style="max-height:80px" class="mb-3 d-block">
+        {% endif %}
+        <div class="row g-3">
+            <div class="col-12">
+                <label class="form-label" for="{{ formulario.firma.id_for_label }}">{{ formulario.firma.label }}</label>
+                {{ formulario.firma }}
+                {% if formulario.firma.errors %}<div class="text-danger small">{{ formulario.firma.errors }}</div>{% endif %}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="{{ formulario.identificacion.id_for_label }}">{{ formulario.identificacion.label }}</label>
+                {{ formulario.identificacion }}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="{{ formulario.numero_tarjeta_profesional.id_for_label }}">{{ formulario.numero_tarjeta_profesional.label }}</label>
+                {{ formulario.numero_tarjeta_profesional }}
+            </div>
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Guardar</button>
+    </div>
+</form>

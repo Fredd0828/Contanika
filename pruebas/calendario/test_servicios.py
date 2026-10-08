@@ -1,0 +1,408 @@
+"""Pruebas de las reglas de negocio del módulo 2: cálculo DIAN y vencimientos."""
+
+from datetime import date
+
+import pytest
+from django.core.exceptions import PermissionDenied
+
+from aplicaciones.calendario.models import (
+    AnotacionCalendario,
+    ConfiguracionAlerta,
+    TablaReferenciaDian,
+    Vencimiento,
+)
+from aplicaciones.calendario.servicios import (
+    calcular_grupos_dian,
+    cambiar_estado_presentacion,
+    eliminar_anotacion,
+    generar_vencimientos_cliente,
+    generar_vencimientos_masivo,
+    guardar_anotacion,
+    guardar_vencimiento_manual,
+    obligaciones_por_cliente,
+    validar_vencimiento,
+)
+from aplicaciones.clientes.models import Cliente
+
+from ..conftest import _asignar_obligaciones as _asignar
+
+pytestmark = pytest.mark.django_db
+
+
+# ---------------------------------------------------------------------------
+# calcular_grupos_dian
+# ---------------------------------------------------------------------------
+
+
+def test_grupos_dian_empresa_incluye_ultimo_digito(cliente):
+    """Empresas (NIT): el último dígito del NIT es uno de los grupos DIAN."""
+    assert cliente.nit_cedula == "900123456"
+    assert calcular_grupos_dian(cliente) == ["6", "56"]
+
+
+def test_grupos_dian_persona_natural_incluye_dos_ultimos_digitos(cliente_natural):
+    """Personas naturales (CC): los dos últimos dígitos son uno de los grupos DIAN."""
+    assert cliente_natural.nit_cedula == "1032456789"
+    assert calcular_grupos_dian(cliente_natural) == ["9", "89"]
+
+
+def test_grupos_dian_extranjero_no_es_calculable(cliente_extranjero):
+    """Documentos extranjeros no tienen cálculo automático (registro manual)."""
+    assert calcular_grupos_dian(cliente_extranjero) == []
+
+
+def test_grupos_dian_sin_digitos_no_es_calculable(usuario_administrador):
+    """Un documento sin dígitos no puede calcular grupo."""
+    cliente = Cliente.objects.create(
+        nombre_razon_social="Sin Número SAS",
+        nit_cedula="ABC",
+        tipo_documento=Cliente.NIT,
+        tipo_persona=Cliente.JURIDICA,
+        responsable=usuario_administrador,
+    )
+    assert calcular_grupos_dian(cliente) == []
+
+
+# ---------------------------------------------------------------------------
+# obligaciones_por_cliente
+# ---------------------------------------------------------------------------
+
+
+def test_obligaciones_por_cliente_devuelve_las_marcadas_explicitamente(cliente):
+    """Las obligaciones ya no se adivinan: son las marcadas en el perfil del cliente."""
+    obligaciones = obligaciones_por_cliente(cliente)
+    assert "Renta personas jurídicas" in obligaciones
+    assert "Retención en la fuente" in obligaciones
+    assert "IVA bimestral" in obligaciones
+
+
+def test_obligaciones_por_cliente_vacio_sin_seleccion(cliente_extranjero):
+    """Un cliente sin obligaciones marcadas no devuelve ninguna."""
+    assert obligaciones_por_cliente(cliente_extranjero) == []
+
+
+def test_obligaciones_por_cliente_incluye_exogena_si_se_marca(cliente):
+    """Obligaciones que no se pueden inferir por texto, como exógena, se pueden marcar."""
+    from aplicaciones.clientes.models import ClienteObligacion, ObligacionTributaria
+
+    exogena, _ = ObligacionTributaria.objects.get_or_create(
+        nombre="Exógena distrital", defaults={"ambito": ObligacionTributaria.DISTRITAL}
+    )
+    ClienteObligacion.objects.create(cliente=cliente, obligacion_tributaria=exogena)
+
+    assert "Exógena distrital" in obligaciones_por_cliente(cliente)
+
+
+def test_obligaciones_persona_natural(cliente_natural):
+    """Persona natural: solo la obligación explícitamente marcada en su perfil."""
+    assert obligaciones_por_cliente(cliente_natural) == ["Renta personas naturales"]
+
+
+# ---------------------------------------------------------------------------
+# generar_vencimientos_cliente
+# ---------------------------------------------------------------------------
+
+
+def test_generar_vencimientos_crea_desde_tabla_dian(cliente, usuario_administrador, referencia_dian):
+    """El cálculo crea vencimientos nacionales pendientes de validar."""
+    resumen = generar_vencimientos_cliente(cliente, usuario_administrador)
+
+    assert resumen["creados"] == 1
+    vencimiento = Vencimiento.objects.get(cliente=cliente)
+    assert vencimiento.tipo_obligacion == "IVA bimestral"
+    assert vencimiento.ambito == Vencimiento.NACIONAL
+    assert vencimiento.fecha_vencimiento == date(2026, 3, 17)
+    assert vencimiento.estado_validacion == Vencimiento.PENDIENTE_VALIDAR
+    assert vencimiento.es_automatico_dian is True
+    assert vencimiento.responsable == cliente.responsable
+
+
+def _referencia(obligacion, grupo, dia):
+    return TablaReferenciaDian.objects.create(
+        tipo_obligacion=obligacion,
+        grupo_nit=grupo,
+        fecha_vencimiento=date(2026, 8, dia),
+        periodo_gravable="2026",
+    )
+
+
+def test_persona_natural_con_nit_calcula_renta_por_dos_ultimos_digitos(usuario_administrador):
+    """Una persona natural registrada con NIT toma los dos últimos dígitos para su renta."""
+    natural = Cliente.objects.create(
+        nombre_razon_social="Freddy Carrillo",
+        nit_cedula="1111111113",
+        tipo_documento=Cliente.NIT,
+        tipo_persona=Cliente.NATURAL,
+        responsable=usuario_administrador,
+    )
+    _asignar(natural, "Renta personas naturales", "Retención en la fuente")
+    _referencia("Renta personas naturales", "13", 21)
+    _referencia("Renta personas naturales", "14", 22)
+    _referencia("Retención en la fuente", "3", 12)
+
+    resumen = generar_vencimientos_cliente(natural, usuario_administrador)
+
+    assert resumen["creados"] == 2
+    fechas = dict(
+        Vencimiento.objects.filter(cliente=natural).values_list("tipo_obligacion", "fecha_vencimiento")
+    )
+    assert fechas["Renta personas naturales"] == date(2026, 8, 21)
+    assert fechas["Retención en la fuente"] == date(2026, 8, 12)
+
+
+def test_persona_natural_con_cedula_calcula_retencion_por_ultimo_digito(usuario_administrador):
+    """Con cédula también se calculan las obligaciones que la DIAN ordena por el último dígito."""
+    natural = Cliente.objects.create(
+        nombre_razon_social="Ana Gómez",
+        nit_cedula="1019087764",
+        tipo_documento=Cliente.CC,
+        tipo_persona=Cliente.NATURAL,
+        responsable=usuario_administrador,
+    )
+    _asignar(natural, "Renta personas naturales", "Retención en la fuente")
+    _referencia("Renta personas naturales", "64", 25)
+    _referencia("Retención en la fuente", "4", 13)
+
+    resumen = generar_vencimientos_cliente(natural, usuario_administrador)
+
+    assert resumen["creados"] == 2
+
+
+def test_reporta_obligaciones_sin_fecha_para_el_documento(usuario_administrador):
+    """Una obligación con fechas cargadas pero ninguna para el documento se informa."""
+    natural = Cliente.objects.create(
+        nombre_razon_social="Pedro Ruiz",
+        nit_cedula="1111111177",
+        tipo_documento=Cliente.CC,
+        tipo_persona=Cliente.NATURAL,
+        responsable=usuario_administrador,
+    )
+    _asignar(natural, "Renta personas jurídicas")
+    _referencia("Renta personas jurídicas", "3", 12)
+
+    resumen = generar_vencimientos_cliente(natural, usuario_administrador)
+
+    assert resumen["creados"] == 0
+    assert resumen["sin_coincidencia"] == ["Renta personas jurídicas"]
+    assert resumen["sin_referencia"] == []
+
+
+def test_generar_vencimientos_no_duplica(cliente, usuario_administrador, referencia_dian):
+    """Volver a calcular no duplica los vencimientos ya creados."""
+    generar_vencimientos_cliente(cliente, usuario_administrador)
+    resumen = generar_vencimientos_cliente(cliente, usuario_administrador)
+
+    assert resumen["creados"] == 0
+    assert resumen["actualizados"] == 0
+    assert resumen["omitidos"] == 1
+    assert Vencimiento.objects.filter(cliente=cliente).count() == 1
+
+
+def test_generar_vencimientos_actualiza_fecha_corregida_sin_duplicar(
+    cliente, usuario_administrador, referencia_dian
+):
+    """Si el Administrador corrige la fecha en la tabla DIAN, recalcular actualiza (no duplica)."""
+    generar_vencimientos_cliente(cliente, usuario_administrador)
+    assert Vencimiento.objects.filter(cliente=cliente).count() == 1
+
+    referencia_dian.fecha_vencimiento = date(2026, 3, 24)
+    referencia_dian.save(update_fields=["fecha_vencimiento"])
+
+    resumen = generar_vencimientos_cliente(cliente, usuario_administrador)
+
+    assert resumen["creados"] == 0
+    assert resumen["actualizados"] == 1
+    assert Vencimiento.objects.filter(cliente=cliente).count() == 1
+    vencimiento = Vencimiento.objects.get(cliente=cliente)
+    assert vencimiento.fecha_vencimiento == date(2026, 3, 24)
+    assert vencimiento.estado_validacion == Vencimiento.PENDIENTE_VALIDAR
+
+
+def test_recalcular_no_pisa_un_vencimiento_validado(cliente, usuario_administrador, referencia_dian):
+    """Un vencimiento validado o corregido por el contador conserva su fecha al recalcular."""
+    generar_vencimientos_cliente(cliente, usuario_administrador)
+    vencimiento = Vencimiento.objects.get(cliente=cliente)
+    vencimiento.fecha_vencimiento = date(2026, 3, 30)
+    vencimiento.estado_validacion = Vencimiento.VALIDADO
+    vencimiento.save()
+
+    resumen = generar_vencimientos_cliente(cliente, usuario_administrador)
+
+    assert resumen["actualizados"] == 0
+    assert resumen["omitidos"] == 1
+    vencimiento.refresh_from_db()
+    assert vencimiento.fecha_vencimiento == date(2026, 3, 30)
+
+
+def test_generar_vencimientos_sin_grupo_no_crea(cliente_extranjero, usuario_administrador):
+    """Un cliente sin grupo calculable no genera vencimientos automáticos."""
+    resumen = generar_vencimientos_cliente(cliente_extranjero, usuario_administrador)
+
+    assert resumen["sin_grupo"] is True
+    assert resumen["creados"] == 0
+    assert resumen["sin_referencia"] == []
+    assert Vencimiento.objects.filter(cliente=cliente_extranjero).count() == 0
+
+
+def test_generar_vencimientos_reporta_obligaciones_sin_referencia(
+    cliente, usuario_administrador, referencia_dian
+):
+    """Las obligaciones marcadas que no tienen ninguna fila en la tabla DIAN se reportan aparte."""
+    resumen = generar_vencimientos_cliente(cliente, usuario_administrador)
+
+    assert "Renta personas jurídicas" in resumen["sin_referencia"]
+    assert "Retención en la fuente" in resumen["sin_referencia"]
+    assert "IVA bimestral" not in resumen["sin_referencia"]
+
+
+def test_generar_vencimientos_persona_natural_usa_dos_digitos(cliente_natural, usuario_administrador):
+    """La renta de persona natural busca la referencia con dos dígitos."""
+    TablaReferenciaDian.objects.create(
+        tipo_obligacion="Renta personas naturales",
+        grupo_nit="89",
+        fecha_vencimiento=date(2026, 10, 19),
+        periodo_gravable="2026",
+    )
+    resumen = generar_vencimientos_cliente(cliente_natural, usuario_administrador)
+
+    assert resumen["creados"] == 1
+    vencimiento = Vencimiento.objects.get(cliente=cliente_natural)
+    assert vencimiento.tipo_obligacion == "Renta personas naturales"
+
+
+def test_generar_vencimientos_masivo_solo_activos(
+    cliente, cliente_natural, usuario_administrador, referencia_dian
+):
+    """El cálculo masivo omite clientes inactivos."""
+    cliente_natural.inactivar()
+    resumen = generar_vencimientos_masivo(usuario_administrador, solo_activos=True)
+
+    assert resumen["clientes"] == 1
+    assert Vencimiento.objects.filter(cliente=cliente).count() == 1
+    assert Vencimiento.objects.filter(cliente=cliente_natural).count() == 0
+    assert "Renta personas jurídicas" in resumen["sin_referencia"]
+
+
+# ---------------------------------------------------------------------------
+# Vencimiento manual, validación y estado
+# ---------------------------------------------------------------------------
+
+
+def test_guardar_vencimiento_manual_asigna_responsable(cliente, usuario_administrador):
+    """El vencimiento manual queda con el usuario que lo registra si no hay responsable."""
+    from aplicaciones.calendario.formularios import VencimientoManualForm
+
+    formulario = VencimientoManualForm(
+        data={
+            "cliente": cliente.pk,
+            "tipo_obligacion": "ICA municipal",
+            "ambito": Vencimiento.MUNICIPAL,
+            "municipio": "Bogotá D.C.",
+            "fecha_vencimiento": "2026-05-15",
+            "estado_presentacion": Vencimiento.PENDIENTE,
+        },
+        usuario=usuario_administrador,
+    )
+    assert formulario.is_valid(), formulario.errors
+    vencimiento = guardar_vencimiento_manual(formulario, usuario_administrador)
+
+    assert vencimiento.responsable == usuario_administrador
+    assert vencimiento.estado_validacion == ""
+    assert vencimiento.es_automatico_dian is False
+
+
+def test_validar_vencimiento_alterna_estado(cliente):
+    """La validación cambia entre pendiente y validado."""
+    vencimiento = Vencimiento.objects.create(
+        cliente=cliente,
+        tipo_obligacion="IVA bimestral",
+        fecha_vencimiento=date(2026, 3, 17),
+        estado_validacion=Vencimiento.PENDIENTE_VALIDAR,
+    )
+    validar_vencimiento(vencimiento, validado=True)
+    assert vencimiento.estado_validacion == Vencimiento.VALIDADO
+    validar_vencimiento(vencimiento, validado=False)
+    assert vencimiento.estado_validacion == Vencimiento.PENDIENTE_VALIDAR
+
+
+def test_cambiar_estado_presentacion_rechaza_estado_invalido(cliente):
+    """No se acepta un estado fuera de las opciones del modelo."""
+    vencimiento = Vencimiento.objects.create(
+        cliente=cliente,
+        tipo_obligacion="IVA bimestral",
+        fecha_vencimiento=date(2026, 3, 17),
+    )
+    with pytest.raises(ValueError):
+        cambiar_estado_presentacion(vencimiento, "Estado inventado")
+
+
+# ---------------------------------------------------------------------------
+# Anotaciones
+# ---------------------------------------------------------------------------
+
+
+def test_guardar_anotacion_con_destinatarios(usuario_administrador, usuario_junior):
+    """Una anotación por etiqueta registra a sus destinatarios."""
+    from aplicaciones.calendario.formularios import AnotacionCalendarioForm
+
+    formulario = AnotacionCalendarioForm(
+        data={
+            "fecha": "2026-10-05",
+            "contenido": "Reunión de cierre contable",
+            "visibilidad": AnotacionCalendario.POR_ETIQUETA,
+            "destinatarios": [usuario_junior.pk],
+        }
+    )
+    assert formulario.is_valid(), formulario.errors
+    anotacion = guardar_anotacion(
+        formulario,
+        usuario_administrador,
+        destinatarios=formulario.cleaned_data["destinatarios"],
+    )
+
+    assert anotacion.autor == usuario_administrador
+    assert anotacion.destinatarios.count() == 1
+    assert anotacion.destinatarios.first().usuario == usuario_junior
+
+
+def test_eliminar_anotacion_solo_autor_o_admin(usuario_administrador, usuario_senior, usuario_junior):
+    """Otro usuario no puede eliminar la anotación; el administrador sí."""
+    anotacion = AnotacionCalendario.objects.create(
+        fecha=date(2026, 10, 5),
+        contenido="Nota privada",
+        autor=usuario_junior,
+        visibilidad=AnotacionCalendario.PRIVADA,
+    )
+    with pytest.raises(PermissionDenied):
+        eliminar_anotacion(anotacion, usuario_senior)
+
+    eliminar_anotacion(anotacion, usuario_administrador)
+    assert AnotacionCalendario.objects.count() == 0
+
+
+def test_eliminar_anotacion_por_su_autor(usuario_junior):
+    """El autor puede eliminar su propia anotación."""
+    anotacion = AnotacionCalendario.objects.create(
+        fecha=date(2026, 10, 5),
+        contenido="Nota propia",
+        autor=usuario_junior,
+        visibilidad=AnotacionCalendario.PRIVADA,
+    )
+    eliminar_anotacion(anotacion, usuario_junior)
+    assert AnotacionCalendario.objects.count() == 0
+
+
+def test_alerta_se_asocia_al_vencimiento(cliente):
+    """Las alertas quedan asociadas a su vencimiento."""
+    vencimiento = Vencimiento.objects.create(
+        cliente=cliente,
+        tipo_obligacion="IVA bimestral",
+        fecha_vencimiento=date(2026, 3, 17),
+    )
+    alerta = ConfiguracionAlerta.objects.create(
+        vencimiento=vencimiento,
+        dias_anticipacion=7,
+        canal=ConfiguracionAlerta.WHATSAPP,
+    )
+    assert alerta.vencimiento == vencimiento
+    assert vencimiento.alertas.count() == 1

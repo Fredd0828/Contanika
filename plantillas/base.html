@@ -37,11 +37,17 @@
         {% endfor %}
     </div>
     <div class="s-foot">
-        <div class="av-sb">{{ iniciales_usuario }}</div>
-        <div style="flex:1;min-width:0">
-            <div class="av-name">{{ user.nombre }}</div>
-            <div class="av-role">{{ user.rol.nombre_rol }}</div>
-        </div>
+        <a href="{% url 'seguridad:perfil' %}" class="d-flex align-items-center gap-2 text-decoration-none" style="flex:1;min-width:0;color:inherit" title="Mi perfil">
+            {% if user.foto %}
+            <img src="{{ user.foto.url }}" alt="" class="av-sb" style="object-fit:cover;padding:0">
+            {% else %}
+            <div class="av-sb">{{ iniciales_usuario }}</div>
+            {% endif %}
+            <div style="flex:1;min-width:0">
+                <div class="av-name">{{ user.nombre }}</div>
+                <div class="av-role">{{ user.rol.nombre_rol }}</div>
+            </div>
+        </a>
         <form method="post" action="{% url 'seguridad:cerrar_sesion' %}">
             {% csrf_token %}
             <button type="submit" class="btn-salir" title="Cerrar sesión"><i class="bi bi-box-arrow-right"></i></button>
@@ -56,11 +62,57 @@
             <div class="page-title">Hola, {{ nombre_corto }}</div>
             <div class="page-sub">{% now "l, j \d\e F \d\e Y" %}</div>
         </div>
-        <div class="tb-search">
+        {% if puede_buscar_clientes %}
+        <form class="tb-search" method="get" action="{% url 'clientes:lista' %}" role="search">
             <i class="bi bi-search"></i>
-            <input type="text" placeholder="Buscar cliente o empresa…" disabled title="Disponible al completar el módulo de clientes">
+            <input type="search" name="busqueda" placeholder="Buscar cliente o empresa…" aria-label="Buscar cliente por nombre o razón social">
+        </form>
+        {% else %}
+        <div class="tb-search"></div>
+        {% endif %}
+        {% if user.is_authenticated and total_avisos_vencimientos is not None %}
+        <div class="dropdown me-2">
+            <a href="#" class="text-decoration-none position-relative" style="font-size:21px;color:var(--text)"
+               id="campanaAvisos" data-bs-toggle="dropdown" aria-expanded="false"
+               title="Vencimientos próximos" aria-label="Vencimientos próximos">
+                <i class="bi bi-bell"></i>
+                {% if total_avisos_vencimientos %}
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                      style="font-size:10px">{{ total_avisos_vencimientos }}</span>
+                {% endif %}
+            </a>
+            <div class="dropdown-menu dropdown-menu-end p-2" style="min-width:320px;max-width:380px" aria-labelledby="campanaAvisos">
+                <div class="small fw-semibold px-2 mb-1">Vencimientos próximos</div>
+                {% for aviso in avisos_vencimientos %}
+                <div class="px-2 py-2 border-top small">
+                    <a class="text-decoration-none d-block" href="{% url 'calendario:detalle' aviso.vencimiento.pk %}">
+                        <strong>{{ aviso.vencimiento.tipo_obligacion }}</strong> · {{ aviso.vencimiento.cliente.nombre_razon_social }}
+                    </a>
+                    <span class="text-muted">
+                        {% if aviso.dias == 0 %}Vence hoy{% elif aviso.dias == 1 %}Vence mañana{% else %}Vence en {{ aviso.dias }} días{% endif %}
+                        ({{ aviso.vencimiento.fecha_vencimiento|date:"d/m/Y" }})
+                    </span>
+                    {% if aviso.enlace_whatsapp %}
+                    <a class="ms-2" href="{{ aviso.enlace_whatsapp }}" target="_blank" rel="noopener"><i class="bi bi-whatsapp"></i> Enviar por WhatsApp</a>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <p class="text-muted small mb-0 px-2">No tiene vencimientos próximos con alerta.</p>
+                {% endfor %}
+                {% if total_avisos_vencimientos > avisos_vencimientos|length %}
+                <a class="dropdown-item small text-center" href="{% url 'calendario:lista' %}">Ver todos ({{ total_avisos_vencimientos }})</a>
+                {% endif %}
+            </div>
         </div>
-        <div class="av-top">{{ iniciales_usuario }}</div>
+        {% endif %}
+        <a href="{% url 'seguridad:ayuda' %}" class="text-decoration-none me-2" style="font-size:21px;color:var(--text)" title="Ayuda" aria-label="Ayuda"><i class="bi bi-question-circle"></i></a>
+        <a href="{% url 'seguridad:perfil' %}" class="text-decoration-none" title="Mi perfil">
+            {% if user.foto %}
+            <img src="{{ user.foto.url }}" alt="Mi perfil" class="av-top" style="object-fit:cover;padding:0">
+            {% else %}
+            <div class="av-top">{{ iniciales_usuario }}</div>
+            {% endif %}
+        </a>
     </header>
     <main class="content">
         {% if messages %}

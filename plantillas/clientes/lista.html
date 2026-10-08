@@ -11,6 +11,9 @@
             {% if puede_editar %}
             <a class="ph-link" href="{% url 'clientes:plantilla' %}"><i class="bi bi-download"></i> Plantilla</a>
             <a class="ph-link" href="{% url 'clientes:importar' %}"><i class="bi bi-upload"></i> Importar</a>
+            {% endif %}
+            <a class="ph-link" href="{% url 'clientes:reporte_credenciales_todos' %}"><i class="bi bi-key"></i> Reporte de credenciales</a>
+            {% if puede_gestionar %}
             <a class="ph-btn" href="{% url 'clientes:crear' %}"><i class="bi bi-plus-lg"></i> Nuevo cliente</a>
             {% endif %}
         </div>
@@ -19,18 +22,8 @@
     <form method="get" class="filters mb-3">
         <input type="hidden" name="por_pagina" value="{{ por_pagina }}">
         <div class="campo">
-            <label for="f-ciudad">Ciudad</label>
-            <input type="text" id="f-ciudad" name="ciudad" value="{{ filtros.ciudad|default:'' }}" list="f-lista-ciudades" placeholder="Escriba para buscar...">
-            <datalist id="f-lista-ciudades">
-                {% for valor in opciones.ciudades %}<option value="{{ valor }}"></option>{% endfor %}
-            </datalist>
-        </div>
-        <div class="campo">
-            <label for="f-municipio">Municipio</label>
-            <input type="text" id="f-municipio" name="municipio" value="{{ filtros.municipio|default:'' }}" list="f-lista-municipios" placeholder="Escriba para buscar...">
-            <datalist id="f-lista-municipios">
-                {% for valor in opciones.municipios %}<option value="{{ valor }}"></option>{% endfor %}
-            </datalist>
+            <label for="f-busqueda">Cliente</label>
+            <input type="text" id="f-busqueda" name="busqueda" value="{{ filtros.busqueda|default:'' }}" placeholder="Buscar por nombre...">
         </div>
         <div class="campo">
             <label for="f-regimen">Régimen tributario</label>
@@ -40,29 +33,15 @@
             </datalist>
         </div>
         <div class="campo">
-            <label for="f-tipo-doc">Tipo de documento</label>
-            <select id="f-tipo-doc" name="tipo_documento">
-                <option value="">Todos</option>
-                {% for valor, etiqueta in opciones.tipos_documento %}
-                <option value="{{ valor }}" {% if filtros.tipo_documento == valor %}selected{% endif %}>{{ etiqueta }}</option>
-                {% endfor %}
-            </select>
+            <label for="f-nit">NIT</label>
+            <input type="text" id="f-nit" name="nit" value="{{ filtros.nit|default:'' }}" placeholder="Buscar por NIT...">
         </div>
         <div class="campo">
-            <label for="f-tipo">Tipo de persona</label>
-            <select id="f-tipo" name="tipo_persona">
+            <label for="f-responsable-iva">Responsable de IVA</label>
+            <select id="f-responsable-iva" name="responsable_iva">
                 <option value="">Todos</option>
-                <option value="Natural" {% if filtros.tipo_persona == "Natural" %}selected{% endif %}>Natural</option>
-                <option value="Jurídica" {% if filtros.tipo_persona == "Jurídica" %}selected{% endif %}>Jurídica</option>
-            </select>
-        </div>
-        <div class="campo">
-            <label for="f-responsable">Responsable</label>
-            <select id="f-responsable" name="responsable">
-                <option value="">Todos</option>
-                {% for persona in responsables %}
-                <option value="{{ persona.pk }}" {% if filtros.responsable == persona.pk|stringformat:"s" %}selected{% endif %}>{{ persona.nombre }}</option>
-                {% endfor %}
+                <option value="si" {% if filtros.responsable_iva == "si" %}selected{% endif %}>Sí</option>
+                <option value="no" {% if filtros.responsable_iva == "no" %}selected{% endif %}>No</option>
             </select>
         </div>
         <div class="campo">

@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block titulo %}Tabla de referencia DIAN{% endblock %}
+
+{% block contenido %}
+<div class="panel">
+    <div class="ph">
+        <div class="ph-title"><i class="bi bi-cloud-upload"></i> Tabla de referencia DIAN</div>
+        <a class="ph-link" href="{% url 'calendario:calendario' %}">
+            <i class="bi bi-arrow-left"></i> Volver al calendario
+        </a>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-md-6">
+            <div class="ph-title mb-2"><i class="bi bi-plus-square"></i> Carga manual</div>
+            <p class="text-muted" style="font-size:12px">
+                Registre un vencimiento oficial de la DIAN. La obligación es una
+                selección abierta: puede escribir un valor nuevo.
+            </p>
+            <form method="post" class="row g-3">
+                {% csrf_token %}
+                {% if formulario.non_field_errors %}
+                <div class="alert alert-danger">{{ formulario.non_field_errors }}</div>
+                {% endif %}
+                <div class="col-12">
+                    <label class="form-label">{{ formulario.tipo_obligacion.label }}</label>
+                    {{ formulario.tipo_obligacion }}
+                    <datalist id="lista-obligaciones">
+                        {% for tipo in opciones.tipos_obligacion %}<option value="{{ tipo }}">{% endfor %}
+                    </datalist>
+                    {{ formulario.tipo_obligacion.errors }}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">{{ formulario.grupo_nit.label }}</label>
+                    {{ formulario.grupo_nit }}
+                    {{ formulario.grupo_nit.errors }}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">{{ formulario.periodo_gravable.label }}</label>
+                    {{ formulario.periodo_gravable }}
+                    {{ formulario.periodo_gravable.errors }}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">{{ formulario.fecha_vencimiento.label }}</label>
+                    {{ formulario.fecha_vencimiento }}
+                    {{ formulario.fecha_vencimiento.errors }}
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="ph-btn"><i class="bi bi-check2"></i> Guardar referencia</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="col-md-6">
+            <div class="ph-title mb-2"><i class="bi bi-file-earmark-excel"></i> Carga masiva</div>
+            <p class="text-muted" style="font-size:12px">
+                Descargue la plantilla, diligénciela con las columnas
+                <code>tipo_obligacion</code>, <code>grupo_nit</code>,
+                <code>fecha_vencimiento</code> y <code>periodo_gravable</code>, y súbala aquí.
+            </p>
+            <a class="ph-link mb-3 d-inline-block" href="{% url 'calendario:plantilla_dian' %}">
+                <i class="bi bi-download"></i> Descargar plantilla Excel
+            </a>
+            <form method="post" action="{% url 'calendario:importar_dian' %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <label class="form-label">{{ formulario_importar.archivo.label }}</label>
+                {{ formulario_importar.archivo }}
+                {{ formulario_importar.archivo.errors }}
+                <button type="submit" class="ph-btn mt-3"><i class="bi bi-upload"></i> Importar</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

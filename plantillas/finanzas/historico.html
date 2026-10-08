@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% load finanzas_tags %}
+
+{% block titulo %}Honorarios{% endblock %}
+
+{% block contenido %}
+<div class="panel">
+    <div class="ph">
+        <div class="ph-title"><i class="bi bi-cash-coin"></i> Cuentas de cobro</div>
+        <div class="ph-actions">
+            <span class="ph-meta">{% if is_paginated %}{{ page_obj.paginator.count }}{% else %}{{ cuentas|length }}{% endif %} registro(s)</span>
+            <a class="ph-link" href="{% url 'finanzas:cartera' %}"><i class="bi bi-graph-down-arrow"></i> Cartera</a>
+            {% if es_administrador %}
+            <a class="ph-link" href="{% url 'finanzas:catalogos' %}"><i class="bi bi-journal-bookmark"></i> Catálogos</a>
+            <a class="ph-btn" href="{% url 'finanzas:generar' %}"><i class="bi bi-plus-lg"></i> Generar cuenta de cobro</a>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if es_administrador %}
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        <a class="btn btn-sm btn-outline-secondary" href="{% url 'finanzas:envio_masivo' %}"><i class="bi bi-send-check"></i> Envío masivo de cuentas</a>
+        <a class="btn btn-sm btn-outline-secondary" href="{% url 'finanzas:envio_masivo' %}?tipo=Recordatorio"><i class="bi bi-bell"></i> Recordatorios de pago</a>
+        <a class="btn btn-sm btn-outline-secondary" href="{% url 'finanzas:bandeja_whatsapp' %}">
+            <i class="bi bi-whatsapp"></i> WhatsApp pendientes
+            {% if pendientes_whatsapp %}<span class="badge bg-success ms-1">{{ pendientes_whatsapp }}</span>{% endif %}
+        </a>
+        <a class="btn btn-sm btn-outline-secondary" href="{% url 'finanzas:programados' %}"><i class="bi bi-calendar-event"></i> Envíos programados</a>
+        <a class="btn btn-sm btn-outline-secondary" href="{% url 'finanzas:configuracion' %}"><i class="bi bi-gear"></i> Cobro automático</a>
+    </div>
+    {% endif %}
+
+    <form method="get" class="filters mb-3">
+        <div class="campo">
+            <label for="{{ formulario_filtro.cliente.id_for_label }}">Cliente</label>
+            {{ formulario_filtro.cliente }}
+        </div>
+        <div class="campo">
+            <label for="{{ formulario_filtro.estado_pago.id_for_label }}">{{ formulario_filtro.estado_pago.label }}</label>
+            {{ formulario_filtro.estado_pago }}
+        </div>
+        <div class="campo">
+            <label for="{{ formulario_filtro.periodo.id_for_label }}">{{ formulario_filtro.periodo.label }}</label>
+            {{ formulario_filtro.periodo }}
+        </div>
+        <div class="campo">
+            <label for="{{ formulario_filtro.desde.id_for_label }}">Generada desde</label>
+            {{ formulario_filtro.desde }}
+        </div>
+        <div class="campo">
+            <label for="{{ formulario_filtro.hasta.id_for_label }}">Generada hasta</label>
+            {{ formulario_filtro.hasta }}
+        </div>
+        <div class="campo">
+            <button type="submit" class="ph-btn"><i class="bi bi-funnel"></i> Filtrar</button>
+        </div>
+        <div class="campo">
+            <a class="ph-link" href="{% url 'finanzas:historico' %}">Limpiar</a>
+        </div>
+    </form>
+
+    <div class="table-responsive">
+        <table class="tbl">
+            <thead>
+                <tr>
+                    <th>No.</th>
+                    <th>Cliente</th>
+                    <th>Período</th>
+                    <th class="text-end">Valor</th>
+                    <th class="text-end">Abonado</th>
+                    <th class="text-end">Saldo</th>
+                    <th>Vence</th>
+                    <th>Estado de pago</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cuenta in cuentas %}
+                <tr>
+                    <td>{{ cuenta.pk }}</td>
+                    <td>{{ cuenta.cliente.nombre_razon_social }}</td>
+                    <td>
+                        {{ cuenta.periodo_facturado }}
+                        {% if cuenta.fecha_inicio_periodo %}<div class="text-muted small">{{ cuenta.fecha_inicio_periodo|date:"d/m/Y" }} – {{ cuenta.fecha_fin_periodo|date:"d/m/Y" }}</div>{% endif %}
+                    </td>
+                    <td class="text-end">{{ cuenta.valor_total|pesos }}</td>
+                    {% include "finanzas/_celdas_abonos.html" %}
+                    <td>{{ cuenta.fecha_vencimiento_pago|date:"d/m/Y" }}</td>
+                    <td>{% include "finanzas/_estado_pago.html" %}</td>
+                    <td class="text-end text-nowrap">
+                        <a class="icon-btn" href="{% url 'finanzas:detalle' cuenta.pk %}" title="Ver detalle"><i class="bi bi-eye"></i></a>
+                        {% if cuenta.archivo %}
+                        <a class="icon-btn" href="{% url 'finanzas:descargar' cuenta.pk %}" title="Descargar PDF"><i class="bi bi-download"></i></a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% include "finanzas/_fila_abonos.html" with columnas=9 %}
+                {% empty %}
+                <tr>
+                    <td colspan="9" class="text-center text-muted py-4">No hay cuentas de cobro registradas.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if is_paginated %}
+<div class="panel mt-3">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <nav aria-label="Paginación de cuentas de cobro">
+            <ul class="pagination pagination-sm mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ querystring }}">Anterior</a></li>
+                {% endif %}
+                <li class="page-item active" aria-current="page"><span class="page-link">{{ page_obj.number }}</span></li>
+                {% if page_obj.has_next %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ querystring }}">Siguiente</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+        <span class="text-muted small">Página {{ page_obj.number }} de {{ paginator.num_pages }} · {{ paginator.count }} registro(s)</span>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

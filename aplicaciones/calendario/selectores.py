@@ -1,0 +1,195 @@
+"""
+Consultas del módulo 2: vencimientos y anotaciones visibles para cada usuario.
+
+Se separan de las vistas para reutilizarse en el calendario, el listado, el
+detalle del cliente y el futuro reporte de vencimientos (Módulo 10).
+"""
+
+from django.db.models import Q
+from django.utils import timezone
+
+from .models import (
+    AnotacionCalendario,
+    ConfiguracionAlerta,
+    TablaReferenciaDian,
+    Vencimiento,
+)
+
+LIMITE_RESUMEN = 10
+
+
+def vencimientos_visibles(usuario):
+    """
+    Vencimientos que el usuario puede ver.
+
+    Todos los roles ven el calendario completo del despacho, para trabajar con
+    la misma información que el equipo (decisión del usuario, 1-oct-2026; antes
+    el Contador Junior solo veía los de sus clientes asignados).
+    """
+    return Vencimiento.objects.select_related("cliente", "responsable", "tarea").prefetch_related("alertas")
+
+
+def filtrar_vencimientos(
+    usuario,
+    fecha_inicio=None,
+    fecha_fin=None,
+    cliente=None,
+    ambito=None,
+    estado_presentacion=None,
+    tipo_obligacion=None,
+    responsable=None,
+    origen=None,
+):
+    """
+    Aplica los filtros desplegables del calendario y del listado.
+
+    Todos los filtros son opcionales; la consulta base ya respeta la
+    visibilidad. `origen`
+    distingue los vencimientos tributarios de los generados por una tarea
+    del Kanban marcada con "mostrar en calendario" (Módulo 3).
+    """
+    consulta = vencimientos_visibles(usuario)
+    if fecha_inicio:
+        consulta = consulta.filter(fecha_vencimiento__gte=fecha_inicio)
+    if fecha_fin:
+        consulta = consulta.filter(fecha_vencimiento__lte=fecha_fin)
+    if cliente:
+        consulta = consulta.filter(cliente_id=cliente)
+    if ambito:
+        consulta = consulta.filter(ambito=ambito)
+    if estado_presentacion:
+        consulta = consulta.filter(estado_presentacion=estado_presentacion)
+    if tipo_obligacion:
+        consulta = consulta.filter(tipo_obligacion=tipo_obligacion)
+    if responsable:
+        consulta = consulta.filter(responsable_id=responsable)
+    if origen == "tarea":
+        consulta = consulta.filter(tarea__isnull=False)
+    elif origen == "tributaria":
+        consulta = consulta.filter(tarea__isnull=True)
+    return consulta
+
+
+def vencimientos_por_cliente(usuario, cliente):
+    """
+    Vencimientos de un cliente concreto."""
+    return filtrar_vencimientos(usuario, cliente=cliente.pk)
+
+
+def vencimientos_proximos(usuario, limite=LIMITE_RESUMEN):
+    """Próximos vencimientos y los del día de hoy, del más cercano al más lejano."""
+    hoy = timezone.localdate()
+    return (
+        vencimientos_visibles(usuario)
+        .filter(fecha_vencimiento__gte=hoy)
+        .order_by("fecha_vencimiento")[:limite]
+    )
+
+
+def vencimientos_vencidos(usuario, limite=LIMITE_RESUMEN):
+    """Vencimientos ya pasados y aún no presentados, del más antiguo al más reciente."""
+    hoy = timezone.localdate()
+    return (
+        vencimientos_visibles(usuario)
+        .filter(fecha_vencimiento__lt=hoy)
+        .exclude(estado_presentacion=Vencimiento.PRESENTADA)
+        .order_by("fecha_vencimiento")[:limite]
+    )
+
+
+def anotaciones_visibles(usuario, fecha_inicio=None, fecha_fin=None):
+    """
+    Anotaciones del calendario visibles para el usuario.
+
+    - Privadas: solo el autor.
+    - Equipo completo: todos.
+    - Por rol: usuarios con el mismo rol del autor.
+    - Por etiqueta: solo los usuarios destinatarios (y el autor).
+    """
+    base = AnotacionCalendario.objects.select_related("autor").prefetch_related("destinatarios__usuario")
+    visibles = base.filter(
+        Q(visibilidad=AnotacionCalendario.EQUIPO)
+        | Q(autor=usuario)
+        | Q(visibilidad=AnotacionCalendario.POR_ROL, autor__rol=usuario.rol)
+        | Q(visibilidad=AnotacionCalendario.POR_ETIQUETA, destinatarios__usuario=usuario)
+    ).distinct()
+
+    if fecha_inicio:
+        visibles = visibles.filter(fecha__gte=fecha_inicio)
+    if fecha_fin:
+        visibles = visibles.filter(fecha__lte=fecha_fin)
+    return visibles
+
+
+def alertas_en_curso(usuario=None, hoy=None):
+    """
+    Alertas cuyo aviso ya llegó y cuyo vencimiento sigue pendiente.
+
+    Una alerta está en curso desde `fecha_vencimiento - dias_anticipacion`
+    hasta la fecha del vencimiento, siempre que no esté presentado. Con
+    `usuario`, solo las de los vencimientos que tiene asignados: el
+    responsable del vencimiento o, si no tiene, el del cliente (HU040-3).
+    """
+    hoy = hoy or timezone.localdate()
+    consulta = (
+        ConfiguracionAlerta.objects.select_related(
+            "vencimiento__cliente__responsable", "vencimiento__responsable"
+        )
+        .filter(vencimiento__fecha_vencimiento__gte=hoy)
+        .exclude(vencimiento__estado_presentacion=Vencimiento.PRESENTADA)
+    )
+    if usuario is not None:
+        consulta = consulta.filter(
+            Q(vencimiento__responsable=usuario)
+            | Q(vencimiento__responsable__isnull=True, vencimiento__cliente__responsable=usuario)
+        )
+    return [alerta for alerta in consulta if alerta.fecha_aviso <= hoy]
+
+
+def avisos_para_usuario(usuario, hoy=None):
+    """
+    Avisos de vencimientos próximos que se muestran dentro del sistema (la campana).
+
+    Un aviso por vencimiento, del más cercano al más lejano, sin importar por
+    qué canal se configuró la alerta: la notificación interna se muestra
+    siempre, aunque falle el correo o WhatsApp (HU040-5).
+    """
+    hoy = hoy or timezone.localdate()
+    por_vencimiento = {}
+    for alerta in alertas_en_curso(usuario, hoy):
+        aviso = por_vencimiento.setdefault(
+            alerta.vencimiento_id,
+            {"vencimiento": alerta.vencimiento, "whatsapp": False},
+        )
+        aviso["whatsapp"] = aviso["whatsapp"] or alerta.canal == ConfiguracionAlerta.WHATSAPP
+    avisos = sorted(por_vencimiento.values(), key=lambda a: a["vencimiento"].fecha_vencimiento)
+    for aviso in avisos:
+        aviso["dias"] = (aviso["vencimiento"].fecha_vencimiento - hoy).days
+    return avisos
+
+
+def opciones_filtro_calendario():
+    """
+    Valores para llenar los filtros desplegables del calendario y del listado.
+
+    El tipo de obligación es una selección abierta: se sugieren los valores ya
+    registrados en vencimientos y en la tabla de referencia DIAN, más el
+    catálogo de obligaciones tributarias del Módulo 1 (para que una
+    obligación recién agregada al catálogo, como "Exógena nacional", ya
+    aparezca sugerida aunque todavía no tenga ningún vencimiento ni
+    referencia DIAN cargada), pero el usuario puede escribir uno nuevo.
+    """
+    from aplicaciones.clientes.models import ObligacionTributaria
+
+    tipos_vencimiento = Vencimiento.objects.values_list("tipo_obligacion", flat=True).distinct()
+    tipos_dian = TablaReferenciaDian.objects.values_list("tipo_obligacion", flat=True).distinct()
+    tipos_catalogo = ObligacionTributaria.objects.values_list("nombre", flat=True)
+
+    return {
+        "tipos_obligacion": sorted(set(tipos_vencimiento) | set(tipos_dian) | set(tipos_catalogo)),
+        "ambitos": Vencimiento.OPCIONES_AMBITO,
+        "estados_presentacion": Vencimiento.OPCIONES_ESTADO_PRESENTACION,
+        "estados_validacion": Vencimiento.OPCIONES_ESTADO_VALIDACION,
+        "canales_alerta": ConfiguracionAlerta.OPCIONES_CANAL,
+        "visibilidades_anotacion": AnotacionCalendario.OPCIONES_VISIBILIDAD,
+    }

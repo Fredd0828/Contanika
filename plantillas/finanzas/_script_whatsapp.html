@@ -1,0 +1,7 @@
+{# Tras abrir un WhatsApp en otra pestaña, recarga la página para reflejar que quedó enviado. #}
+<script>
+document.addEventListener("submit", function (evento) {
+    if (!evento.target.classList.contains("form-whatsapp")) return;
+    setTimeout(function () { window.location.reload(); }, 1500);
+});
+</script>

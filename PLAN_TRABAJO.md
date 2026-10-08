@@ -133,12 +133,21 @@ de M10 los cubren; el trigger de saldo por abono queda implementado en S6.
 
 Numerales 3.1, 3.2 y 3.3, conclusiones (4, una por objetivo), presentación y sustentación.
 
+> **Desviación de alcance (25 sep 2026):** a pedido del usuario, el Módulo 6 incluye además
+> programación de envíos, cobro mensual automático y recordatorios automáticos de pago (no
+> estaban en el spec). El M6 se construye en 3 bloques: (1) honorarios, catálogos y cuentas de
+> cobro; (2) envíos, recordatorios y programación; (3) abonos con disparador y cartera.
+> Tablas nuevas: `honorario_servicio`, `configuracion_cobro`, `envio_programado` (39 en total).
+>
+> **Módulo 10 (1 oct 2026):** tabla nueva `descarga_reporte` para registrar quién descarga
+> cada reporte, cuándo, en qué formato y con qué filtros (HU028-5). Son 40 tablas en total.
+
 ## 5. Decisiones técnicas abiertas (con recomendación)
 
 | # | Tema | Recomendación por defecto |
 |---|---|---|
-| T2 | WhatsApp | Correo real por SMTP + WhatsApp mediante enlace `wa.me` con registro automático en M7; API Business como mejora |
-| T3 | Alertas automáticas | Management command `enviar_alertas` + cron; probado con reloj simulado |
+| T2 | WhatsApp | **Resuelta (25-sep-2026, M6):** correo por SMTP (variables `CORREO_*`) + WhatsApp por enlace `wa.me` con registro en Comunicaciones; los WhatsApp programados o masivos quedan en una bandeja de pendientes. API Business como mejora futura |
+| T3 | Alertas automáticas | **Resuelta para el M6 (25-sep-2026):** comando `procesar_cobros` + cron cada 15 min, probado con fechas simuladas. **Resuelta para el M2 (1-oct-2026):** comando `procesar_alertas` (cron) para el correo, notificación interna en la campana de la barra superior y `wa.me` como enlace; ver AGENTS.md (Módulo 2) |
 | T4 | API DRF | Solo endpoints AJAX necesarios (Kanban, calendario, búsqueda incremental, notificaciones) |
 | T5 | Despliegue | Hosting con soporte Python + BD Supabase en la semana del 7 de diciembre |
 

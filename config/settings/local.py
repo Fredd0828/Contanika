@@ -11,8 +11,10 @@ DEBUG = True
 
 ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
 
-# En desarrollo los correos se imprimen en la consola para poder revisarlos.
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+# En desarrollo los correos se imprimen en la consola para poder revisarlos,
+# salvo que se haya configurado un servidor SMTP real en CORREO_HOST (.env).
+if not EMAIL_HOST:  # noqa: F405
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 # Herramientas de depuración que solo aplican en local.
 INTERNAL_IPS = ["127.0.0.1"]

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block titulo %}Datos del despacho{% endblock %}
+
+{% block contenido %}
+<div class="panel">
+    <div class="ph mb-0">
+        <div class="ph-title" style="font-size:18px"><i class="bi bi-building"></i> Datos del despacho</div>
+        <a class="ph-link" href="{% url 'documentos:historico' %}"><i class="bi bi-arrow-left"></i> Volver</a>
+    </div>
+</div>
+
+<div class="panel">
+    <p class="text-muted">
+        Estos datos se imprimen en los documentos generados. Si carga la imagen del
+        membrete, esta reemplaza el nombre y la ciudad del despacho en el encabezado
+        de cada PDF.
+    </p>
+    {% if formulario.instance.membrete %}
+    <img src="{{ formulario.instance.membrete.url }}" alt="Membrete actual" style="max-height:90px;max-width:100%" class="mb-3 d-block">
+    {% endif %}
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="row g-3">
+            {% for campo in formulario %}
+            <div class="{% if campo.name == 'membrete' %}col-12{% else %}col-md-6{% endif %}">
+                <label class="form-label" for="{{ campo.id_for_label }}">{{ campo.label }}</label>
+                {{ campo }}
+                {% if campo.errors %}<div class="text-danger small">{{ campo.errors }}</div>{% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="ph-btn"><i class="bi bi-save"></i> Guardar</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

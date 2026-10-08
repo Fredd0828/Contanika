@@ -1,8 +1,9 @@
 """
 Modelos del módulo 10: reportes y análisis.
 
-Catálogo de los seis reportes del sistema y la habilitación de cada uno
-por rol, que el Administrador configura de forma individual.
+Catálogo de los seis reportes del sistema, la habilitación de cada uno
+por rol, que el Administrador configura de forma individual, y el registro
+de las descargas.
 """
 
 from django.db import models
@@ -69,3 +70,40 @@ class PermisoReporteRol(models.Model):
 
     def __str__(self):
         return f"{self.rol.nombre_rol} - {self.reporte.nombre_reporte}: {self.habilitado}"
+
+
+class DescargaReporte(models.Model):
+    """
+    Registro de cada descarga de un reporte (HU028-5): qué reporte, quién, cuándo,
+    en qué formato y con qué filtros. Tabla agregada en el Módulo 10.
+    """
+
+    EXCEL = "Excel"
+    PDF = "PDF"
+    OPCIONES_FORMATO = [(EXCEL, EXCEL), (PDF, PDF)]
+
+    id_descarga = models.AutoField(primary_key=True)
+    reporte = models.ForeignKey(
+        Reporte,
+        on_delete=models.PROTECT,
+        db_column="id_reporte",
+        related_name="descargas",
+    )
+    usuario = models.ForeignKey(
+        "seguridad.Usuario",
+        on_delete=models.PROTECT,
+        db_column="id_usuario",
+        related_name="descargas_reporte",
+    )
+    formato = models.CharField(max_length=10, choices=OPCIONES_FORMATO)
+    filtros = models.TextField(blank=True)
+    fecha_hora = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "descarga_reporte"
+        verbose_name = "descarga de reporte"
+        verbose_name_plural = "descargas de reportes"
+        ordering = ["-fecha_hora"]
+
+    def __str__(self):
+        return f"{self.reporte.nombre_reporte} ({self.formato}) - {self.usuario.nombre}"

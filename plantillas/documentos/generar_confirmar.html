@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block titulo %}Previsualizar documento{% endblock %}
+
+{% block contenido %}
+<div class="panel">
+    <div class="ph mb-0">
+        <div class="ph-title" style="font-size:18px"><i class="bi bi-eye"></i> Previsualizar documento</div>
+        <a class="ph-link" href="{% url 'documentos:generar' %}"><i class="bi bi-arrow-left"></i> Volver a editar</a>
+    </div>
+</div>
+
+<div class="panel mb-3">
+    <div class="ph"><div class="ph-title"><i class="bi bi-card-list"></i> Datos del documento</div></div>
+    <dl class="row mb-0">
+        <dt class="col-sm-3 text-muted fw-normal">Cliente</dt><dd class="col-sm-9">{{ cliente.nombre_razon_social }}</dd>
+        <dt class="col-sm-3 text-muted fw-normal">Tipo de documento</dt><dd class="col-sm-9">{{ plantilla.nombre_plantilla }}</dd>
+        <dt class="col-sm-3 text-muted fw-normal">Período</dt><dd class="col-sm-9">{{ periodo }}</dd>
+        <dt class="col-sm-3 text-muted fw-normal">Descripción</dt><dd class="col-sm-9">{{ descripcion|default:"—" }}</dd>
+        <dt class="col-sm-3 text-muted fw-normal">Firma a usar</dt><dd class="col-sm-9">{{ usuario_firmante.nombre }}</dd>
+    </dl>
+</div>
+
+<div class="panel mb-3">
+    <div class="ph"><div class="ph-title"><i class="bi bi-file-earmark-text"></i> Texto del certificado</div></div>
+    <p class="mb-0">{{ texto_renderizado }}</p>
+</div>
+
+<form method="post">
+    {% csrf_token %}
+    <div class="d-flex gap-2">
+        <button type="submit" class="ph-btn"><i class="bi bi-check-lg"></i> Confirmar y generar PDF</button>
+        <a class="btn btn-outline-secondary" href="{% url 'documentos:generar' %}">Cancelar</a>
+    </div>
+</form>
+{% endblock %}

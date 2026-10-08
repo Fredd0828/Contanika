@@ -1,0 +1,91 @@
+{% if puede_gestionar %}
+<div class="row g-3 mb-3 align-items-end">
+    <div class="col-auto">
+        <form method="post" action="{% url 'hallazgos:cambiar_estado' hallazgo.pk %}" class="d-flex gap-2 align-items-end">
+            {% csrf_token %}
+            <div>
+                <label class="form-label">Estado</label>
+                {{ formulario_estado.estado }}
+            </div>
+            <div>
+                <label class="form-label">Observación de cierre</label>
+                {{ formulario_estado.observacion_cierre }}
+                <div class="form-text">Solo obligatoria al pasar a "Cerrado".</div>
+            </div>
+            <button type="submit" class="btn btn-outline-primary"><i class="bi bi-check2"></i> Cambiar</button>
+        </form>
+    </div>
+    <div class="col-auto text-muted small">
+        Prioridad: <span class="kb-prio kb-prio-{{ hallazgo.prioridad|lower }}">{{ hallazgo.prioridad }}</span>
+    </div>
+</div>
+{% else %}
+<div class="row g-3 mb-3">
+    <div class="col-auto text-muted small">
+        Estado: <strong>{{ hallazgo.estado }}</strong>
+        · Prioridad: <span class="kb-prio kb-prio-{{ hallazgo.prioridad|lower }}">{{ hallazgo.prioridad }}</span>
+        · Responsable: {{ hallazgo.responsable.nombre|default:"Sin asignar" }}
+    </div>
+</div>
+{% endif %}
+
+{% if hallazgo.observacion_cierre %}
+<div class="alert alert-light border small">
+    <strong>Observación de cierre:</strong> {{ hallazgo.observacion_cierre }}
+</div>
+{% endif %}
+
+{% if puede_gestionar %}
+<form method="post" action="{% url 'hallazgos:editar' hallazgo.pk %}" class="mb-4">
+    {% include "hallazgos/_hallazgo_form_campos.html" %}
+    <button type="submit" class="btn btn-primary btn-sm mt-3"><i class="bi bi-save"></i> Guardar cambios</button>
+</form>
+{% else %}
+<table class="tbl mb-4">
+    <tbody>
+        <tr><th>Tipo</th><td>{{ hallazgo.tipo_hallazgo }}</td></tr>
+        <tr><th>Período revisado</th><td>{{ hallazgo.fecha_inicio_periodo|date:"d/m/Y" }} – {{ hallazgo.fecha_fin_periodo|date:"d/m/Y" }}</td></tr>
+        <tr><th>Descripción</th><td>{{ hallazgo.descripcion|linebreaksbr }}</td></tr>
+    </tbody>
+</table>
+<p class="text-muted small">Consulta: este hallazgo es de un cliente que no tiene a su cargo.</p>
+{% endif %}
+
+<div class="sec-lbl">Adjuntos de soporte</div>
+<div class="table-responsive mb-2">
+    <table class="tbl">
+        <tbody>
+            {% for adjunto in adjuntos %}
+            <tr>
+                <td><i class="bi bi-paperclip"></i> {{ adjunto.nombre_archivo }}</td>
+                <td class="text-muted small">{{ adjunto.fecha_carga|date:"d/m/Y H:i" }}</td>
+                <td class="text-end">
+                    <a class="icon-btn" href="{% url 'hallazgos:descargar_adjunto' adjunto.pk %}" title="Descargar">
+                        <i class="bi bi-download"></i>
+                    </a>
+                    {% if puede_gestionar %}
+                    <form method="post" action="{% url 'hallazgos:eliminar_adjunto' adjunto.pk %}" class="d-inline"
+                          onsubmit="return confirm('¿Eliminar este adjunto?')">
+                        {% csrf_token %}
+                        <button type="submit" class="icon-btn danger" title="Eliminar"><i class="bi bi-trash"></i></button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td class="text-muted small">Sin adjuntos cargados.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% if puede_gestionar %}
+<form method="post" action="{% url 'hallazgos:agregar_adjunto' hallazgo.pk %}" enctype="multipart/form-data"
+      class="d-flex gap-2 align-items-end">
+    {% csrf_token %}
+    <div class="flex-grow-1">
+        {{ formulario_adjunto.archivo }}
+        {% if formulario_adjunto.archivo.errors %}<div class="text-danger small">{{ formulario_adjunto.archivo.errors }}</div>{% endif %}
+    </div>
+    <button type="submit" class="btn btn-outline-primary"><i class="bi bi-paperclip"></i> Adjuntar</button>
+</form>
+{% endif %}

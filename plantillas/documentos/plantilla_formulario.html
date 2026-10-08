@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block titulo %}{% if accion == "crear" %}Nueva plantilla{% else %}Editar plantilla{% endif %}{% endblock %}
+
+{% block contenido %}
+<div class="panel">
+    <div class="ph mb-0">
+        <div class="ph-title" style="font-size:18px">
+            {% if accion == "crear" %}Nueva plantilla{% else %}Editar plantilla{% endif %}
+        </div>
+        <a class="ph-link" href="{% url 'documentos:plantillas' %}"><i class="bi bi-arrow-left"></i> Volver</a>
+    </div>
+</div>
+
+<form method="post" novalidate>
+    {% csrf_token %}
+
+    {% if formulario.non_field_errors %}
+    <div class="alert alert-danger">{{ formulario.non_field_errors }}</div>
+    {% endif %}
+    {% if formset_campos.non_form_errors %}
+    <div class="alert alert-danger">{{ formset_campos.non_form_errors }}</div>
+    {% endif %}
+
+    <div class="panel mb-3">
+        <div class="ph"><div class="ph-title"><i class="bi bi-file-earmark-text"></i> Datos generales</div></div>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label" for="{{ formulario.nombre_plantilla.id_for_label }}">{{ formulario.nombre_plantilla.label }} *</label>
+                {{ formulario.nombre_plantilla }}
+                {% if formulario.nombre_plantilla.errors %}<div class="text-danger small">{{ formulario.nombre_plantilla.errors }}</div>{% endif %}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="{{ formulario.tipo_documento.id_for_label }}">{{ formulario.tipo_documento.label }} *</label>
+                {{ formulario.tipo_documento }}
+                {% if formulario.tipo_documento.errors %}<div class="text-danger small">{{ formulario.tipo_documento.errors }}</div>{% endif %}
+            </div>
+            <div class="col-12">
+                <label class="form-label" for="{{ formulario.texto_predeterminado.id_for_label }}">{{ formulario.texto_predeterminado.label }}</label>
+                {{ formulario.texto_predeterminado }}
+                {% if formulario.texto_predeterminado.help_text %}<div class="form-text">{{ formulario.texto_predeterminado.help_text }}</div>{% endif %}
+                {% if formulario.texto_predeterminado.errors %}<div class="text-danger small">{{ formulario.texto_predeterminado.errors }}</div>{% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="panel mb-3">
+        <div class="ph"><div class="ph-title"><i class="bi bi-list-columns"></i> Campos propios</div></div>
+        {{ formset_campos.management_form }}
+        <div id="filas-campos">
+            {% for fila in formset_campos %}
+            <div class="row g-2 align-items-center mb-2 fila-campo">
+                {{ fila.id_campo }}
+                <div class="col-md-5">
+                    {{ fila.nombre_campo }}
+                    {% if fila.nombre_campo.errors %}<div class="text-danger small">{{ fila.nombre_campo.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-4">
+                    {{ fila.tipo_campo }}
+                </div>
+                <div class="col-md-3">
+                    {% if fila.instance.pk %}
+                    <div class="form-check">
+                        {{ fila.DELETE }}
+                        <label class="form-check-label">Quitar</label>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <button type="button" class="ph-link mt-2" id="agregar-campo"><i class="bi bi-plus-lg"></i> Agregar campo</button>
+    </div>
+
+    <div class="d-flex gap-2">
+        <button type="submit" class="ph-btn"><i class="bi bi-check-lg"></i> Guardar</button>
+        <a class="btn btn-outline-secondary" href="{% url 'documentos:plantillas' %}">Cancelar</a>
+    </div>
+</form>
+
+<div id="plantilla-campo" class="d-none">
+    <div class="row g-2 align-items-center mb-2 fila-campo">
+        <div class="col-md-5">{{ formset_campos.empty_form.nombre_campo }}</div>
+        <div class="col-md-4">{{ formset_campos.empty_form.tipo_campo }}</div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const boton = document.getElementById("agregar-campo");
+    const contenedor = document.getElementById("filas-campos");
+    const plantilla = document.getElementById("plantilla-campo").innerHTML;
+    const total = document.getElementById("id_campos-TOTAL_FORMS");
+    if (boton && contenedor && total) {
+        boton.addEventListener("click", function () {
+            const indice = parseInt(total.value, 10);
+            contenedor.insertAdjacentHTML("beforeend", plantilla.replace(/__prefix__/g, indice));
+            total.value = indice + 1;
+        });
+    }
+});
+</script>
+{% endblock %}

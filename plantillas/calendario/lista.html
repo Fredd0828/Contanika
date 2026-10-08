@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+{% block titulo %}Vencimientos{% endblock %}
+
+{% block contenido %}
+<div class="panel">
+    <div class="ph">
+        <div class="ph-title"><i class="bi bi-list-ul"></i> Vencimientos</div>
+        <div class="ph-actions">
+            <a class="ph-link" href="{% url 'calendario:calendario' %}">
+                <i class="bi bi-calendar2-check"></i> Calendario
+            </a>
+            {% if puede_editar %}
+            <form method="post" action="{% url 'calendario:generar' %}" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="ph-btn"
+                        onclick="return confirm('¿Calcular los vencimientos DIAN de todos los clientes activos?')">
+                    <i class="bi bi-arrow-repeat"></i> Calcular vencimientos DIAN
+                </button>
+            </form>
+            <a class="ph-btn" href="{% url 'calendario:crear_vencimiento' %}">
+                <i class="bi bi-plus-lg"></i> Nuevo vencimiento
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <ul class="nav nav-tabs mb-3" id="tabsVencimientos" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {% if not mostrar_completo %}active{% endif %}" id="tab-resumen-btn" data-bs-toggle="tab" data-bs-target="#tab-resumen" type="button" role="tab" aria-controls="tab-resumen" aria-selected="{% if not mostrar_completo %}true{% else %}false{% endif %}">
+                <i class="bi bi-hourglass-split"></i> Resumen
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {% if mostrar_completo %}active{% endif %}" id="tab-completo-btn" data-bs-toggle="tab" data-bs-target="#tab-completo" type="button" role="tab" aria-controls="tab-completo" aria-selected="{% if mostrar_completo %}true{% else %}false{% endif %}">
+                <i class="bi bi-table"></i> Todos los vencimientos
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="tabsVencimientosContenido">
+        <div class="tab-pane fade {% if not mostrar_completo %}show active{% endif %}" id="tab-resumen" role="tabpanel" aria-labelledby="tab-resumen-btn">
+            <div class="row g-3">
+                <div class="col-lg-6">
+                    <div class="panel h-100 mb-0">
+                        <div class="ph">
+                            <div class="ph-title"><i class="bi bi-hourglass-split"></i> Próximos y actuales</div>
+                            <a class="ph-link" href="{% url 'calendario:lista' %}?desde={{ hoy|date:"Y-m-d" }}">Ver todos</a>
+                        </div>
+                        <table class="tbl">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Cliente</th>
+                                    <th>Obligación</th>
+                                    <th>Estado</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for vencimiento in proximos %}
+                                <tr>
+                                    <td>{{ vencimiento.fecha_vencimiento|date:"d/m/Y" }}</td>
+                                    <td>{{ vencimiento.cliente.nombre_razon_social }}</td>
+                                    <td>{{ vencimiento.tipo_obligacion }}</td>
+                                    <td>
+                                        {% if vencimiento.estado_presentacion == "Presentada" %}
+                                        <span class="badge-est be-g">Presentada</span>
+                                        {% elif vencimiento.estado_presentacion == "En progreso" %}
+                                        <span class="badge-est be-w">En progreso</span>
+                                        {% else %}
+                                        <span class="badge-est be-r">Pendiente</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a class="icon-btn" href="{% url 'calendario:detalle' vencimiento.pk %}" title="Ver detalle">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-3">No hay vencimientos próximos.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="panel h-100 mb-0">
+                        <div class="ph">
+                            <div class="ph-title"><i class="bi bi-exclamation-triangle"></i> Vencidos</div>
+                            <a class="ph-link" href="{% url 'calendario:lista' %}?hasta={{ ayer|date:"Y-m-d" }}">Ver todos</a>
+                        </div>
+                        <table class="tbl">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Cliente</th>
+                                    <th>Obligación</th>
+                                    <th>Estado</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for vencimiento in vencidos %}
+                                <tr>
+                                    <td>{{ vencimiento.fecha_vencimiento|date:"d/m/Y" }}</td>
+                                    <td>{{ vencimiento.cliente.nombre_razon_social }}</td>
+                                    <td>{{ vencimiento.tipo_obligacion }}</td>
+                                    <td>
+                                        {% if vencimiento.estado_presentacion == "En progreso" %}
+                                        <span class="badge-est be-w">En progreso</span>
+                                        {% else %}
+                                        <span class="badge-est be-r">Pendiente</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a class="icon-btn" href="{% url 'calendario:detalle' vencimiento.pk %}" title="Ver detalle">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-3">No hay vencimientos vencidos pendientes.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade {% if mostrar_completo %}show active{% endif %}" id="tab-completo" role="tabpanel" aria-labelledby="tab-completo-btn">
+            <form method="get" class="filters mb-3">
+                <div class="campo">
+                    <label>Desde</label>
+                    <input type="date" name="desde" value="{{ request.GET.desde }}">
+                </div>
+                <div class="campo">
+                    <label>Hasta</label>
+                    <input type="date" name="hasta" value="{{ request.GET.hasta }}">
+                </div>
+                <div class="campo">
+                    <label>{{ formulario_filtro.cliente.label }}</label>
+                    {{ formulario_filtro.cliente }}
+                </div>
+                <div class="campo">
+                    <label>{{ formulario_filtro.ambito.label }}</label>
+                    {{ formulario_filtro.ambito }}
+                </div>
+                <div class="campo">
+                    <label>{{ formulario_filtro.estado_presentacion.label }}</label>
+                    {{ formulario_filtro.estado_presentacion }}
+                </div>
+                <div class="campo">
+                    <label>{{ formulario_filtro.tipo_obligacion.label }}</label>
+                    {{ formulario_filtro.tipo_obligacion }}
+                </div>
+                <div class="campo">
+                    <label>{{ formulario_filtro.responsable.label }}</label>
+                    {{ formulario_filtro.responsable }}
+                </div>
+                <div class="campo">
+                    <label>{{ formulario_filtro.origen.label }}</label>
+                    {{ formulario_filtro.origen }}
+                </div>
+                <button type="submit" class="ph-btn"><i class="bi bi-funnel"></i> Filtrar</button>
+                <a class="ph-link" href="{% url 'calendario:lista' %}">Limpiar</a>
+            </form>
+
+            <table class="tbl">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Cliente</th>
+                        <th>Obligación</th>
+                        <th>Ámbito</th>
+                        <th>Municipio</th>
+                        <th>Responsable</th>
+                        <th>Estado</th>
+                        <th>Validación</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for vencimiento in vencimientos %}
+                    <tr>
+                        <td>{{ vencimiento.fecha_vencimiento|date:"d/m/Y" }}</td>
+                        <td>
+                            <div class="cli-name">{{ vencimiento.cliente.nombre_razon_social }}</div>
+                            <div class="cli-nit">{{ vencimiento.cliente.nit_cedula }}</div>
+                        </td>
+                        <td>
+                            {{ vencimiento.tipo_obligacion }}
+                            {% if vencimiento.tarea_id %}
+                            <div><span class="badge-tipo bt-emp"><i class="bi bi-kanban-fill"></i> Tarea</span></div>
+                            {% endif %}
+                        </td>
+                        <td><span class="badge-tipo bt-emp">{{ vencimiento.ambito }}</span></td>
+                        <td>{{ vencimiento.municipio|default:"—" }}</td>
+                        <td>{{ vencimiento.responsable.nombre|default:"Sin asignar" }}</td>
+                        <td>
+                            {% if vencimiento.estado_presentacion == "Presentada" %}
+                            <span class="badge-est be-g">Presentada</span>
+                            {% elif vencimiento.estado_presentacion == "En progreso" %}
+                            <span class="badge-est be-w">En progreso</span>
+                            {% else %}
+                            <span class="badge-est be-r">Pendiente</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if vencimiento.es_automatico_dian %}
+                                {% if vencimiento.estado_validacion == "Validado" %}
+                                <span class="badge-est be-teal">Validado</span>
+                                {% else %}
+                                <span class="badge-est be-n">Pendiente de validar</span>
+                                {% endif %}
+                            {% else %}
+                            <span class="badge-est be-n">Manual</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a class="icon-btn" href="{% url 'calendario:detalle' vencimiento.pk %}" title="Ver detalle">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="text-center text-muted py-4">
+                            No hay vencimientos con los filtros seleccionados.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            {% if is_paginated %}
+            <nav class="mt-3">
+                <ul class="pagination pagination-sm mb-0">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ querystring }}">Anterior</a>
+                    </li>
+                    {% endif %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+                    </li>
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ querystring }}">Siguiente</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,16 +1,32 @@
 """
 Modelos del módulo 9: expediente y bitácora por cliente.
 
-La bitácora es cronológica e inmutable: las anotaciones no se eliminan, solo
-se marcan como archivadas por el Administrador, de modo que el historial de
-gestión de cada cliente quede completo desde su ingreso al despacho.
+La bitácora es cronológica e inmutable: las anotaciones no se editan ni se
+eliminan, solo se marcan como archivadas por el Administrador, de modo que el
+historial de gestión de cada cliente quede completo desde su ingreso al
+despacho.
 """
 
 from django.db import models
+from django.utils import timezone
 
 
 class Anotacion(models.Model):
     """Anotación cronológica del expediente y bitácora de un cliente."""
+
+    # Tipos sugeridos por el spec; el campo es de selección abierta, así que
+    # se puede escribir un tipo nuevo (p. ej. "Retención en la fuente").
+    TIPOS_SUGERIDOS = [
+        "Reunión",
+        "Llamada",
+        "Entrega de documento",
+        "Acuerdo",
+        "Observación interna",
+        "Nota al cliente",
+        "Hito",
+        "Alerta",
+        "Modificación",
+    ]
 
     id_anotacion = models.AutoField(primary_key=True)
     cliente = models.ForeignKey(
@@ -20,6 +36,9 @@ class Anotacion(models.Model):
         related_name="anotaciones",
     )
     tipo_anotacion = models.CharField(max_length=40)
+    # Fecha en que ocurrió lo anotado (editable, por defecto hoy); `fecha_hora`
+    # es el momento exacto del registro y no se puede alterar (HU025-2).
+    fecha = models.DateField(default=timezone.localdate)
     fecha_hora = models.DateTimeField(auto_now_add=True)
     usuario = models.ForeignKey(
         "seguridad.Usuario",
@@ -34,9 +53,9 @@ class Anotacion(models.Model):
         db_table = "anotacion"
         verbose_name = "anotación del expediente"
         verbose_name_plural = "anotaciones del expediente"
-        ordering = ["-fecha_hora"]
+        ordering = ["-fecha", "-fecha_hora"]
         indexes = [
-            models.Index(fields=["cliente", "-fecha_hora"], name="idx_anotacion_cliente"),
+            models.Index(fields=["cliente", "-fecha", "-fecha_hora"], name="idx_anotacion_cliente"),
         ]
 
     def __str__(self):
@@ -45,6 +64,11 @@ class Anotacion(models.Model):
     def archivar(self):
         """Marca la anotación como archivada; el registro se conserva."""
         self.archivado = True
+        self.save(update_fields=["archivado"])
+
+    def restaurar(self):
+        """Devuelve al expediente una anotación archivada por error."""
+        self.archivado = False
         self.save(update_fields=["archivado"])
 
     def delete(self, *args, **kwargs):

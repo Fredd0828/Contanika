@@ -4,49 +4,15 @@
 -- Motor: PostgreSQL (16 local, compatible con PostgreSQL 15 de Supabase)
 -- Generado desde las migraciones de Django 5.2 LTS el 21 de septiembre de 2026.
 --
--- Contiene las 36 tablas del modelo relacional (numerales 2.4 y 2.5 del
+-- Contiene las 40 tablas del modelo relacional: las 36 del diccionario de
+-- datos más honorario_servicio, configuracion_cobro y envio_programado,
+-- agregadas en el Módulo 6, y descarga_reporte (Módulo 10) (numerales 2.4 y 2.5 del
 -- documento de proyecto) y los comentarios de cada tabla tomados del
 -- diccionario de datos. Las llaves foráneas se agregan al final del script.
+-- Incluye el disparador exigido por la guía: sobre la tabla abono, calcula el
+-- saldo anterior y resultante, actualiza el estado de pago de la cuenta de
+-- cobro e impide modificar o eliminar abonos (migración finanzas 0004).
 -- ============================================================================
-
--- Comentarios de las tablas (diccionario de datos, numeral 2.5)
-
-COMMENT ON TABLE rol IS 'Roles del sistema: Administrador, Contador Senior, Contador Junior.';
-COMMENT ON TABLE usuario IS 'Miembro del equipo del despacho (o el contador independiente).';
-COMMENT ON TABLE modulo IS 'Catálogo de los 10 módulos del sistema.';
-COMMENT ON TABLE permiso_rol_modulo IS 'Habilitación de cada módulo por rol (RQF031).';
-COMMENT ON TABLE cliente IS 'Ficha central de cada cliente del despacho.';
-COMMENT ON TABLE cliente_municipio IS 'Municipios o distritos adicionales donde el cliente tributa (multi-ICA).';
-COMMENT ON TABLE tipo_servicio IS 'Catálogo de tipos de servicio contable prestado.';
-COMMENT ON TABLE cliente_servicio IS 'Relación N:M entre cliente y los tipos de servicio que recibe.';
-COMMENT ON TABLE credencial IS 'Credenciales de acceso a portales del cliente.';
-COMMENT ON TABLE tabla_referencia_dian IS 'Calendario oficial DIAN por grupo de NIT, cargado por el Administrador.';
-COMMENT ON TABLE vencimiento IS 'Vencimiento tributario nacional, distrital/municipal o de tarea marcada.';
-COMMENT ON TABLE configuracion_alerta IS 'Alertas automáticas configuradas para un vencimiento.';
-COMMENT ON TABLE anotacion_calendario IS 'Anotación libre por fecha, no asociada a un cliente.';
-COMMENT ON TABLE anotacion_calendario_destinatario IS 'Usuarios etiquetados cuando la visibilidad es restringida.';
-COMMENT ON TABLE tarea IS 'Tarjeta del tablero Kanban.';
-COMMENT ON TABLE historial_tarea IS 'Registro de cada cambio de estado de una tarea.';
-COMMENT ON TABLE observacion_tarea IS 'Observación de avance registrada sobre una tarea.';
-COMMENT ON TABLE plantilla IS 'Plantilla de documento o certificado (6 base + creadas por el Administrador).';
-COMMENT ON TABLE campo_plantilla IS 'Campo variable propio de cada plantilla (simple o repetible).';
-COMMENT ON TABLE documento IS 'Documento o certificado generado para un cliente.';
-COMMENT ON TABLE documento_valor IS 'Valor de un campo simple para un documento generado.';
-COMMENT ON TABLE documento_detalle IS 'Fila de un campo repetible (ej. cada accionista) para un documento.';
-COMMENT ON TABLE hallazgo IS 'Hallazgo, revisión, observación o inconsistencia registrada para un cliente.';
-COMMENT ON TABLE adjunto IS 'Archivo de soporte adjunto (tabla genérica reutilizada por hallazgo y anotación).';
-COMMENT ON TABLE honorario IS 'Configuración del honorario de un cliente.';
-COMMENT ON TABLE concepto_facturable IS 'Catálogo reutilizable de conceptos facturables.';
-COMMENT ON TABLE cuenta_bancaria IS 'Cuenta bancaria del despacho, disponible como destino de pago.';
-COMMENT ON TABLE metodo_pago IS 'Catálogo de métodos de pago aceptados.';
-COMMENT ON TABLE cuenta_cobro IS 'Cuenta de cobro generada en PDF para un cliente.';
-COMMENT ON TABLE cuenta_cobro_detalle IS 'Línea de servicio descrita dentro de una cuenta de cobro.';
-COMMENT ON TABLE abono IS 'Pago o abono registrado contra una cuenta de cobro.';
-COMMENT ON TABLE comunicacion IS 'Comunicación automática o manual registrada con un cliente.';
-COMMENT ON TABLE anotacion IS 'Anotación cronológica del expediente y bitácora del cliente.';
-COMMENT ON TABLE reporte IS 'Catálogo de los 6 reportes del Módulo 10.';
-COMMENT ON TABLE permiso_reporte_rol IS 'Habilitación de cada reporte individual por rol.';
-COMMENT ON TABLE configuracion_despacho IS 'Datos fijos del despacho usados en documentos y cuentas de cobro.';
 
 --
 -- PostgreSQL database dump
@@ -67,6 +33,71 @@ SET check_function_bodies = false;
 SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
+
+--
+-- Name: fn_abono_calcular_saldo(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE OR REPLACE FUNCTION public.fn_abono_calcular_saldo() RETURNS trigger AS $$
+DECLARE
+    v_valor_total numeric(12, 2);
+    v_abonado numeric(12, 2);
+BEGIN
+    IF NEW.monto IS NULL OR NEW.monto <= 0 THEN
+        RAISE EXCEPTION 'El monto del abono debe ser mayor que cero.'
+            USING ERRCODE = 'check_violation';
+    END IF;
+
+    -- Bloquea la cuenta para que dos abonos simultáneos no calculen el mismo saldo.
+    SELECT valor_total INTO v_valor_total
+      FROM cuenta_cobro
+     WHERE id_cuenta_cobro = NEW.id_cuenta_cobro
+       FOR UPDATE;
+
+    SELECT COALESCE(SUM(monto), 0) INTO v_abonado
+      FROM abono
+     WHERE id_cuenta_cobro = NEW.id_cuenta_cobro;
+
+    NEW.saldo_anterior := v_valor_total - v_abonado;
+    IF NEW.monto > NEW.saldo_anterior THEN
+        RAISE EXCEPTION 'El abono supera el saldo pendiente de la cuenta (%).', NEW.saldo_anterior
+            USING ERRCODE = 'check_violation';
+    END IF;
+    NEW.saldo_resultante := NEW.saldo_anterior - NEW.monto;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+
+--
+-- Name: fn_abono_actualizar_estado_cuenta(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE OR REPLACE FUNCTION public.fn_abono_actualizar_estado_cuenta() RETURNS trigger AS $$
+BEGIN
+    UPDATE cuenta_cobro
+       SET estado_pago = CASE
+               WHEN NEW.saldo_resultante = 0 THEN 'Pagada'
+               WHEN fecha_vencimiento_pago < (now() AT TIME ZONE 'America/Bogota')::date THEN 'Vencida'
+               ELSE 'Abonada'
+           END
+     WHERE id_cuenta_cobro = NEW.id_cuenta_cobro;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+
+--
+-- Name: fn_abono_inmutable(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE OR REPLACE FUNCTION public.fn_abono_inmutable() RETURNS trigger AS $$
+BEGIN
+    RAISE EXCEPTION 'Los abonos no se modifican ni se eliminan: conservan la trazabilidad de la cartera.'
+        USING ERRCODE = 'restrict_violation';
+END;
+$$ LANGUAGE plpgsql;
+
 
 SET default_tablespace = '';
 
@@ -110,9 +141,9 @@ CREATE TABLE public.adjunto (
     id_adjunto integer NOT NULL,
     tabla_origen character varying(30) NOT NULL,
     id_origen integer NOT NULL,
-    archivo_url character varying(255) NOT NULL,
     nombre_archivo character varying(150) NOT NULL,
     fecha_carga timestamp with time zone NOT NULL,
+    archivo character varying(255) NOT NULL,
     CONSTRAINT adjunto_id_origen_check CHECK ((id_origen >= 0))
 );
 
@@ -142,7 +173,8 @@ CREATE TABLE public.anotacion (
     contenido text NOT NULL,
     archivado boolean NOT NULL,
     id_cliente integer NOT NULL,
-    id_usuario integer NOT NULL
+    id_usuario integer NOT NULL,
+    fecha date NOT NULL
 );
 
 
@@ -392,6 +424,7 @@ CREATE TABLE public.configuracion_alerta (
     dias_anticipacion integer NOT NULL,
     canal character varying(20) NOT NULL,
     id_vencimiento integer NOT NULL,
+    fecha_envio date,
     CONSTRAINT configuracion_alerta_dias_anticipacion_check CHECK ((dias_anticipacion >= 0))
 );
 
@@ -411,6 +444,44 @@ ALTER TABLE public.configuracion_alerta ALTER COLUMN id_alerta ADD GENERATED BY 
 
 
 --
+-- Name: configuracion_cobro; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.configuracion_cobro (
+    id_configuracion_cobro integer NOT NULL,
+    cobro_automatico_activo boolean NOT NULL,
+    dia_generacion smallint NOT NULL,
+    dias_plazo_pago smallint NOT NULL,
+    canal_cobro character varying(10) NOT NULL,
+    recordatorios_activos boolean NOT NULL,
+    dias_antes_vencimiento smallint NOT NULL,
+    frecuencia_mora_dias smallint NOT NULL,
+    canal_recordatorio character varying(10) NOT NULL,
+    ultima_ejecucion timestamp with time zone,
+    id_cuenta_bancaria integer,
+    id_metodo_pago integer,
+    CONSTRAINT configuracion_cobro_dia_generacion_check CHECK ((dia_generacion >= 0)),
+    CONSTRAINT configuracion_cobro_dias_plazo_pago_check CHECK ((dias_plazo_pago >= 0)),
+    CONSTRAINT configuracion_cobro_dias_antes_vencimiento_check CHECK ((dias_antes_vencimiento >= 0)),
+    CONSTRAINT configuracion_cobro_frecuencia_mora_dias_check CHECK ((frecuencia_mora_dias >= 0))
+);
+
+
+--
+-- Name: configuracion_cobro_id_configuracion_cobro_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+ALTER TABLE public.configuracion_cobro ALTER COLUMN id_configuracion_cobro ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME public.configuracion_cobro_id_configuracion_cobro_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
 -- Name: configuracion_despacho; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -418,11 +489,11 @@ CREATE TABLE public.configuracion_despacho (
     id_configuracion integer NOT NULL,
     nombre_despacho character varying(150) NOT NULL,
     nit_despacho character varying(20) NOT NULL,
-    membrete_url character varying(255) NOT NULL,
     ciudad character varying(60) NOT NULL,
     direccion character varying(150) NOT NULL,
     telefono character varying(20) NOT NULL,
-    correo character varying(100) NOT NULL
+    correo character varying(100) NOT NULL,
+    membrete character varying(100) NOT NULL
 );
 
 
@@ -507,12 +578,14 @@ CREATE TABLE public.cuenta_cobro (
     fecha_vencimiento_pago date NOT NULL,
     estado_envio character varying(20) NOT NULL,
     estado_pago character varying(20) NOT NULL,
-    archivo_url character varying(255) NOT NULL,
     fecha_generacion timestamp with time zone NOT NULL,
     id_cliente integer NOT NULL,
     id_cuenta_bancaria integer,
     id_honorario integer,
-    id_metodo_pago integer
+    id_metodo_pago integer,
+    archivo character varying(100) NOT NULL,
+    fecha_fin_periodo date,
+    fecha_inicio_periodo date
 );
 
 
@@ -565,10 +638,11 @@ CREATE TABLE public.documento (
     id_documento integer NOT NULL,
     fecha_generacion timestamp with time zone NOT NULL,
     descripcion text NOT NULL,
-    archivo_url character varying(255) NOT NULL,
     id_cliente integer NOT NULL,
     id_plantilla integer NOT NULL,
-    id_usuario_generador integer NOT NULL
+    id_usuario_generador integer NOT NULL,
+    archivo character varying(255) NOT NULL,
+    periodo character varying(60) NOT NULL
 );
 
 
@@ -632,6 +706,38 @@ CREATE TABLE public.documento_valor (
 
 ALTER TABLE public.documento_valor ALTER COLUMN id_valor ADD GENERATED BY DEFAULT AS IDENTITY (
     SEQUENCE NAME public.documento_valor_id_valor_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- Name: envio_programado; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.envio_programado (
+    id_envio_programado integer NOT NULL,
+    tipo character varying(20) NOT NULL,
+    canal character varying(10) NOT NULL,
+    fecha_programada timestamp with time zone NOT NULL,
+    estado character varying(20) NOT NULL,
+    fecha_procesado timestamp with time zone,
+    detalle_error character varying(255) NOT NULL,
+    id_comunicacion integer,
+    id_cuenta_cobro integer NOT NULL,
+    id_usuario integer
+);
+
+
+--
+-- Name: envio_programado_id_envio_programado_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+ALTER TABLE public.envio_programado ALTER COLUMN id_envio_programado ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME public.envio_programado_id_envio_programado_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -708,7 +814,9 @@ CREATE TABLE public.honorario (
     id_honorario integer NOT NULL,
     tipo character varying(20) NOT NULL,
     monto numeric(12,2) NOT NULL,
-    id_cliente integer NOT NULL
+    id_cliente integer NOT NULL,
+    fecha_actualizacion timestamp with time zone NOT NULL,
+    id_usuario_actualizacion integer
 );
 
 
@@ -718,6 +826,32 @@ CREATE TABLE public.honorario (
 
 ALTER TABLE public.honorario ALTER COLUMN id_honorario ADD GENERATED BY DEFAULT AS IDENTITY (
     SEQUENCE NAME public.honorario_id_honorario_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- Name: honorario_servicio; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.honorario_servicio (
+    id_honorario_servicio integer NOT NULL,
+    monto numeric(12,2) NOT NULL,
+    id_honorario integer NOT NULL,
+    id_tipo_servicio integer NOT NULL
+);
+
+
+--
+-- Name: honorario_servicio_id_honorario_servicio_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+ALTER TABLE public.honorario_servicio ALTER COLUMN id_honorario_servicio ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME public.honorario_servicio_id_honorario_servicio_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -794,6 +928,34 @@ CREATE TABLE public.observacion_tarea (
 
 ALTER TABLE public.observacion_tarea ALTER COLUMN id_observacion ADD GENERATED BY DEFAULT AS IDENTITY (
     SEQUENCE NAME public.observacion_tarea_id_observacion_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- Name: descarga_reporte; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.descarga_reporte (
+    id_descarga integer NOT NULL,
+    formato character varying(10) NOT NULL,
+    filtros text NOT NULL,
+    fecha_hora timestamp with time zone NOT NULL,
+    id_reporte integer NOT NULL,
+    id_usuario integer NOT NULL
+);
+
+
+--
+-- Name: descarga_reporte_id_descarga_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+ALTER TABLE public.descarga_reporte ALTER COLUMN id_descarga ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME public.descarga_reporte_id_descarga_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -1022,15 +1184,16 @@ CREATE TABLE public.usuario (
     nombre character varying(150) NOT NULL,
     correo character varying(150) NOT NULL,
     telefono character varying(20) NOT NULL,
-    foto_url character varying(255) NOT NULL,
+    foto character varying(255) NOT NULL,
     password_hash character varying(255) NOT NULL,
-    firma_url character varying(255) NOT NULL,
     numero_tarjeta_profesional character varying(30) NOT NULL,
     estado character varying(15) NOT NULL,
     fecha_creacion timestamp with time zone NOT NULL,
     is_staff boolean NOT NULL,
     is_superuser boolean NOT NULL,
-    id_rol integer NOT NULL
+    id_rol integer NOT NULL,
+    firma character varying(100) NOT NULL,
+    identificacion character varying(20) NOT NULL
 );
 
 
@@ -1062,7 +1225,8 @@ CREATE TABLE public.vencimiento (
     estado_validacion character varying(20) NOT NULL,
     id_cliente integer NOT NULL,
     id_usuario_responsable integer,
-    id_tarea integer
+    id_tarea integer,
+    periodo_gravable character varying(10) NOT NULL
 );
 
 
@@ -1185,6 +1349,14 @@ ALTER TABLE ONLY public.configuracion_alerta
 
 
 --
+-- Name: configuracion_cobro configuracion_cobro_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.configuracion_cobro
+    ADD CONSTRAINT configuracion_cobro_pkey PRIMARY KEY (id_configuracion_cobro);
+
+
+--
 -- Name: configuracion_despacho configuracion_despacho_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1249,6 +1421,14 @@ ALTER TABLE ONLY public.documento_valor
 
 
 --
+-- Name: envio_programado envio_programado_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.envio_programado
+    ADD CONSTRAINT envio_programado_pkey PRIMARY KEY (id_envio_programado);
+
+
+--
 -- Name: hallazgo hallazgo_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1278,6 +1458,22 @@ ALTER TABLE ONLY public.honorario
 
 ALTER TABLE ONLY public.honorario
     ADD CONSTRAINT honorario_pkey PRIMARY KEY (id_honorario);
+
+
+--
+-- Name: honorario_servicio honorario_servicio_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.honorario_servicio
+    ADD CONSTRAINT honorario_servicio_pkey PRIMARY KEY (id_honorario_servicio);
+
+
+--
+-- Name: honorario_servicio unico_honorario_servicio; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.honorario_servicio
+    ADD CONSTRAINT unico_honorario_servicio UNIQUE (id_honorario, id_tipo_servicio);
 
 
 --
@@ -1318,6 +1514,14 @@ ALTER TABLE ONLY public.modulo
 
 ALTER TABLE ONLY public.observacion_tarea
     ADD CONSTRAINT observacion_tarea_pkey PRIMARY KEY (id_observacion);
+
+
+--
+-- Name: descarga_reporte descarga_reporte_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.descarga_reporte
+    ADD CONSTRAINT descarga_reporte_pkey PRIMARY KEY (id_descarga);
 
 
 --
@@ -1734,6 +1938,69 @@ CREATE INDEX historial_tarea_id_usuario_f5b8bd8c ON public.historial_tarea USING
 
 
 --
+-- Name: honorario_id_usuario_actualizacion_d6fe930c; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX honorario_id_usuario_actualizacion_d6fe930c ON public.honorario USING btree (id_usuario_actualizacion);
+
+
+--
+-- Name: honorario_servicio_id_honorario_b416943b; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX honorario_servicio_id_honorario_b416943b ON public.honorario_servicio USING btree (id_honorario);
+
+
+--
+-- Name: honorario_servicio_id_tipo_servicio_801daba0; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX honorario_servicio_id_tipo_servicio_801daba0 ON public.honorario_servicio USING btree (id_tipo_servicio);
+
+
+--
+-- Name: configuracion_cobro_id_cuenta_bancaria_9f91ed81; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX configuracion_cobro_id_cuenta_bancaria_9f91ed81 ON public.configuracion_cobro USING btree (id_cuenta_bancaria);
+
+
+--
+-- Name: configuracion_cobro_id_metodo_pago_acc7871f; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX configuracion_cobro_id_metodo_pago_acc7871f ON public.configuracion_cobro USING btree (id_metodo_pago);
+
+
+--
+-- Name: envio_programado_id_comunicacion_4a470a70; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX envio_programado_id_comunicacion_4a470a70 ON public.envio_programado USING btree (id_comunicacion);
+
+
+--
+-- Name: envio_programado_id_cuenta_cobro_23fb05ed; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX envio_programado_id_cuenta_cobro_23fb05ed ON public.envio_programado USING btree (id_cuenta_cobro);
+
+
+--
+-- Name: envio_programado_id_usuario_4dfa2705; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX envio_programado_id_usuario_4dfa2705 ON public.envio_programado USING btree (id_usuario);
+
+
+--
+-- Name: idx_envio_estado_fecha; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_envio_estado_fecha ON public.envio_programado USING btree (estado, fecha_programada);
+
+
+--
 -- Name: idx_abono_cuenta; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1751,7 +2018,7 @@ CREATE INDEX idx_adjunto_origen ON public.adjunto USING btree (tabla_origen, id_
 -- Name: idx_anotacion_cliente; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX idx_anotacion_cliente ON public.anotacion USING btree (id_cliente, fecha_hora DESC);
+CREATE INDEX idx_anotacion_cliente ON public.anotacion USING btree (id_cliente, fecha DESC, fecha_hora DESC);
 
 
 --
@@ -1867,6 +2134,20 @@ CREATE INDEX observacion_tarea_id_usuario_fca8c926 ON public.observacion_tarea U
 
 
 --
+-- Name: descarga_reporte_id_reporte_b2135478; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX descarga_reporte_id_reporte_b2135478 ON public.descarga_reporte USING btree (id_reporte);
+
+
+--
+-- Name: descarga_reporte_id_usuario_6dff0de6; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX descarga_reporte_id_usuario_6dff0de6 ON public.descarga_reporte USING btree (id_usuario);
+
+
+--
 -- Name: permiso_reporte_rol_id_reporte_ee00d9bf; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1962,6 +2243,33 @@ CREATE INDEX vencimiento_id_tarea_7f55dc35 ON public.vencimiento USING btree (id
 --
 
 CREATE INDEX vencimiento_id_usuario_responsable_6bad33c0 ON public.vencimiento USING btree (id_usuario_responsable);
+
+
+--
+-- Name: abono trg_abono_calcular_saldo; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_abono_calcular_saldo
+    BEFORE INSERT ON public.abono
+    FOR EACH ROW EXECUTE FUNCTION public.fn_abono_calcular_saldo();
+
+
+--
+-- Name: abono trg_abono_actualizar_estado; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_abono_actualizar_estado
+    AFTER INSERT ON public.abono
+    FOR EACH ROW EXECUTE FUNCTION public.fn_abono_actualizar_estado_cuenta();
+
+
+--
+-- Name: abono trg_abono_inmutable; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_abono_inmutable
+    BEFORE UPDATE OR DELETE ON public.abono
+    FOR EACH ROW EXECUTE FUNCTION public.fn_abono_inmutable();
 
 
 --
@@ -2245,6 +2553,70 @@ ALTER TABLE ONLY public.honorario
 
 
 --
+-- Name: honorario honorario_id_usuario_actualiza_d6fe930c_fk_usuario_i; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.honorario
+    ADD CONSTRAINT honorario_id_usuario_actualiza_d6fe930c_fk_usuario_i FOREIGN KEY (id_usuario_actualizacion) REFERENCES public.usuario(id_usuario) DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: honorario_servicio honorario_servicio_id_honorario_b416943b_fk_honorario; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.honorario_servicio
+    ADD CONSTRAINT honorario_servicio_id_honorario_b416943b_fk_honorario FOREIGN KEY (id_honorario) REFERENCES public.honorario(id_honorario) DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: honorario_servicio honorario_servicio_id_tipo_servicio_801daba0_fk_tipo_serv; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.honorario_servicio
+    ADD CONSTRAINT honorario_servicio_id_tipo_servicio_801daba0_fk_tipo_serv FOREIGN KEY (id_tipo_servicio) REFERENCES public.tipo_servicio(id_tipo_servicio) DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: configuracion_cobro configuracion_cobro_id_cuenta_bancaria_9f91ed81_fk_cuenta_ba; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.configuracion_cobro
+    ADD CONSTRAINT configuracion_cobro_id_cuenta_bancaria_9f91ed81_fk_cuenta_ba FOREIGN KEY (id_cuenta_bancaria) REFERENCES public.cuenta_bancaria(id_cuenta_bancaria) DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: configuracion_cobro configuracion_cobro_id_metodo_pago_acc7871f_fk_metodo_pa; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.configuracion_cobro
+    ADD CONSTRAINT configuracion_cobro_id_metodo_pago_acc7871f_fk_metodo_pa FOREIGN KEY (id_metodo_pago) REFERENCES public.metodo_pago(id_metodo_pago) DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: envio_programado envio_programado_id_comunicacion_4a470a70_fk_comunicac; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.envio_programado
+    ADD CONSTRAINT envio_programado_id_comunicacion_4a470a70_fk_comunicac FOREIGN KEY (id_comunicacion) REFERENCES public.comunicacion(id_comunicacion) DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: envio_programado envio_programado_id_cuenta_cobro_23fb05ed_fk_cuenta_co; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.envio_programado
+    ADD CONSTRAINT envio_programado_id_cuenta_cobro_23fb05ed_fk_cuenta_co FOREIGN KEY (id_cuenta_cobro) REFERENCES public.cuenta_cobro(id_cuenta_cobro) DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: envio_programado envio_programado_id_usuario_4dfa2705_fk_usuario_id_usuario; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.envio_programado
+    ADD CONSTRAINT envio_programado_id_usuario_4dfa2705_fk_usuario_id_usuario FOREIGN KEY (id_usuario) REFERENCES public.usuario(id_usuario) DEFERRABLE INITIALLY DEFERRED;
+
+
+--
 -- Name: observacion_tarea observacion_tarea_id_tarea_f7ed11b7_fk_tarea_id_tarea; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2258,6 +2630,22 @@ ALTER TABLE ONLY public.observacion_tarea
 
 ALTER TABLE ONLY public.observacion_tarea
     ADD CONSTRAINT observacion_tarea_id_usuario_fca8c926_fk_usuario_id_usuario FOREIGN KEY (id_usuario) REFERENCES public.usuario(id_usuario) DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: descarga_reporte descarga_reporte_id_reporte_b2135478_fk_reporte_id_reporte; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.descarga_reporte
+    ADD CONSTRAINT descarga_reporte_id_reporte_b2135478_fk_reporte_id_reporte FOREIGN KEY (id_reporte) REFERENCES public.reporte(id_reporte) DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: descarga_reporte descarga_reporte_id_usuario_6dff0de6_fk_usuario_id_usuario; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.descarga_reporte
+    ADD CONSTRAINT descarga_reporte_id_usuario_6dff0de6_fk_usuario_id_usuario FOREIGN KEY (id_usuario) REFERENCES public.usuario(id_usuario) DEFERRABLE INITIALLY DEFERRED;
 
 
 --
@@ -2341,8 +2729,173 @@ ALTER TABLE ONLY public.vencimiento
 
 
 --
+-- Name: cliente_obligacion; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.cliente_obligacion (
+    id_cliente_obligacion integer NOT NULL,
+    id_cliente integer NOT NULL,
+    id_obligacion integer NOT NULL
+);
+
+
+--
+-- Name: cliente_obligacion_id_cliente_obligacion_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+ALTER TABLE public.cliente_obligacion ALTER COLUMN id_cliente_obligacion ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME public.cliente_obligacion_id_cliente_obligacion_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- Name: obligacion_tributaria; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.obligacion_tributaria (
+    id_obligacion integer NOT NULL,
+    nombre character varying(60) NOT NULL,
+    ambito character varying(20) NOT NULL
+);
+
+
+--
+-- Name: obligacion_tributaria_id_obligacion_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+ALTER TABLE public.obligacion_tributaria ALTER COLUMN id_obligacion ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME public.obligacion_tributaria_id_obligacion_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- Name: cliente_obligacion cliente_obligacion_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cliente_obligacion
+    ADD CONSTRAINT cliente_obligacion_pkey PRIMARY KEY (id_cliente_obligacion);
+
+
+--
+-- Name: obligacion_tributaria obligacion_tributaria_nombre_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.obligacion_tributaria
+    ADD CONSTRAINT obligacion_tributaria_nombre_key UNIQUE (nombre);
+
+
+--
+-- Name: obligacion_tributaria obligacion_tributaria_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.obligacion_tributaria
+    ADD CONSTRAINT obligacion_tributaria_pkey PRIMARY KEY (id_obligacion);
+
+
+--
+-- Name: cliente_obligacion unico_cliente_obligacion; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cliente_obligacion
+    ADD CONSTRAINT unico_cliente_obligacion UNIQUE (id_cliente, id_obligacion);
+
+
+--
+-- Name: cliente_obligacion_id_cliente_24db040e; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX cliente_obligacion_id_cliente_24db040e ON public.cliente_obligacion USING btree (id_cliente);
+
+
+--
+-- Name: cliente_obligacion_id_obligacion_6b811523; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX cliente_obligacion_id_obligacion_6b811523 ON public.cliente_obligacion USING btree (id_obligacion);
+
+
+--
+-- Name: obligacion_tributaria_nombre_ad6c0ddf_like; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX obligacion_tributaria_nombre_ad6c0ddf_like ON public.obligacion_tributaria USING btree (nombre varchar_pattern_ops);
+
+
+--
+-- Name: cliente_obligacion cliente_obligacion_id_cliente_24db040e_fk_cliente_id_cliente; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cliente_obligacion
+    ADD CONSTRAINT cliente_obligacion_id_cliente_24db040e_fk_cliente_id_cliente FOREIGN KEY (id_cliente) REFERENCES public.cliente(id_cliente) DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: cliente_obligacion cliente_obligacion_id_obligacion_6b811523_fk_obligacio; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cliente_obligacion
+    ADD CONSTRAINT cliente_obligacion_id_obligacion_6b811523_fk_obligacio FOREIGN KEY (id_obligacion) REFERENCES public.obligacion_tributaria(id_obligacion) DEFERRABLE INITIALLY DEFERRED;
+
+
+--
 -- PostgreSQL database dump complete
 --
 
 \unrestrict vzljRXeDMnxgnYVzuunOG3e1a6aJXUxxLyENtAadYdWC2rZrrmUVasdwfysw6gw
 
+-- Comentarios de las tablas (diccionario de datos, numeral 2.5). Van al final,
+-- cuando las tablas ya existen, y con el esquema explícito porque el volcado
+-- de pg_dump deja vacío el search_path.
+
+COMMENT ON TABLE public.rol IS 'Roles del sistema: Administrador, Contador Senior, Contador Junior.';
+COMMENT ON TABLE public.usuario IS 'Miembro del equipo del despacho (o el contador independiente).';
+COMMENT ON TABLE public.modulo IS 'Catálogo de los 10 módulos del sistema.';
+COMMENT ON TABLE public.permiso_rol_modulo IS 'Habilitación de cada módulo por rol (RQF031).';
+COMMENT ON TABLE public.cliente IS 'Ficha central de cada cliente del despacho.';
+COMMENT ON TABLE public.cliente_municipio IS 'Municipios o distritos adicionales donde el cliente tributa (multi-ICA).';
+COMMENT ON TABLE public.tipo_servicio IS 'Catálogo de tipos de servicio contable prestado.';
+COMMENT ON TABLE public.cliente_servicio IS 'Relación N:M entre cliente y los tipos de servicio que recibe.';
+COMMENT ON TABLE public.credencial IS 'Credenciales de acceso a portales del cliente.';
+COMMENT ON TABLE public.tabla_referencia_dian IS 'Calendario oficial DIAN por grupo de NIT, cargado por el Administrador.';
+COMMENT ON TABLE public.vencimiento IS 'Vencimiento tributario nacional, distrital/municipal o de tarea marcada.';
+COMMENT ON TABLE public.configuracion_alerta IS 'Alertas automáticas configuradas para un vencimiento.';
+COMMENT ON TABLE public.anotacion_calendario IS 'Anotación libre por fecha, no asociada a un cliente.';
+COMMENT ON TABLE public.anotacion_calendario_destinatario IS 'Usuarios etiquetados cuando la visibilidad es restringida.';
+COMMENT ON TABLE public.tarea IS 'Tarjeta del tablero Kanban.';
+COMMENT ON TABLE public.historial_tarea IS 'Registro de cada cambio de estado de una tarea.';
+COMMENT ON TABLE public.observacion_tarea IS 'Observación de avance registrada sobre una tarea.';
+COMMENT ON TABLE public.plantilla IS 'Plantilla de documento o certificado (6 base + creadas por el Administrador).';
+COMMENT ON TABLE public.campo_plantilla IS 'Campo variable propio de cada plantilla (simple o repetible).';
+COMMENT ON TABLE public.documento IS 'Documento o certificado generado para un cliente.';
+COMMENT ON TABLE public.documento_valor IS 'Valor de un campo simple para un documento generado.';
+COMMENT ON TABLE public.documento_detalle IS 'Fila de un campo repetible (ej. cada accionista) para un documento.';
+COMMENT ON TABLE public.hallazgo IS 'Hallazgo, revisión, observación o inconsistencia registrada para un cliente.';
+COMMENT ON TABLE public.adjunto IS 'Archivo de soporte adjunto (tabla genérica reutilizada por hallazgo y anotación).';
+COMMENT ON TABLE public.honorario IS 'Configuración del honorario de un cliente.';
+COMMENT ON TABLE public.honorario_servicio IS 'Monto del honorario por cada tipo de servicio del cliente (HU044).';
+COMMENT ON TABLE public.concepto_facturable IS 'Catálogo reutilizable de conceptos facturables.';
+COMMENT ON TABLE public.cuenta_bancaria IS 'Cuenta bancaria del despacho, disponible como destino de pago.';
+COMMENT ON TABLE public.metodo_pago IS 'Catálogo de métodos de pago aceptados.';
+COMMENT ON TABLE public.cuenta_cobro IS 'Cuenta de cobro generada en PDF para un cliente.';
+COMMENT ON TABLE public.configuracion_cobro IS 'Parámetros del cobro mensual automático y de los recordatorios automáticos (una fila).';
+COMMENT ON TABLE public.envio_programado IS 'Envío de cuenta de cobro o recordatorio por correo o WhatsApp, inmediato o programado.';
+COMMENT ON TABLE public.cuenta_cobro_detalle IS 'Línea de servicio descrita dentro de una cuenta de cobro.';
+COMMENT ON TABLE public.abono IS 'Pago o abono registrado contra una cuenta de cobro.';
+COMMENT ON TABLE public.comunicacion IS 'Comunicación automática o manual registrada con un cliente.';
+COMMENT ON TABLE public.anotacion IS 'Anotación cronológica del expediente y bitácora del cliente.';
+COMMENT ON TABLE public.reporte IS 'Catálogo de los 6 reportes del Módulo 10.';
+COMMENT ON TABLE public.permiso_reporte_rol IS 'Habilitación de cada reporte individual por rol.';
+COMMENT ON TABLE public.descarga_reporte IS 'Registro de cada descarga de reporte: usuario, fecha, formato y filtros (HU028-5).';
+COMMENT ON TABLE public.configuracion_despacho IS 'Datos fijos del despacho usados en documentos y cuentas de cobro.';
+COMMENT ON TABLE public.obligacion_tributaria IS 'Catálogo de obligaciones tributarias que pueden aplicarle a un cliente.';
+COMMENT ON TABLE public.cliente_obligacion IS 'Obligaciones tributarias que presenta cada cliente; de ellas se calculan sus vencimientos.';

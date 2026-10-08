@@ -1,0 +1,29 @@
+{# Panel del expediente y bitácora del cliente: se incluye en clientes/detalle.html #}
+<div class="panel">
+    <div class="ph">
+        <div class="ph-title"><i class="bi bi-journal-text"></i> Expediente y bitácora</div>
+        <div class="d-flex gap-2">
+            <a class="ph-link" href="{% url 'expediente:cliente' cliente.pk %}">
+                <i class="bi bi-funnel"></i> Expediente completo y filtros
+            </a>
+            {% if a_cargo %}
+            <a class="ph-btn" href="{% url 'expediente:crear' %}?cliente={{ cliente.pk }}">
+                <i class="bi bi-plus-lg"></i> Nueva anotación
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if anotaciones %}
+    <div class="tl">
+        {% for anotacion in anotaciones %}
+        {% include "expediente/_anotacion.html" %}
+        {% endfor %}
+    </div>
+    {% if anotaciones|length == 10 %}
+    <p class="text-muted small mt-3 mb-0">Se muestran las 10 anotaciones más recientes; abra el expediente completo para ver las anteriores.</p>
+    {% endif %}
+    {% else %}
+    <p class="text-muted mb-0">El cliente no tiene anotaciones en su expediente.</p>
+    {% endif %}
+</div>

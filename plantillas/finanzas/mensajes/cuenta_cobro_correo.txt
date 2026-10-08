@@ -1,0 +1,15 @@
+{% autoescape off %}Señores {{ cliente.nombre_razon_social }}:
+
+Adjuntamos la cuenta de cobro No. {{ cuenta.pk }} por valor de {{ valor_total }}, correspondiente al período {{ cuenta.periodo_facturado|lower }}{% if cuenta.fecha_inicio_periodo %} del {{ cuenta.fecha_inicio_periodo|date:"d/m/Y" }} al {{ cuenta.fecha_fin_periodo|date:"d/m/Y" }}{% endif %}.
+
+Fecha límite de pago: {{ fecha_vencimiento }}.
+{% if cuenta_bancaria %}
+Datos para el pago:
+{{ cuenta_bancaria.banco }} - Cuenta {{ cuenta_bancaria.tipo_cuenta }} No. {{ cuenta_bancaria.numero_cuenta }}
+Titular: {{ cuenta_bancaria.titular }}
+{% endif %}{% if metodo_pago %}Método de pago: {{ metodo_pago.nombre_metodo }}
+{% endif %}
+Cordialmente,
+
+{{ nombre_despacho }}
+{% endautoescape %}

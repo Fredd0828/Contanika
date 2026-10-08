@@ -9,7 +9,7 @@ los municipios adicionales y los tipos de servicio queden consistentes.
 from django.db import transaction
 from django.utils import timezone
 
-from .models import ClienteServicio
+from .models import ClienteObligacion, ClienteServicio
 
 
 @transaction.atomic
@@ -31,6 +31,7 @@ def guardar_cliente(formulario, formset_municipios, usuario):
     formset_municipios.save()
 
     _sincronizar_servicios(cliente, formulario.servicios_seleccionados())
+    _sincronizar_obligaciones(cliente, formulario.obligaciones_seleccionadas())
     return cliente
 
 
@@ -39,6 +40,15 @@ def _sincronizar_servicios(cliente, tipos_servicio):
     ClienteServicio.objects.filter(cliente=cliente).exclude(tipo_servicio__in=tipos_servicio).delete()
     for tipo in tipos_servicio:
         ClienteServicio.objects.get_or_create(cliente=cliente, tipo_servicio=tipo)
+
+
+def _sincronizar_obligaciones(cliente, obligaciones_tributarias):
+    """Deja registradas exactamente las obligaciones tributarias marcadas."""
+    ClienteObligacion.objects.filter(cliente=cliente).exclude(
+        obligacion_tributaria__in=obligaciones_tributarias
+    ).delete()
+    for obligacion in obligaciones_tributarias:
+        ClienteObligacion.objects.get_or_create(cliente=cliente, obligacion_tributaria=obligacion)
 
 
 @transaction.atomic

@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block titulo %}{{ documento.plantilla.nombre_plantilla }}{% endblock %}
+
+{% block contenido %}
+<div class="panel">
+    <div class="ph mb-0">
+        <div>
+            <div class="ph-title" style="font-size:18px">{{ documento.plantilla.nombre_plantilla }}</div>
+            <div class="ph-meta mt-1">
+                {{ documento.cliente.nombre_razon_social }} · {{ documento.fecha_generacion|date:"d/m/Y H:i" }}
+            </div>
+        </div>
+        <div class="ph-actions">
+            <a class="ph-link" href="{% url 'documentos:descargar' documento.pk %}"><i class="bi bi-download"></i> Descargar PDF</a>
+            {% if puede_eliminar %}
+            <button type="button" class="ph-link" data-bs-toggle="modal" data-bs-target="#modalEliminarDocumento">
+                <i class="bi bi-trash"></i> Eliminar
+            </button>
+            {% endif %}
+            <a class="ph-link" href="{% url 'documentos:historico' %}"><i class="bi bi-arrow-left"></i> Volver</a>
+        </div>
+    </div>
+</div>
+
+<div class="panel mb-3">
+    <div class="ph"><div class="ph-title"><i class="bi bi-card-list"></i> Datos del documento</div></div>
+    <dl class="row mb-0">
+        <dt class="col-sm-3 text-muted fw-normal">Cliente</dt><dd class="col-sm-9">{{ documento.cliente.nombre_razon_social }}</dd>
+        <dt class="col-sm-3 text-muted fw-normal">Tipo de documento</dt><dd class="col-sm-9">{{ documento.plantilla.nombre_plantilla }}</dd>
+        <dt class="col-sm-3 text-muted fw-normal">Período</dt><dd class="col-sm-9">{{ documento.periodo|default:"—" }}</dd>
+        <dt class="col-sm-3 text-muted fw-normal">Descripción</dt><dd class="col-sm-9">{{ documento.descripcion|default:"—" }}</dd>
+        <dt class="col-sm-3 text-muted fw-normal">Generado por</dt><dd class="col-sm-9">{{ documento.usuario_generador.nombre }}</dd>
+    </dl>
+</div>
+
+<div class="panel mb-3">
+    <div class="ph"><div class="ph-title"><i class="bi bi-file-earmark-text"></i> Texto del certificado</div></div>
+    <p class="mb-0">{{ texto_renderizado }}</p>
+</div>
+
+{% if puede_eliminar %}
+<div class="modal fade" id="modalEliminarDocumento" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Eliminar documento</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                Se eliminará el documento <strong>{{ documento.plantilla.nombre_plantilla }}</strong> y su PDF.
+                <span class="text-danger">Esta acción no se puede deshacer.</span>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form method="post" action="{% url 'documentos:eliminar' documento.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Sí, eliminar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

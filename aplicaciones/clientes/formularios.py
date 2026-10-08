@@ -6,7 +6,7 @@ from django.forms import inlineformset_factory
 
 from aplicaciones.comunes.formularios import FormularioBase, ModeloFormularioBase
 
-from .models import Cliente, ClienteMunicipio, Credencial, TipoServicio
+from .models import Cliente, ClienteMunicipio, Credencial, ObligacionTributaria, TipoServicio
 
 Usuario = get_user_model()
 
@@ -30,6 +30,12 @@ class ClienteForm(ModeloFormularioBase):
         required=False,
         max_length=80,
         label="Otro tipo de servicio (escríbalo si no aparece en la lista)",
+    )
+    obligaciones_tributarias = forms.ModelMultipleChoiceField(
+        queryset=ObligacionTributaria.objects.all(),
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+        label="Obligaciones tributarias y vencimientos que le aplican",
     )
     regimen_tributario = forms.CharField(
         required=False,
@@ -74,13 +80,21 @@ class ClienteForm(ModeloFormularioBase):
             "nit_cedula": "Número de documento",
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, usuario=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["responsable"].queryset = Usuario.objects.filter(estado=Usuario.ACTIVO)
         self.fields["responsable"].required = False
+        # El Contador Junior no reasigna responsables ni inactiva clientes: el
+        # cliente nuevo queda a su nombre y el existente conserva su responsable.
+        if usuario is not None and usuario.es_contador_junior:
+            del self.fields["responsable"]
+            del self.fields["estado"]
         if self.instance.pk:
             self.fields["tipos_servicio"].initial = self.instance.servicios.values_list(
                 "tipo_servicio", flat=True
+            )
+            self.fields["obligaciones_tributarias"].initial = self.instance.obligaciones.values_list(
+                "obligacion_tributaria", flat=True
             )
 
     def clean_nit_cedula(self):
@@ -105,6 +119,10 @@ class ClienteForm(ModeloFormularioBase):
             tipo, _ = TipoServicio.objects.get_or_create(nombre_servicio=nuevo)
             seleccionados.append(tipo)
         return seleccionados
+
+    def obligaciones_seleccionadas(self):
+        """Obligaciones tributarias marcadas para el cliente."""
+        return list(self.cleaned_data.get("obligaciones_tributarias", []))
 
 
 class ClienteMunicipioForm(ModeloFormularioBase):

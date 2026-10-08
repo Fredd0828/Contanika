@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block titulo %}Cobro automático{% endblock %}
+
+{% block contenido %}
+<div class="panel">
+    <div class="ph mb-0">
+        <div class="ph-title" style="font-size:18px"><i class="bi bi-gear"></i> Cobro automático</div>
+        <div class="ph-actions">
+            <a class="ph-link" href="{% url 'finanzas:programados' %}"><i class="bi bi-calendar-event"></i> Envíos programados</a>
+            <a class="ph-link" href="{% url 'finanzas:historico' %}"><i class="bi bi-arrow-left"></i> Volver</a>
+        </div>
+    </div>
+</div>
+
+<form method="post" novalidate>
+    {% csrf_token %}
+    <div class="row g-3">
+        <div class="col-lg-6">
+            <div class="panel h-100">
+                <div class="ph"><div class="ph-title"><i class="bi bi-receipt"></i> Cobro mensual</div></div>
+                <p class="text-muted small">
+                    Desde el día indicado de cada mes se genera la cuenta de cobro del mes a cada cliente activo
+                    con honorario configurado (una sola vez por mes) y se envía por el canal elegido.
+                </p>
+                <div class="form-check mb-3">
+                    {{ formulario.cobro_automatico_activo }}
+                    <label class="form-check-label" for="{{ formulario.cobro_automatico_activo.id_for_label }}">{{ formulario.cobro_automatico_activo.label }}</label>
+                </div>
+                <div class="row g-3">
+                    {% for campo in formulario %}{% if campo.name == "dia_generacion" or campo.name == "dias_plazo_pago" or campo.name == "canal_cobro" or campo.name == "cuenta_bancaria" or campo.name == "metodo_pago" %}
+                    <div class="col-md-6">
+                        <label class="form-label" for="{{ campo.id_for_label }}">{{ campo.label }}</label>
+                        {{ campo }}
+                        {% if campo.errors %}<div class="text-danger small">{{ campo.errors }}</div>{% endif %}
+                    </div>
+                    {% endif %}{% endfor %}
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="panel h-100">
+                <div class="ph"><div class="ph-title"><i class="bi bi-bell"></i> Recordatorios de pago</div></div>
+                <p class="text-muted small">
+                    Un recordatorio antes del vencimiento y, si la cuenta queda en mora, uno cada tantos días
+                    mientras tenga saldo pendiente.
+                </p>
+                <div class="form-check mb-3">
+                    {{ formulario.recordatorios_activos }}
+                    <label class="form-check-label" for="{{ formulario.recordatorios_activos.id_for_label }}">{{ formulario.recordatorios_activos.label }}</label>
+                </div>
+                <div class="row g-3">
+                    {% for campo in formulario %}{% if campo.name == "dias_antes_vencimiento" or campo.name == "frecuencia_mora_dias" or campo.name == "canal_recordatorio" %}
+                    <div class="col-md-6">
+                        <label class="form-label" for="{{ campo.id_for_label }}">{{ campo.label }}</label>
+                        {{ campo }}
+                        {% if campo.errors %}<div class="text-danger small">{{ campo.errors }}</div>{% endif %}
+                    </div>
+                    {% endif %}{% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="d-flex gap-2 mt-3">
+        <button type="submit" class="ph-btn"><i class="bi bi-save"></i> Guardar configuración</button>
+    </div>
+</form>
+
+<div class="panel mt-3">
+    <div class="ph"><div class="ph-title"><i class="bi bi-play-circle"></i> Ejecución</div></div>
+    <p class="small mb-2">
+        El proceso se ejecuta solo con la tarea programada del servidor (<code>python gestionar.py procesar_cobros</code>
+        cada 15 minutos). También puede ejecutarlo ahora: genera las cuentas del mes pendientes, programa los
+        recordatorios que correspondan y despacha los envíos cuya hora ya llegó.
+    </p>
+    <p class="small text-muted">
+        Última ejecución: {{ configuracion.ultima_ejecucion|date:"d/m/Y H:i"|default:"nunca" }}.
+        Los WhatsApp que resulten quedan en la bandeja de WhatsApp pendientes.
+    </p>
+    <form method="post" action="{% url 'finanzas:ejecutar_proceso' %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline-secondary"><i class="bi bi-play-fill"></i> Ejecutar ahora</button>
+    </form>
+</div>
+{% endblock %}

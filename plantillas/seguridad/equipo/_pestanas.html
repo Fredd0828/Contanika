@@ -1,0 +1,20 @@
+{# Navegación entre las pantallas del módulo de equipo y roles. #}
+<ul class="nav nav-tabs mb-3">
+    <li class="nav-item">
+        <a class="nav-link {% if pestana == 'panel' %}active{% endif %}" href="{% url 'seguridad:equipo' %}">
+            <i class="bi bi-speedometer2"></i> Panel de equipo
+        </a>
+    </li>
+    {% if user.es_administrador %}
+    <li class="nav-item">
+        <a class="nav-link {% if pestana == 'usuarios' %}active{% endif %}" href="{% url 'seguridad:usuarios' %}">
+            <i class="bi bi-person-gear"></i> Usuarios
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if pestana == 'permisos' %}active{% endif %}" href="{% url 'seguridad:permisos' %}">
+            <i class="bi bi-toggles"></i> Módulos por rol
+        </a>
+    </li>
+    {% endif %}
+</ul>

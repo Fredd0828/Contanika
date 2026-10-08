@@ -1,0 +1,16 @@
+{% autoescape off %}Señores {{ cliente.nombre_razon_social }}:
+
+{% if en_mora %}Le recordamos que la cuenta de cobro No. {{ cuenta.pk }} venció el {{ fecha_vencimiento }} y presenta un saldo pendiente de {{ saldo_pendiente }}.{% else %}Le recordamos que la cuenta de cobro No. {{ cuenta.pk }}, con saldo pendiente de {{ saldo_pendiente }}, vence el {{ fecha_vencimiento }}.{% endif %}
+{% if cuenta_bancaria %}
+Datos para el pago:
+{{ cuenta_bancaria.banco }} - Cuenta {{ cuenta_bancaria.tipo_cuenta }} No. {{ cuenta_bancaria.numero_cuenta }}
+Titular: {{ cuenta_bancaria.titular }}
+{% endif %}
+Puede consultar la cuenta de cobro en: {{ enlace_pdf }}
+
+Si ya realizó el pago, por favor haga caso omiso de este mensaje.
+
+Cordialmente,
+
+{{ nombre_despacho }}
+{% endautoescape %}

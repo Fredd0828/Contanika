@@ -1,0 +1,13 @@
+<div class="modal-header">
+    <h5 class="modal-title"><i class="bi bi-telephone-plus"></i> Registrar comunicación</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+</div>
+<form method="post" action="{% url 'comunicaciones:registrar' %}">
+    <div class="modal-body">
+        {% include "comunicaciones/_comunicacion_form_campos.html" %}
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Registrar comunicación</button>
+    </div>
+</form>
