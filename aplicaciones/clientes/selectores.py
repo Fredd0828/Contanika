@@ -5,7 +5,7 @@ Los filtros se separan de las vistas para que la consulta sea reutilizable
 por el listado, la exportación y el futuro reporte de clientes (Módulo 10).
 """
 
-from .models import Cliente
+from .models import Cliente, Credencial
 from .municipios_colombia import MUNICIPIOS_COLOMBIA
 
 REGIMENES_BASE = [
@@ -42,6 +42,30 @@ def filtrar_clientes(
     if estado:
         consulta = consulta.filter(estado=estado)
     return consulta
+
+
+def credenciales_visibles(usuario, cliente=None, estado=None):
+    """
+    Credenciales de todos los clientes para el reporte consolidado del módulo 1.
+
+    El Contador Junior solo ve las de los clientes que tiene a su cargo (las
+    claves son sensibles). `estado` filtra por «actualizada» o «requiere» (más
+    de 90 días sin actualizar, que se calcula en Python con la misma regla del
+    modelo).
+    """
+    consulta = Credencial.objects.select_related("cliente").order_by(
+        "cliente__nombre_razon_social", "concepto"
+    )
+    if usuario.es_contador_junior:
+        consulta = consulta.filter(cliente__responsable=usuario)
+    if cliente:
+        consulta = consulta.filter(cliente_id=cliente)
+    credenciales = list(consulta)
+    if estado == "requiere":
+        credenciales = [c for c in credenciales if c.requiere_actualizacion]
+    elif estado == "actualizada":
+        credenciales = [c for c in credenciales if not c.requiere_actualizacion]
+    return credenciales
 
 
 def opciones_filtro():

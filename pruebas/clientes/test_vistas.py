@@ -4,7 +4,8 @@ import pytest
 from django.test import Client
 from django.urls import reverse
 
-from aplicaciones.clientes.models import Cliente
+from aplicaciones.calendario.models import TablaReferenciaDian, Vencimiento
+from aplicaciones.clientes.models import Cliente, ObligacionTributaria
 
 pytestmark = pytest.mark.django_db
 
@@ -48,8 +49,8 @@ def test_administrador_ve_el_listado(client, usuario_administrador, cliente):
     assert "Comercializadora La Rebaja" in respuesta.content.decode()
 
 
-def test_junior_solo_ve_sus_clientes(client, usuario_junior, cliente):
-    """El Contador Junior solo consulta los clientes asignados a él (CU002)."""
+def test_junior_ve_todos_los_clientes(client, usuario_junior, cliente):
+    """El Contador Junior consulta el listado completo de clientes del despacho."""
     Cliente.objects.create(
         nombre_razon_social="Cliente del Junior",
         nit_cedula="800999888",
@@ -59,20 +60,78 @@ def test_junior_solo_ve_sus_clientes(client, usuario_junior, cliente):
     client.force_login(usuario_junior)
     contenido = client.get(reverse("clientes:lista")).content.decode()
     assert "Cliente del Junior" in contenido
-    assert "Comercializadora La Rebaja" not in contenido
+    assert "Comercializadora La Rebaja" in contenido
 
 
-def test_junior_no_puede_crear_cliente(client, usuario_junior):
-    """El Contador Junior no puede crear clientes."""
-    client.force_login(usuario_junior)
-    assert client.get(reverse("clientes:crear")).status_code == 403
+def test_junior_ve_la_ficha_de_un_cliente_ajeno_sin_credenciales(client, usuario_junior, cliente):
+    """La ficha de un cliente ajeno carga, pero sus credenciales no se muestran al Junior."""
+    from aplicaciones.clientes.models import Credencial
 
-
-def test_junior_no_accede_a_cliente_no_asignado(client, usuario_junior, cliente):
-    """Intento de acceso directo a un cliente ajeno (IDOR) devuelve 404."""
+    Credencial.objects.create(cliente=cliente, concepto="DIAN", usuario_acceso="900123456", clave_cifrada="x")
     client.force_login(usuario_junior)
     respuesta = client.get(reverse("clientes:detalle", args=[cliente.pk]))
-    assert respuesta.status_code == 404
+    assert respuesta.status_code == 200
+    contenido = respuesta.content.decode()
+    assert "tab-credenciales" not in contenido
+    assert respuesta.context["puede_ver_credenciales"] is False
+
+
+def test_junior_ve_las_credenciales_de_sus_clientes(client, usuario_junior, cliente):
+    """El Junior sigue viendo (sin editar) las credenciales de los clientes a su cargo."""
+    cliente.responsable = usuario_junior
+    cliente.save()
+    client.force_login(usuario_junior)
+    respuesta = client.get(reverse("clientes:detalle", args=[cliente.pk]))
+    assert "tab-credenciales" in respuesta.content.decode()
+    assert respuesta.context["puede_editar"] is False
+
+
+def test_junior_crea_cliente_a_su_nombre(client, usuario_junior, usuario_administrador):
+    """El Junior registra clientes; quedan a su nombre aunque intente asignar otro responsable."""
+    client.force_login(usuario_junior)
+    respuesta = client.post(
+        reverse("clientes:crear"),
+        _datos_cliente(responsable=usuario_administrador.pk, estado=Cliente.INACTIVO),
+    )
+    assert respuesta.status_code == 302
+    creado = Cliente.objects.get(nit_cedula="901222333")
+    assert creado.responsable == usuario_junior
+    assert creado.estado == Cliente.ACTIVO
+
+
+def test_formulario_del_junior_no_ofrece_responsable_ni_estado(client, usuario_junior):
+    client.force_login(usuario_junior)
+    formulario = client.get(reverse("clientes:crear")).context["formulario"]
+    assert "responsable" not in formulario.fields
+    assert "estado" not in formulario.fields
+
+
+def test_junior_edita_cliente_ajeno_sin_cambiar_responsable_ni_estado(
+    client, usuario_junior, usuario_administrador, cliente
+):
+    """El Junior corrige los datos de cualquier cliente, pero no lo reasigna ni lo inactiva."""
+    client.force_login(usuario_junior)
+    datos = _datos_cliente(
+        nombre_razon_social="Comercializadora La Rebaja Ltda",
+        nit_cedula=cliente.nit_cedula,
+        responsable=usuario_junior.pk,
+        estado=Cliente.INACTIVO,
+    )
+    respuesta = client.post(reverse("clientes:editar", args=[cliente.pk]), datos)
+    assert respuesta.status_code == 302
+    cliente.refresh_from_db()
+    assert cliente.nombre_razon_social == "Comercializadora La Rebaja Ltda"
+    assert cliente.responsable == usuario_administrador
+    assert cliente.estado == Cliente.ACTIVO
+
+
+def test_junior_no_inactiva_ni_importa_clientes(client, usuario_junior, cliente):
+    """Inactivar e importar siguen siendo del Administrador y el Contador Senior."""
+    client.force_login(usuario_junior)
+    assert client.post(reverse("clientes:inactivar", args=[cliente.pk])).status_code == 403
+    assert client.get(reverse("clientes:importar")).status_code == 403
+    cliente.refresh_from_db()
+    assert cliente.estado == Cliente.ACTIVO
 
 
 def test_senior_crea_cliente_con_municipio(client, usuario_senior):
@@ -83,6 +142,43 @@ def test_senior_crea_cliente_con_municipio(client, usuario_senior):
     creado = Cliente.objects.get(nit_cedula="901222333")
     assert creado.responsable == usuario_senior
     assert creado.municipios_adicionales.filter(municipio="Soacha").exists()
+
+
+def test_crear_cliente_calcula_sus_vencimientos_dian(client, usuario_senior):
+    """Al guardar un cliente con obligaciones marcadas se calculan sus vencimientos."""
+    from datetime import date
+
+    renta, _ = ObligacionTributaria.objects.get_or_create(nombre="Renta personas naturales")
+    TablaReferenciaDian.objects.create(
+        tipo_obligacion=renta.nombre,
+        grupo_nit="33",
+        fecha_vencimiento=date(2026, 8, 21),
+        periodo_gravable="2026",
+    )
+    client.force_login(usuario_senior)
+    respuesta = client.post(
+        reverse("clientes:crear"),
+        _datos_cliente(
+            nit_cedula="1019087733",
+            tipo_documento=Cliente.NIT,
+            tipo_persona=Cliente.NATURAL,
+            obligaciones_tributarias=[renta.pk],
+        ),
+        follow=True,
+    )
+    creado = Cliente.objects.get(nit_cedula="1019087733")
+    vencimiento = Vencimiento.objects.get(cliente=creado)
+    assert vencimiento.fecha_vencimiento == date(2026, 8, 21)
+    assert "Vencimientos DIAN calculados" in respuesta.content.decode()
+
+
+def test_crear_cliente_sin_obligaciones_pregunta_que_impuestos_presenta(client, usuario_senior):
+    """Sin obligaciones marcadas, el sistema avisa en lugar de dejar el calendario vacío."""
+    client.force_login(usuario_senior)
+    respuesta = client.post(reverse("clientes:crear"), _datos_cliente(), follow=True)
+    creado = Cliente.objects.get(nit_cedula="901222333")
+    assert not Vencimiento.objects.filter(cliente=creado).exists()
+    assert "qué impuestos o anticipos presenta" in respuesta.content.decode()
 
 
 def test_crear_cliente_con_servicio_nuevo(client, usuario_senior):

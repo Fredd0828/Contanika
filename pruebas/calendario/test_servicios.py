@@ -12,7 +12,7 @@ from aplicaciones.calendario.models import (
     Vencimiento,
 )
 from aplicaciones.calendario.servicios import (
-    calcular_grupo_nit,
+    calcular_grupos_dian,
     cambiar_estado_presentacion,
     eliminar_anotacion,
     generar_vencimientos_cliente,
@@ -24,32 +24,34 @@ from aplicaciones.calendario.servicios import (
 )
 from aplicaciones.clientes.models import Cliente
 
+from ..conftest import _asignar_obligaciones as _asignar
+
 pytestmark = pytest.mark.django_db
 
 
 # ---------------------------------------------------------------------------
-# calcular_grupo_nit
+# calcular_grupos_dian
 # ---------------------------------------------------------------------------
 
 
-def test_grupo_nit_empresa_usa_ultimo_digito(cliente):
-    """Empresas (NIT): el grupo DIAN es el último dígito del NIT."""
+def test_grupos_dian_empresa_incluye_ultimo_digito(cliente):
+    """Empresas (NIT): el último dígito del NIT es uno de los grupos DIAN."""
     assert cliente.nit_cedula == "900123456"
-    assert calcular_grupo_nit(cliente) == "6"
+    assert calcular_grupos_dian(cliente) == ["6", "56"]
 
 
-def test_grupo_nit_persona_natural_usa_dos_ultimos_digitos(cliente_natural):
-    """Personas naturales (CC): el grupo son los dos últimos dígitos."""
+def test_grupos_dian_persona_natural_incluye_dos_ultimos_digitos(cliente_natural):
+    """Personas naturales (CC): los dos últimos dígitos son uno de los grupos DIAN."""
     assert cliente_natural.nit_cedula == "1032456789"
-    assert calcular_grupo_nit(cliente_natural) == "89"
+    assert calcular_grupos_dian(cliente_natural) == ["9", "89"]
 
 
-def test_grupo_nit_extranjero_no_es_calculable(cliente_extranjero):
+def test_grupos_dian_extranjero_no_es_calculable(cliente_extranjero):
     """Documentos extranjeros no tienen cálculo automático (registro manual)."""
-    assert calcular_grupo_nit(cliente_extranjero) is None
+    assert calcular_grupos_dian(cliente_extranjero) == []
 
 
-def test_grupo_nit_sin_digitos_no_es_calculable(usuario_administrador):
+def test_grupos_dian_sin_digitos_no_es_calculable(usuario_administrador):
     """Un documento sin dígitos no puede calcular grupo."""
     cliente = Cliente.objects.create(
         nombre_razon_social="Sin Número SAS",
@@ -58,7 +60,7 @@ def test_grupo_nit_sin_digitos_no_es_calculable(usuario_administrador):
         tipo_persona=Cliente.JURIDICA,
         responsable=usuario_administrador,
     )
-    assert calcular_grupo_nit(cliente) is None
+    assert calcular_grupos_dian(cliente) == []
 
 
 # ---------------------------------------------------------------------------
@@ -115,6 +117,76 @@ def test_generar_vencimientos_crea_desde_tabla_dian(cliente, usuario_administrad
     assert vencimiento.responsable == cliente.responsable
 
 
+def _referencia(obligacion, grupo, dia):
+    return TablaReferenciaDian.objects.create(
+        tipo_obligacion=obligacion,
+        grupo_nit=grupo,
+        fecha_vencimiento=date(2026, 8, dia),
+        periodo_gravable="2026",
+    )
+
+
+def test_persona_natural_con_nit_calcula_renta_por_dos_ultimos_digitos(usuario_administrador):
+    """Una persona natural registrada con NIT toma los dos últimos dígitos para su renta."""
+    natural = Cliente.objects.create(
+        nombre_razon_social="Freddy Carrillo",
+        nit_cedula="1111111113",
+        tipo_documento=Cliente.NIT,
+        tipo_persona=Cliente.NATURAL,
+        responsable=usuario_administrador,
+    )
+    _asignar(natural, "Renta personas naturales", "Retención en la fuente")
+    _referencia("Renta personas naturales", "13", 21)
+    _referencia("Renta personas naturales", "14", 22)
+    _referencia("Retención en la fuente", "3", 12)
+
+    resumen = generar_vencimientos_cliente(natural, usuario_administrador)
+
+    assert resumen["creados"] == 2
+    fechas = dict(
+        Vencimiento.objects.filter(cliente=natural).values_list("tipo_obligacion", "fecha_vencimiento")
+    )
+    assert fechas["Renta personas naturales"] == date(2026, 8, 21)
+    assert fechas["Retención en la fuente"] == date(2026, 8, 12)
+
+
+def test_persona_natural_con_cedula_calcula_retencion_por_ultimo_digito(usuario_administrador):
+    """Con cédula también se calculan las obligaciones que la DIAN ordena por el último dígito."""
+    natural = Cliente.objects.create(
+        nombre_razon_social="Ana Gómez",
+        nit_cedula="1019087764",
+        tipo_documento=Cliente.CC,
+        tipo_persona=Cliente.NATURAL,
+        responsable=usuario_administrador,
+    )
+    _asignar(natural, "Renta personas naturales", "Retención en la fuente")
+    _referencia("Renta personas naturales", "64", 25)
+    _referencia("Retención en la fuente", "4", 13)
+
+    resumen = generar_vencimientos_cliente(natural, usuario_administrador)
+
+    assert resumen["creados"] == 2
+
+
+def test_reporta_obligaciones_sin_fecha_para_el_documento(usuario_administrador):
+    """Una obligación con fechas cargadas pero ninguna para el documento se informa."""
+    natural = Cliente.objects.create(
+        nombre_razon_social="Pedro Ruiz",
+        nit_cedula="1111111177",
+        tipo_documento=Cliente.CC,
+        tipo_persona=Cliente.NATURAL,
+        responsable=usuario_administrador,
+    )
+    _asignar(natural, "Renta personas jurídicas")
+    _referencia("Renta personas jurídicas", "3", 12)
+
+    resumen = generar_vencimientos_cliente(natural, usuario_administrador)
+
+    assert resumen["creados"] == 0
+    assert resumen["sin_coincidencia"] == ["Renta personas jurídicas"]
+    assert resumen["sin_referencia"] == []
+
+
 def test_generar_vencimientos_no_duplica(cliente, usuario_administrador, referencia_dian):
     """Volver a calcular no duplica los vencimientos ya creados."""
     generar_vencimientos_cliente(cliente, usuario_administrador)
@@ -144,6 +216,22 @@ def test_generar_vencimientos_actualiza_fecha_corregida_sin_duplicar(
     vencimiento = Vencimiento.objects.get(cliente=cliente)
     assert vencimiento.fecha_vencimiento == date(2026, 3, 24)
     assert vencimiento.estado_validacion == Vencimiento.PENDIENTE_VALIDAR
+
+
+def test_recalcular_no_pisa_un_vencimiento_validado(cliente, usuario_administrador, referencia_dian):
+    """Un vencimiento validado o corregido por el contador conserva su fecha al recalcular."""
+    generar_vencimientos_cliente(cliente, usuario_administrador)
+    vencimiento = Vencimiento.objects.get(cliente=cliente)
+    vencimiento.fecha_vencimiento = date(2026, 3, 30)
+    vencimiento.estado_validacion = Vencimiento.VALIDADO
+    vencimiento.save()
+
+    resumen = generar_vencimientos_cliente(cliente, usuario_administrador)
+
+    assert resumen["actualizados"] == 0
+    assert resumen["omitidos"] == 1
+    vencimiento.refresh_from_db()
+    assert vencimiento.fecha_vencimiento == date(2026, 3, 30)
 
 
 def test_generar_vencimientos_sin_grupo_no_crea(cliente_extranjero, usuario_administrador):

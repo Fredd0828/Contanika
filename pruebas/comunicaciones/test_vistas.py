@@ -74,20 +74,20 @@ def test_ficha_del_cliente_muestra_pestana_comunicaciones(
     assert respuesta.context["puede_registrar_comunicacion"] is True
 
 
-def test_junior_ve_solo_sus_clientes(
+def test_junior_ve_las_comunicaciones_de_todos_los_clientes_sin_registrar(
     client, usuario_junior, comunicacion_automatica, comunicacion_manual_junior
 ):
     client.force_login(usuario_junior)
     respuesta = client.get(reverse("comunicaciones:lista"))
-    assert list(respuesta.context["comunicaciones"]) == [comunicacion_manual_junior]
+    assert set(respuesta.context["comunicaciones"]) == {comunicacion_automatica, comunicacion_manual_junior}
     assert respuesta.context["puede_registrar"] is False
     assert "Registrar comunicación" not in respuesta.content.decode()
 
 
-def test_junior_no_abre_historial_de_cliente_ajeno(client, usuario_junior, cliente):
+def test_junior_abre_el_historial_de_cualquier_cliente(client, usuario_junior, cliente):
     client.force_login(usuario_junior)
     url = reverse("comunicaciones:cliente", kwargs={"pk_cliente": cliente.pk})
-    assert client.get(url).status_code == 404
+    assert client.get(url).status_code == 200
 
 
 def test_junior_no_ve_boton_registrar_en_la_ficha(client, usuario_junior, cliente_junior):

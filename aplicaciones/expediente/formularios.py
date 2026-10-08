@@ -50,7 +50,7 @@ class AnotacionForm(ModeloFormularioBase):
     def __init__(self, *args, usuario=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.maximo_adjuntos = maximo_adjuntos(usuario)
-        self.fields["cliente"].queryset = selectores.clientes_visibles(usuario).order_by(
+        self.fields["cliente"].queryset = selectores.clientes_anotables(usuario).order_by(
             "nombre_razon_social"
         )
         ayuda = f"Hasta {self.maximo_adjuntos} archivos (PDF, Word, Excel o imagen, máximo 10 MB cada uno)."

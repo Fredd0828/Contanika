@@ -170,16 +170,19 @@ def test_junior_no_genera_para_cliente_ajeno(
     assert cliente not in clientes_disponibles
 
 
-def test_junior_detalle_documento_ajeno_devuelve_404(client, usuario_junior, documento_cliente):
+def test_junior_ve_el_detalle_de_documentos_de_cualquier_cliente(client, usuario_junior, documento_cliente):
     client.force_login(usuario_junior)
     respuesta = client.get(reverse("documentos:detalle", args=[documento_cliente.pk]))
-    assert respuesta.status_code == 404
+    assert respuesta.status_code == 200
 
 
-def test_junior_descarga_documento_ajeno_devuelve_404(client, usuario_junior, documento_cliente):
+def test_junior_descarga_documentos_de_cualquier_cliente(client, usuario_junior, documento_cliente):
+    from django.core.files.base import ContentFile
+
+    documento_cliente.archivo.save("certificado.pdf", ContentFile(b"%PDF-1.4 prueba"))
     client.force_login(usuario_junior)
     respuesta = client.get(reverse("documentos:descargar", args=[documento_cliente.pk]))
-    assert respuesta.status_code == 404
+    assert respuesta.status_code == 200
 
 
 def test_junior_su_propio_documento_carga(client, usuario_junior, documento_cliente_junior):

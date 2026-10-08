@@ -52,7 +52,7 @@
         <div class="kb-col" data-estado="{{ estado }}">
             <div class="kb-col-h">{{ etiqueta }} <span class="kb-count">{{ tareas_estado|length }}</span></div>
             {% for tarea in tareas_estado %}
-            <div class="kb-card" draggable="true" data-pk="{{ tarea.pk }}"
+            <div class="kb-card" draggable="{% if puede_editar or tarea.responsable_id == user.id_usuario %}true{% else %}false{% endif %}" data-pk="{{ tarea.pk }}"
                  data-bs-toggle="modal" data-bs-target="#modalTarea"
                  data-url="{% url 'tareas:detalle' tarea.pk %}">
                 <div class="kb-cli">{{ tarea.cliente.nombre_razon_social }}</div>

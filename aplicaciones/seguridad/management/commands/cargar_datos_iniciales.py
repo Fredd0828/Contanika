@@ -175,6 +175,10 @@ REPORTES = [
     (Reporte.INGRESOS, "Honorarios y cartera"),
 ]
 
+# Lo que el Contador Junior no ve al crear el sistema (el Administrador puede habilitarlo).
+MODULOS_SIN_JUNIOR = (Modulo.MOD06_FINANZAS,)
+REPORTES_SIN_JUNIOR = (Reporte.CARTERA, Reporte.CUENTAS_COBRO, Reporte.INGRESOS)
+
 
 class Command(BaseCommand):
     help = "Crea roles, módulos, reportes, permisos y catálogos base del sistema."
@@ -222,23 +226,29 @@ class Command(BaseCommand):
             Reporte.objects.get_or_create(nombre_reporte=nombre, defaults={"modulo_origen": origen})
 
     def _crear_permisos(self):
-        """Habilita todos los módulos y reportes para los tres roles.
+        """Habilita los módulos y reportes de los tres roles, salvo lo financiero del Junior.
 
-        El Administrador puede inhabilitar módulos o reportes individuales
-        después, desde la configuración del módulo 8 (RQF031).
+        El Contador Junior empieza sin el módulo de Honorarios y sin los
+        reportes de cartera, cuentas de cobro e ingresos (decisión del usuario,
+        7-oct-2026). Solo se fija al crear la fila: el Administrador puede
+        cambiarlo después desde el módulo 8 y Reportes → Visibilidad por rol
+        (RQF031), y el comando no lo pisa.
         """
         for rol in Rol.objects.all():
+            es_junior = rol.nombre_rol == Rol.CONTADOR_JUNIOR
             for modulo in Modulo.objects.all():
                 PermisoRolModulo.objects.get_or_create(
                     rol=rol,
                     modulo=modulo,
-                    defaults={"habilitado": True},
+                    defaults={"habilitado": not (es_junior and modulo.codigo_modulo in MODULOS_SIN_JUNIOR)},
                 )
             for reporte in Reporte.objects.all():
                 PermisoReporteRol.objects.get_or_create(
                     rol=rol,
                     reporte=reporte,
-                    defaults={"habilitado": True},
+                    defaults={
+                        "habilitado": not (es_junior and reporte.nombre_reporte in REPORTES_SIN_JUNIOR)
+                    },
                 )
 
     def _crear_configuracion(self):

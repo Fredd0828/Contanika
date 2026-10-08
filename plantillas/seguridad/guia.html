@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block titulo %}{{ guia.titulo }} · Ayuda{% endblock %}
+
+{% block contenido %}
+<div class="row g-3">
+    <div class="col-lg-8">
+        <div class="panel">
+            <div class="ph">
+                <div>
+                    <div class="ph-meta mb-1">Ayuda · {{ guia.grupo }}</div>
+                    <div class="ph-title" style="font-size:18px"><i class="bi {{ guia.icono }}"></i> {{ guia.titulo }}</div>
+                </div>
+                <a class="ph-link" href="{% url 'seguridad:ayuda' %}"><i class="bi bi-arrow-left"></i> Todas las guías</a>
+            </div>
+            <p class="ay-resumen">{{ guia.resumen }}</p>
+
+            {% if guia.requisitos %}
+            <div class="ay-requisitos">
+                <div class="ay-subtitulo"><i class="bi bi-clipboard-check"></i> Antes de empezar</div>
+                <ul>
+                    {% for requisito in guia.requisitos %}<li>{{ requisito }}</li>{% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <ol class="ay-pasos">
+                {% for paso in guia.pasos %}
+                <li class="ay-paso">
+                    <div class="ay-paso-titulo">{{ paso.titulo }}</div>
+                    {% if paso.detalle %}<div class="ay-paso-detalle">{{ paso.detalle }}</div>{% endif %}
+                </li>
+                {% endfor %}
+            </ol>
+
+            {% if url_pantalla %}
+            <a class="ph-btn" href="{{ url_pantalla }}"><i class="bi bi-box-arrow-up-right"></i> {{ guia.etiqueta_ruta }}</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        {% if guia.notas %}
+        <div class="panel">
+            <div class="ph"><div class="ph-title"><i class="bi bi-lightbulb"></i> Tenga en cuenta</div></div>
+            <ul class="ay-notas">
+                {% for nota in guia.notas %}<li>{{ nota }}</li>{% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if relacionadas %}
+        <div class="panel {% if guia.notas %}mt-3{% endif %}">
+            <div class="ph"><div class="ph-title"><i class="bi bi-signpost-split"></i> Guías relacionadas</div></div>
+            <div class="ay-guias ay-guias-columna">
+                {% for otra in relacionadas %}
+                <a class="ay-guia" href="{% url 'seguridad:guia' otra.slug %}">
+                    <span class="ay-guia-icono"><i class="bi {{ otra.icono }}"></i></span>
+                    <span class="ay-guia-cuerpo">
+                        <span class="ay-guia-titulo">{{ otra.titulo }}</span>
+                    </span>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

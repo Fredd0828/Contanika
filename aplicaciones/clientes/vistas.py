@@ -18,10 +18,13 @@ from aplicaciones.seguridad.permisos import ModuloHabilitadoMixin, RolRequeridoM
 from .formularios import ClienteForm, ClienteMunicipioFormSet, CredencialForm, ImportarClientesForm
 from .importacion import generar_plantilla_clientes, importar_clientes
 from .models import Cliente, Credencial
-from .selectores import filtrar_clientes, opciones_filtro
+from .selectores import credenciales_visibles, filtrar_clientes, opciones_filtro
 from .servicios import eliminar_credencial, guardar_cliente, guardar_credencial, inactivar_cliente
 
 ROLES_EDITAN = (Rol.ADMINISTRADOR, Rol.CONTADOR_SENIOR)
+# Quienes registran y editan clientes: el Contador Junior también (decisión del
+# usuario, 1-oct-2026), pero no importa, inactiva ni toca credenciales.
+ROLES_GESTIONAN = ROLES_EDITAN + (Rol.CONTADOR_JUNIOR,)
 PREFIJO_MUNICIPIOS = "municipios"
 
 
@@ -52,9 +55,6 @@ class ListaClientesView(ModuloHabilitadoMixin, ListView):
             responsable_iva=parametros.get("responsable_iva") or None,
             estado=parametros.get("estado") or None,
         )
-        # El Contador Junior solo consulta los clientes asignados a él.
-        if self.request.user.es_contador_junior:
-            consulta = consulta.filter(responsable=self.request.user)
         return consulta
 
     def get_context_data(self, **kwargs):
@@ -62,6 +62,7 @@ class ListaClientesView(ModuloHabilitadoMixin, ListView):
         contexto["opciones"] = opciones_filtro()
         contexto["filtros"] = self.request.GET
         contexto["puede_editar"] = self.request.user.rol.nombre_rol in ROLES_EDITAN
+        contexto["puede_gestionar"] = self.request.user.rol.nombre_rol in ROLES_GESTIONAN
         contexto["por_pagina"] = self.get_paginate_by(self.get_queryset())
         contexto["opciones_por_pagina"] = self.OPCIONES_POR_PAGINA
         parametros = self.request.GET.copy()
@@ -84,14 +85,18 @@ class DetalleClienteView(ModuloHabilitadoMixin, DetailView):
             "municipios_adicionales",
             "credenciales",
         )
-        # Un Contador Junior no puede ver clientes que no le fueron asignados.
-        if self.request.user.es_contador_junior:
-            consulta = consulta.filter(responsable=self.request.user)
         return consulta
 
     def get_context_data(self, **kwargs):
         contexto = super().get_context_data(**kwargs)
         contexto["puede_editar"] = self.request.user.rol.nombre_rol in ROLES_EDITAN
+        contexto["puede_gestionar"] = self.request.user.rol.nombre_rol in ROLES_GESTIONAN
+        # Las credenciales del Junior se limitan a sus clientes asignados.
+        usuario = self.request.user
+        contexto["a_cargo"] = (
+            not usuario.es_contador_junior or self.object.responsable_id == usuario.id_usuario
+        )
+        contexto["puede_ver_credenciales"] = contexto["a_cargo"]
         # Vencimientos del cliente visibles desde su perfil (Módulo 2).
         from aplicaciones.calendario.selectores import vencimientos_por_cliente
 
@@ -112,10 +117,13 @@ class DetalleClienteView(ModuloHabilitadoMixin, DetailView):
             saldo_del_cliente,
         )
 
-        contexto["honorario"] = honorario_del_cliente(self.object)
-        contexto["cuentas_cobro"] = cuentas_del_cliente(self.request.user, self.object)
-        contexto["abonos"] = abonos_del_cliente(self.request.user, self.object)
-        contexto["saldo_cliente"] = saldo_del_cliente(self.object)
+        # Con el módulo inhabilitado para el rol, la pestaña «Honorarios» no aparece.
+        contexto["ve_honorarios"] = usuario.tiene_modulo_habilitado(Modulo.MOD06_FINANZAS)
+        if contexto["ve_honorarios"]:
+            contexto["honorario"] = honorario_del_cliente(self.object)
+            contexto["cuentas_cobro"] = cuentas_del_cliente(self.request.user, self.object)
+            contexto["abonos"] = abonos_del_cliente(self.request.user, self.object)
+            contexto["saldo_cliente"] = saldo_del_cliente(self.object)
         contexto["es_administrador"] = self.request.user.es_administrador
         # Últimas anotaciones del expediente y bitácora del cliente (Módulo 9).
         from aplicaciones.expediente.selectores import anotaciones_del_cliente
@@ -134,11 +142,16 @@ class MixinFormularioCliente:
     """Comportamiento común de las vistas de crear y editar cliente."""
 
     codigo_modulo = Modulo.MOD01_CLIENTES
-    roles_permitidos = ROLES_EDITAN
+    roles_permitidos = ROLES_GESTIONAN
     model = Cliente
     form_class = ClienteForm
     template_name = "clientes/formulario.html"
     success_url = reverse_lazy("clientes:lista")
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["usuario"] = self.request.user
+        return kwargs
 
     def get_formset(self, datos=None):
         """Formset de municipios adicionales, con una fila vacía para agregar."""
@@ -155,7 +168,60 @@ class MixinFormularioCliente:
         return contexto
 
     def guardar(self, formulario, formset):
-        return guardar_cliente(formulario, formset, self.request.user)
+        cliente = guardar_cliente(formulario, formset, self.request.user)
+        self.object = cliente
+        self.calcular_vencimientos(cliente)
+        return cliente
+
+    def calcular_vencimientos(self, cliente):
+        """
+        Calcula los vencimientos DIAN del cliente recién guardado y avisa el resultado.
+
+        Si no marcó obligaciones, pregunta qué impuestos o anticipos presenta
+        en lugar de dejar el calendario vacío sin explicación.
+        """
+        # Import local: calendario ya depende de clientes y evita el ciclo.
+        from aplicaciones.calendario.servicios import generar_vencimientos_cliente
+
+        peticion = self.request
+        if not peticion.user.tiene_modulo_habilitado(Modulo.MOD02_CALENDARIO):
+            return
+        if not cliente.obligaciones.exists():
+            messages.info(
+                peticion,
+                "Falta indicar qué impuestos o anticipos presenta este cliente (renta, IVA, "
+                "retención en la fuente…). Edítelo y márquelos en «Obligaciones tributarias»: "
+                "sus vencimientos se calcularán con su NIT o cédula.",
+            )
+            return
+        resumen = generar_vencimientos_cliente(cliente, peticion.user)
+        if resumen["sin_grupo"]:
+            messages.warning(
+                peticion,
+                "Este documento no permite calcular vencimientos DIAN automáticamente "
+                "(solo NIT o cédula numéricos); regístrelos de forma manual en el Calendario.",
+            )
+            return
+        if resumen["creados"] or resumen["actualizados"]:
+            messages.success(
+                peticion,
+                f"Vencimientos DIAN calculados: {resumen['creados']} nuevos y "
+                f"{resumen['actualizados']} actualizados. Quedan pendientes de validar.",
+            )
+        if resumen["sin_coincidencia"]:
+            messages.warning(
+                peticion,
+                "No hay fecha DIAN para el documento de este cliente en: "
+                + ", ".join(resumen["sin_coincidencia"])
+                + ". Revise que esas obligaciones correspondan a su tipo de persona.",
+            )
+        if resumen["sin_referencia"]:
+            messages.warning(
+                peticion,
+                "Estas obligaciones no tienen fechas cargadas en la tabla DIAN: "
+                + ", ".join(resumen["sin_referencia"])
+                + ".",
+            )
 
 
 class CrearClienteView(MixinFormularioCliente, ModuloHabilitadoMixin, RolRequeridoMixin, CreateView):
@@ -350,6 +416,32 @@ class CredencialEliminarView(ModuloHabilitadoMixin, RolRequeridoMixin, View):
         eliminar_credencial(credencial)
         messages.success(request, "La credencial se eliminó correctamente.")
         return redirect("clientes:detalle", pk=credencial.cliente.pk)
+
+
+class ReporteCredencialesTodosView(ModuloHabilitadoMixin, RolRequeridoMixin, View):
+    """Reporte consolidado de credenciales de todos los clientes (solo en pantalla, sin descarga)."""
+
+    codigo_modulo = Modulo.MOD01_CLIENTES
+    roles_permitidos = ROLES_EDITAN + (Rol.CONTADOR_JUNIOR,)
+    template_name = "clientes/reporte_credenciales_todos.html"
+
+    def get(self, request):
+        cliente = request.GET.get("cliente") or None
+        estado = request.GET.get("estado") or None
+        credenciales = credenciales_visibles(request.user, cliente=cliente, estado=estado)
+        clientes = Cliente.objects.order_by("nombre_razon_social")
+        if request.user.es_contador_junior:
+            clientes = clientes.filter(responsable=request.user)
+        return render(
+            request,
+            self.template_name,
+            {
+                "credenciales": credenciales,
+                "alertas": sum(1 for c in credenciales if c.requiere_actualizacion),
+                "clientes": clientes,
+                "filtros": request.GET,
+            },
+        )
 
 
 class ReporteCredencialesView(ModuloHabilitadoMixin, RolRequeridoMixin, View):

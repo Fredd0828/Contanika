@@ -7,6 +7,8 @@ vencimientos originados en tareas del Kanban, las alertas configurables y
 las anotaciones libres por fecha.
 """
 
+from datetime import timedelta
+
 from django.db import models
 
 
@@ -151,6 +153,9 @@ class ConfiguracionAlerta(models.Model):
     )
     dias_anticipacion = models.PositiveIntegerField(default=3)
     canal = models.CharField(max_length=20, choices=OPCIONES_CANAL, default=NOTIFICACION)
+    # Fecha en que se envió la alerta por su canal (HU040-4): evita reenviarla
+    # mientras el vencimiento no cambie de fecha.
+    fecha_envio = models.DateField(null=True, blank=True)
 
     class Meta:
         db_table = "configuracion_alerta"
@@ -160,6 +165,11 @@ class ConfiguracionAlerta(models.Model):
 
     def __str__(self):
         return f"{self.canal} con {self.dias_anticipacion} días de anticipación"
+
+    @property
+    def fecha_aviso(self):
+        """Día en que la alerta debe avisar: la fecha del vencimiento menos la anticipación."""
+        return self.vencimiento.fecha_vencimiento - timedelta(days=self.dias_anticipacion)
 
 
 class AnotacionCalendario(models.Model):

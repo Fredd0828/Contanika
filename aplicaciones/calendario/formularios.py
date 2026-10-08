@@ -207,10 +207,7 @@ class FiltroCalendarioForm(FormularioBase):
 
         from aplicaciones.clientes.models import Cliente
 
-        clientes = Cliente.objects.filter(estado=Cliente.ACTIVO)
-        if usuario is not None and usuario.es_contador_junior:
-            clientes = clientes.filter(responsable=usuario)
-        self.fields["cliente"].queryset = clientes
+        self.fields["cliente"].queryset = Cliente.objects.filter(estado=Cliente.ACTIVO)
 
 
 class CambiarEstadoForm(FormularioBase):

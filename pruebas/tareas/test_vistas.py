@@ -188,6 +188,65 @@ def test_cambiar_estado_via_ajax_devuelve_json(client, usuario_administrador, ta
     assert respuesta.json() == {"ok": True, "estado": Tarea.EN_REVISION}
 
 
+@pytest.fixture
+def tarea_de_su_cliente(cliente_junior, usuario_administrador):
+    """Tarea de un cliente a cargo del Junior, asignada por otro rol a otra persona."""
+    return Tarea.objects.create(
+        cliente=cliente_junior,
+        titulo="Conciliación bancaria del cliente",
+        responsable=usuario_administrador,
+        prioridad=Tarea.BAJA,
+    )
+
+
+def test_tablero_junior_ve_tareas_de_sus_clientes_asignadas_a_otros(
+    client, usuario_junior, tarea_de_su_cliente, tarea_admin
+):
+    client.force_login(usuario_junior)
+    contenido = client.get(reverse("tareas:tablero")).content.decode()
+    assert "Conciliación bancaria del cliente" in contenido
+    assert "Preparar retención en la fuente" not in contenido
+
+
+def test_junior_ve_el_detalle_de_la_tarea_de_su_cliente_sin_poder_actualizarla(
+    client, usuario_junior, tarea_de_su_cliente
+):
+    client.force_login(usuario_junior)
+    respuesta = client.get(reverse("tareas:detalle", args=[tarea_de_su_cliente.pk]))
+    assert respuesta.status_code == 200
+    assert respuesta.context["puede_actualizar"] is False
+    assert f"/tareas/{tarea_de_su_cliente.pk}/estado/" not in respuesta.content.decode()
+
+
+def test_junior_si_puede_actualizar_su_propia_tarea_desde_el_detalle(client, usuario_junior, tarea_junior):
+    client.force_login(usuario_junior)
+    respuesta = client.get(reverse("tareas:detalle", args=[tarea_junior.pk]))
+    assert respuesta.context["puede_actualizar"] is True
+    assert f"/tareas/{tarea_junior.pk}/estado/" in respuesta.content.decode()
+
+
+def test_junior_no_cambia_el_estado_de_una_tarea_asignada_a_otro(client, usuario_junior, tarea_de_su_cliente):
+    """La tarea es visible por ser de su cliente, pero solo actualiza las suyas."""
+    client.force_login(usuario_junior)
+    respuesta = client.post(
+        reverse("tareas:cambiar_estado", args=[tarea_de_su_cliente.pk]), {"estado": Tarea.EN_PROGRESO}
+    )
+    assert respuesta.status_code == 302
+    tarea_de_su_cliente.refresh_from_db()
+    assert tarea_de_su_cliente.estado == Tarea.POR_HACER
+
+
+def test_junior_no_agrega_observaciones_a_una_tarea_asignada_a_otro(
+    client, usuario_junior, tarea_de_su_cliente
+):
+    client.force_login(usuario_junior)
+    client.post(
+        reverse("tareas:agregar_observacion", args=[tarea_de_su_cliente.pk]),
+        {"contenido": "No me corresponde."},
+    )
+    assert not ObservacionTarea.objects.filter(tarea=tarea_de_su_cliente).exists()
+
+
 # ---------------------------------------------------------------------------
 # Observaciones
 # ---------------------------------------------------------------------------

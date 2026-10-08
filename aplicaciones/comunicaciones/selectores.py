@@ -11,19 +11,13 @@ from .models import Comunicacion
 
 
 def clientes_visibles(usuario):
-    """Clientes cuyo historial puede consultar el usuario (HU021-1: el Junior, solo los suyos)."""
-    consulta = Cliente.objects.all()
-    if usuario.es_contador_junior:
-        consulta = consulta.filter(responsable=usuario)
-    return consulta
+    """Clientes cuyo historial puede consultar el usuario: todos (decisión del usuario, 1-oct-2026)."""
+    return Cliente.objects.all()
 
 
 def comunicaciones_visibles(usuario):
-    """Comunicaciones de los clientes visibles para el usuario."""
-    consulta = Comunicacion.objects.select_related("cliente", "usuario")
-    if usuario.es_contador_junior:
-        consulta = consulta.filter(cliente__responsable=usuario)
-    return consulta
+    """Comunicaciones de todos los clientes, para consulta de cualquier rol."""
+    return Comunicacion.objects.select_related("cliente", "usuario")
 
 
 def filtrar_comunicaciones(usuario, cliente=None, canal=None, tipo=None, desde=None, hasta=None):

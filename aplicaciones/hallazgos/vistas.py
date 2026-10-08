@@ -50,6 +50,13 @@ def _adjunto_visible_o_404(usuario, pk):
     return adjunto
 
 
+def _adjunto_gestionable_o_404(usuario, pk):
+    """Adjunto de un hallazgo que el usuario puede modificar (el Junior, solo de sus clientes)."""
+    adjunto = get_object_or_404(Adjunto, pk=pk, tabla_origen=Adjunto.HALLAZGO)
+    get_object_or_404(selectores.hallazgos_gestionables(usuario), pk=adjunto.id_origen)
+    return adjunto
+
+
 class ListaHallazgosView(ModuloHabilitadoMixin, ListView):
     """Listado filtrable de hallazgos y revisiones."""
 
@@ -101,6 +108,9 @@ class DetalleHallazgoView(ModuloHabilitadoMixin, View):
             "hallazgo": hallazgo,
             "adjuntos": selectores.adjuntos_del_hallazgo(hallazgo),
             "puede_eliminar": puede_eliminar,
+            "puede_gestionar": selectores.hallazgos_gestionables(request.user)
+            .filter(pk=hallazgo.pk)
+            .exists(),
             "formulario": HallazgoForm(instance=hallazgo, usuario=request.user),
             "formulario_estado": CambiarEstadoHallazgoForm(initial={"estado": hallazgo.estado}),
             "formulario_adjunto": AdjuntoHallazgoForm(),
@@ -156,7 +166,7 @@ class EditarHallazgoView(ModuloHabilitadoMixin, View):
         return "hallazgos/hallazgo_form_modal.html" if _es_ajax(request) else "hallazgos/hallazgo_form.html"
 
     def get(self, request, pk):
-        hallazgo = get_object_or_404(selectores.hallazgos_visibles(request.user), pk=pk)
+        hallazgo = get_object_or_404(selectores.hallazgos_gestionables(request.user), pk=pk)
         return render(
             request,
             self._template(request),
@@ -169,7 +179,7 @@ class EditarHallazgoView(ModuloHabilitadoMixin, View):
         )
 
     def post(self, request, pk):
-        hallazgo = get_object_or_404(selectores.hallazgos_visibles(request.user), pk=pk)
+        hallazgo = get_object_or_404(selectores.hallazgos_gestionables(request.user), pk=pk)
         formulario = HallazgoForm(request.POST, instance=hallazgo, usuario=request.user)
         if formulario.is_valid():
             servicios.actualizar_hallazgo(hallazgo, formulario)
@@ -206,7 +216,7 @@ class CambiarEstadoHallazgoView(ModuloHabilitadoMixin, View):
     codigo_modulo = Modulo.MOD05_HALLAZGOS
 
     def post(self, request, pk):
-        hallazgo = get_object_or_404(selectores.hallazgos_visibles(request.user), pk=pk)
+        hallazgo = get_object_or_404(selectores.hallazgos_gestionables(request.user), pk=pk)
         formulario = CambiarEstadoHallazgoForm(request.POST)
         if formulario.is_valid():
             servicios.cambiar_estado_hallazgo(
@@ -227,7 +237,7 @@ class AgregarAdjuntoHallazgoView(ModuloHabilitadoMixin, View):
     codigo_modulo = Modulo.MOD05_HALLAZGOS
 
     def post(self, request, pk):
-        hallazgo = get_object_or_404(selectores.hallazgos_visibles(request.user), pk=pk)
+        hallazgo = get_object_or_404(selectores.hallazgos_gestionables(request.user), pk=pk)
         formulario = AdjuntoHallazgoForm(request.POST, request.FILES)
         if formulario.is_valid():
             servicios.agregar_adjunto(hallazgo, formulario.cleaned_data["archivo"])
@@ -244,7 +254,7 @@ class EliminarAdjuntoHallazgoView(ModuloHabilitadoMixin, View):
     codigo_modulo = Modulo.MOD05_HALLAZGOS
 
     def post(self, request, pk):
-        adjunto = _adjunto_visible_o_404(request.user, pk)
+        adjunto = _adjunto_gestionable_o_404(request.user, pk)
         id_hallazgo = adjunto.id_origen
         servicios.eliminar_adjunto(adjunto)
         messages.success(request, "El adjunto se eliminó correctamente.")

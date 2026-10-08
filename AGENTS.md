@@ -92,7 +92,17 @@ models.py → servicios.py → selectores.py → formularios.py → vistas.py �
 - **Selects abiertos:** los campos desplegables permiten escribir valores nuevos cuando aplique.
 - **Fechas editables:** ninguna fecha queda bloqueada, aunque el sistema la calcule automáticamente.
 - **Filtros desplegables:** todos los listados usan filtros desplegables.
+- **Responsive:** toda pantalla debe acomodarse a teléfono, tableta y
+  escritorio; comprobarlo (360, 768, 1024 y 1440 px) antes de darla por
+  terminada.
 - **Visibilidad por rol:** configurable por el Administrador en el módulo de Equipo.
+- **Colores:** solo los de la paleta (`:root` de `estaticos/css/contanika.css`:
+  navy, teal, naranja, crema, marrón, verde y rojo). Bootstrap trae un azul
+  propio (`#0d6efd`) que no pertenece a la plataforma: está reemplazado en la
+  sección «Armonía con Bootstrap» del CSS mediante las variables `--bs-*`. Al
+  usar un componente nuevo de Bootstrap, revisar que no lo traiga de vuelta.
+  Para PDF, Excel y gráficos usar `aplicaciones/comunes/paleta.py`, nunca
+  colores escritos a mano.
 
 ---
 
@@ -101,9 +111,32 @@ models.py → servicios.py → selectores.py → formularios.py → vistas.py �
 - Autenticación obligatoria: usar `LoginRequiredMixin` o `@login_required`.
 - Control de módulos: usar `ModuloHabilitadoMixin` con `codigo_modulo`.
 - Control de roles: usar `RolRequeridoMixin` con `roles_permitidos`.
-- Contador Junior:
-  - Solo consulta clientes asignados (`cliente.responsable == request.user`).
-  - No edita ni elimina credenciales, clientes ni vencimientos.
+- Contador Junior (reglas vigentes desde el 1-oct-2026, decisión del usuario):
+  - **Clientes:** ve todos, crea y edita cualquiera (`ROLES_GESTIONAN`). El cliente
+    nuevo queda a su nombre; no reasigna responsable ni cambia el estado (el
+    formulario no ofrece esos campos). No inactiva, no importa.
+  - **Credenciales:** solo las ve (sin editar ni eliminar) en los clientes a su
+    cargo (`cliente.responsable == request.user`); en los demás la pestaña no aparece.
+  - **Calendario:** ve todos los vencimientos y las anotaciones visibles para él
+    (Equipo, su rol o etiquetadas). No edita ni valida vencimientos, pero marca el
+    avance (En progreso/Presentada) de los de sus clientes o los que tiene como
+    responsable (`calendario.servicios.puede_actualizar_estado`).
+  - **Tareas:** ve las asignadas a él y las de sus clientes; solo cambia el estado
+    y agrega observaciones a las suyas (`tareas.selectores.puede_actualizar_tarea`).
+  - **Hallazgos, documentos, expediente y comunicaciones:** LECTURA de todos los
+    clientes (los `*_visibles` no filtran por rol). La ESCRITURA sigue limitada a
+    sus clientes asignados con selectores aparte: `hallazgos_gestionables`,
+    `clientes_para_generar`, `expediente.clientes_anotables`. En la ficha de un
+    cliente ajeno los botones de crear se ocultan con `a_cargo`.
+  - **Finanzas y reportes:** solo sus clientes asignados (sin cambios).
+  - **Desde el 7-oct-2026 (decisión del usuario):** no ve el panel principal
+    (`menu.ROLES_POR_RUTA`; `PanelView` lo lleva a `menu.ruta_de_inicio`:
+    Calendario, Tareas o su primera entrada del menú). Empieza con el Módulo 6
+    y los reportes de Cartera, Cuentas de cobro e Ingresos inhabilitados
+    (`MODULOS_SIN_JUNIOR`/`REPORTES_SIN_JUNIOR` en `cargar_datos_iniciales`,
+    solo al crear la fila; el Administrador puede habilitarlos). La pestaña
+    «Honorarios» de la ficha del cliente depende de `ve_honorarios` (Módulo 6).
+- Menú lateral: sección «Soporte» → «Ayuda», para todos los roles.
 - CSRF: todos los POST deben incluir `{% csrf_token %}`.
 - XSS: escapar contenido en templates; no render HTML desde el usuario sin sanitizar.
 - Inyección SQL: usar ORM; nunca concatenar SQL manualmente.
@@ -156,14 +189,46 @@ Ninguna funcionalidad se da por terminada sin:
 
 ### Módulo 1 — Clientes
 - CRUD completo, filtros, importación Excel, credenciales cifradas.
-- Contador Junior solo consulta clientes asignados.
+- Contador Junior: ve todos los clientes y los crea/edita (ver sección 5).
+- Reporte de credenciales: por cliente (`reporte_credenciales`) y consolidado de
+  todos (`reporte_credenciales_todos`, con filtros por cliente y estado), solo en
+  pantalla y sin descarga. El Junior solo ve las de sus clientes a cargo.
+- Tablas `obligacion_tributaria` (catálogo, 10 sembradas) y `cliente_obligacion`
+  (qué presenta cada cliente): son las 41 y 42; faltaban en el script SQL y ya
+  están incluidas.
 
 ### Módulo 2 — Calendario
 - Vencimientos nacionales calculados desde `TablaReferenciaDian`.
-- Grupo NIT (se guarda el dígito real, no grupos abstractos):
-  - Empresas (NIT): último dígito ("0"-"9").
-  - Personas naturales (CC): últimos 2 dígitos de la cédula ("00"-"99").
-  - Extranjeros: vencimiento manual (sin cálculo automático).
+- Grupo NIT (se guarda el dígito real, no grupos abstractos): el grupo depende
+  de la **obligación**, no del tipo de documento. `calcular_grupos_dian`
+  devuelve el último dígito y los dos últimos del NIT o cédula, y la búsqueda
+  en `TablaReferenciaDian` usa el que exista para cada obligación (IVA,
+  retención, renta PJ y RST: 1 dígito; renta PN: 2 dígitos "00"-"99"). Así una
+  persona natural con NIT o con cédula calcula bien todas sus obligaciones.
+  - Documentos que no son NIT/CC o no numéricos (CE, TI, pasaporte, RUT):
+    vencimiento manual (sin cálculo automático).
+- **Alertas automáticas (HU040):** `configuracion_alerta` ganó `fecha_envio`
+  (DATE, migración `calendario 0004`): día en que se envió la alerta; evita
+  repetirla mientras el vencimiento no cambie de fecha (si se corre más tarde,
+  `fecha_aviso` supera a `fecha_envio` y vuelve a avisar). Una alerta está «en
+  curso» desde `fecha_vencimiento - dias_anticipacion` hasta el vencimiento,
+  mientras no esté presentado (`selectores.alertas_en_curso`). Va al
+  responsable del vencimiento o, si no tiene, al del cliente.
+  - Comando `procesar_alertas` (cron, p. ej. cada hora: `0 * * * * cd
+    /ruta/codigo && .venv/bin/python gestionar.py procesar_alertas`):
+    **Correo** → envía al responsable y registra una `Comunicacion` Automática
+    (`modulo_origen="Calendario"`); si falla, no marca y reintenta en la
+    próxima corrida. **Notificación interna** → queda registrada. **WhatsApp** →
+    no se marca: `wa.me` exige que una persona pulse Enviar (decisión T2).
+  - La **campana** de la barra superior (`context_processors.avisos_vencimientos`,
+    en todas las páginas) muestra, por cada vencimiento próximo con alerta
+    en curso, un aviso con enlace al detalle y, si hay alerta por WhatsApp y el
+    responsable tiene celular, el enlace `wa.me`. Se muestra siempre,
+    aunque falle el correo (HU040-5).
+- Al crear o editar un cliente (M1) se calculan sus vencimientos si el rol
+  tiene el M2 habilitado; si no marcó obligaciones, un aviso le pide elegir
+  qué impuestos o anticipos presenta. `resumen["sin_coincidencia"]` lista las
+  obligaciones con fechas cargadas pero ninguna para ese documento.
 - Obligaciones por régimen: simple/simplificado → RST; jurídica ordinaria →
   renta PJ + retención (+ IVA si responsable); natural → renta PN (+ IVA y
   retención si responsable).
@@ -370,9 +435,9 @@ Ninguna funcionalidad se da por terminada sin:
   fechas); ficha del cliente → pestaña «Comunicaciones» (últimas 10) y
   `comunicaciones:cliente`. Distinción visual: etiqueta `be-teal`
   «Automática» (con el módulo de origen) y `be-n` «Manual».
-- Pendiente para módulos futuros: cuando Calendario (alertas) o Documentos
-  envíen por correo/WhatsApp, deben crear su `Comunicacion` Automática con su
-  `modulo_origen`, como hace `finanzas/envios.py`.
+- Calendario (alertas por correo) ya registra su `Comunicacion` Automática
+  (`modulo_origen="Calendario"`), como hace `finanzas/envios.py`. Documentos no
+  envía nada (el spec del M4 no lo pide); si algún día envía, debe registrarla igual.
 
 ### Módulo 8 — Gestión de equipo y roles
 - Rama `feature/modulo-8-equipo`, creada desde `feature/modulo-7-comunicaciones`.
@@ -394,9 +459,29 @@ Ninguna funcionalidad se da por terminada sin:
   fijo (`PERMISOS_FIJOS`) para no bloquearse. Inicio de sesión y perfil no son
   módulos, así que nunca se inhabilitan. Plantilla `403.html` amigable.
 - **Menú**: `menu.ROLES_POR_RUTA` restringe además por rol (Equipo y roles
-  oculto para el Junior). `vistas.RUTAS_MODULOS` del panel principal se
-  deriva ahora de `SECCIONES_MENU` (antes era una lista fija y M7/M9 salían
-  como «Próximamente»).
+  oculto para el Junior).
+- **Panel principal** (`seguridad:panel`, tablero gráfico desde el 2-oct-2026;
+  ya no lista los módulos, que están en el menú lateral): `seguridad/panel.py`
+  arma una sección por módulo (`seccion_vencimientos`, `seccion_tareas`,
+  `seccion_finanzas`, `seccion_hallazgos`, `seccion_clientes`,
+  `seccion_equipo`) y `armar_tablero(usuario, hoy)` las reúne con la franja de
+  cifras. Cada sección usa el selector de visibilidad de su módulo
+  (`vencimientos_visibles`, `tareas_visibles`, `cuentas_cobro_visibles`,
+  `hallazgos_visibles`), así el panel muestra lo mismo que el módulo; queda en
+  `None` si el rol no tiene el módulo habilitado. Carga del equipo: solo
+  Administrador y Senior. Para agregar una sección: su función en `panel.py`,
+  la clave en `armar_tablero` y su bloque en `plantillas/seguridad/panel.html`
+  (clases `.pp-*` del CSS).
+  - Gráficos con Chart.js (vencimientos por semana y facturado/cobrado por
+    mes), datos por `json_script` y colores de `comunes/paleta.py`. Pares de
+    color verificados para daltonismo: naranja + verde y teal + naranja; **no
+    poner teal junto a verde ni naranja junto a rojo** en un mismo gráfico (se
+    confunden). Cada gráfico lleva su tabla («Ver los datos en tabla»).
+  - Responsive: las secciones van a dos columnas y pasan a una cuando no caben
+    (`flex: 1 1 420px`). El interior de cada sección se acomoda con
+    `@container` (ancho de la sección, no de la pantalla), porque una sección
+    es estrecha en un teléfono y también en un portátil junto al menú lateral.
+    Revisado en 360, 390, 768, 1024, 1280 y 1440 px.
 - **Panel de equipo** (HU023, Administrador y Senior, solo consulta): tareas
   activas, % completado de las tareas que vencen en el mes, vencimientos no
   presentados de los próximos 7 días y alerta con más de 10 pendientes. Se
@@ -446,6 +531,23 @@ Ninguna funcionalidad se da por terminada sin:
   (escapa nombres de clientes).
 - Ayuda (HU053): `seguridad:ayuda`, ícono en la barra superior, guía de los
   10 módulos, preguntas frecuentes y contacto desde `ConfiguracionDespacho`.
+  - **Guías paso a paso** (6-oct-2026): catálogo fijo en
+    `seguridad/guias.py` (`Guia` y `Paso`, sin tablas). Cada guía declara su
+    `modulo` y sus `roles`; `guias.es_visible` la muestra solo a quien puede
+    hacer el proceso (otra guía → 403). Vista `seguridad:guia`
+    (`/ayuda/guias/<slug>/`), plantilla `seguridad/guia.html`, clases `.ay-*`.
+    **Al cambiar un botón, un campo o un permiso de una pantalla, actualizar
+    su guía**; al construir un proceso nuevo, agregarle la suya.
+- Buscador de la barra superior: formulario GET a `clientes:lista`
+  (`busqueda`); `puede_buscar_clientes` sale de `context_processors.menu_lateral`.
+- Mapa de navegación (entregable 3.3): `python gestionar.py
+  generar_mapa_navegacion` regenera `documentacion/MAPA_NAVEGACION.md` desde las
+  rutas (módulo, roles y descripción de cada vista). Volver a correrlo cuando
+  se agreguen o cambien rutas. `documentacion/CAMBIOS_WORD.md` lleva lo que
+  falta pasar al Word.
+- Cron: `bash scripts/instalar_cron.sh` (`--ver`, `--quitar`) programa
+  `procesar_cobros` y `procesar_alertas`. No instalarlo sin avisar al usuario:
+  con el cobro automático activo genera cuentas de cobro reales.
 - El reporte de credenciales sigue en el M1 sin descarga (spec), aunque la
   HU028 lo liste.
 
@@ -468,5 +570,5 @@ Ninguna funcionalidad se da por terminada sin:
 
 ---
 
-Última actualización: 1 de octubre de 2026 (Módulo 10: reportes y
-análisis, y sección de ayuda).
+Última actualización: 7 de octubre de 2026 (Contador Junior sin panel ni
+honorarios; Ayuda en el menú lateral).

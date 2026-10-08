@@ -112,7 +112,7 @@ def documento_generado(cliente, plantilla_simple, usuario_administrador, despach
     return documento
 
 
-def test_documentos_visibles_junior_filtra_por_cliente_asignado(
+def test_documentos_visibles_junior_ve_los_de_todos_los_clientes(
     usuario_junior, cliente_junior, cliente, plantilla_simple, usuario_administrador
 ):
     Documento.objects.create(
@@ -123,8 +123,7 @@ def test_documentos_visibles_junior_filtra_por_cliente_asignado(
     )
 
     visibles = selectores.documentos_visibles(usuario_junior)
-    assert visibles.count() == 1
-    assert visibles.first().cliente == cliente_junior
+    assert {d.cliente for d in visibles} == {cliente, cliente_junior}
 
 
 def test_filtrar_historico_por_plantilla_y_rango_de_fechas(usuario_administrador, cliente, plantilla_simple):

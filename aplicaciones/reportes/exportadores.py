@@ -25,15 +25,17 @@ from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import cm
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
+from aplicaciones.comunes import paleta
 from aplicaciones.comunes.pdf import encabezado_despacho
 from aplicaciones.finanzas.templatetags.finanzas_tags import formato_pesos
 from aplicaciones.seguridad.models import ConfiguracionDespacho
 
 from .resultados import FECHA, NUMERO, PESOS, PORCENTAJE
 
-COLOR_ENCABEZADO = "0E7C7B"
+# Colores de la paleta de la plataforma (ver `comunes/paleta.py`).
+COLOR_ENCABEZADO = paleta.sin_numeral(paleta.TEAL)
 COLOR_RESALTADO = "FDE2E1"
-COLORES_SERIES = ["#0E7C7B", "#2E9E5B", "#E0A526", "#C0392B"]
+COLORES_SERIES = paleta.SERIES_GRAFICO
 
 
 def formatear(valor, tipo):
@@ -157,6 +159,11 @@ def _grafico_excel(libro, grafico):
     categorias = Reference(hoja, min_col=1, min_row=2, max_row=1 + len(grafico.etiquetas))
     barras.add_data(datos, titles_from_data=True)
     barras.set_categories(categorias)
+    # Sin esto Excel pinta las barras con el azul de su tema por defecto.
+    for posicion, serie in enumerate(barras.series):
+        color = paleta.sin_numeral(COLORES_SERIES[posicion % len(COLORES_SERIES)])
+        serie.graphicalProperties.solidFill = color
+        serie.graphicalProperties.line.solidFill = color
     hoja.add_chart(barras, f"{get_column_letter(len(grafico.series) + 3)}2")
     hoja.column_dimensions["A"].width = 30
 

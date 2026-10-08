@@ -80,6 +80,10 @@ class ListaAnotacionesView(ModuloHabilitadoMixin, ListView):
         contexto["formulario_filtro"] = self.formulario_filtro
         contexto["tipos_anotacion"] = selectores.tipos_de_anotacion(self.request.user)
         contexto["es_administrador"] = self.request.user.es_administrador
+        contexto["puede_anotar"] = (
+            self.cliente is None
+            or selectores.clientes_anotables(self.request.user).filter(pk=self.cliente.pk).exists()
+        )
         parametros = self.request.GET.copy()
         parametros.pop("page", None)
         contexto["querystring"] = parametros.urlencode()

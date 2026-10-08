@@ -472,3 +472,70 @@ class TestCredencial90Dias:
         credencial.refresh_from_db()
         assert credencial.dias_sin_actualizacion == 90
         assert credencial.requiere_actualizacion is False  # Es >90, no >=90
+
+
+def _credencial(cliente, concepto, dias_sin_actualizar=0):
+    """Credencial con clave cifrada; `dias_sin_actualizar` envejece su última actualización."""
+    credencial = Credencial(cliente=cliente, concepto=concepto, usuario_acceso=f"usuario-{concepto}")
+    credencial.establecer_clave("ClaveDePrueba1*")
+    credencial.save()
+    if dias_sin_actualizar:
+        Credencial.objects.filter(pk=credencial.pk).update(
+            fecha_ultima_actualizacion=timezone.now() - timedelta(days=dias_sin_actualizar)
+        )
+    return credencial
+
+
+class TestReporteCredencialesConsolidado:
+    """Reporte de credenciales de todos los clientes (solo en pantalla)."""
+
+    def test_requiere_sesion(self, client):
+        respuesta = client.get(reverse("clientes:reporte_credenciales_todos"))
+        assert respuesta.status_code == 302
+        assert reverse("seguridad:iniciar_sesion") in respuesta.url
+
+    def test_admin_ve_las_credenciales_de_todos_los_clientes(
+        self, client, usuario_administrador, cliente, cliente_otro
+    ):
+        _credencial(cliente, "DIAN")
+        _credencial(cliente_otro, "Hacienda")
+        client.force_login(usuario_administrador)
+        respuesta = client.get(reverse("clientes:reporte_credenciales_todos"))
+        assert respuesta.status_code == 200
+        assert {c.concepto for c in respuesta.context["credenciales"]} == {"DIAN", "Hacienda"}
+
+    def test_junior_solo_ve_las_de_sus_clientes(self, client, usuario_junior, cliente, cliente_otro):
+        cliente.responsable = usuario_junior
+        cliente.save()
+        _credencial(cliente, "DIAN")
+        _credencial(cliente_otro, "Hacienda")
+        client.force_login(usuario_junior)
+        respuesta = client.get(reverse("clientes:reporte_credenciales_todos"))
+        assert [c.concepto for c in respuesta.context["credenciales"]] == ["DIAN"]
+        assert "Otro Cliente SAS" not in respuesta.content.decode()
+
+    def test_filtra_las_que_requieren_actualizacion(
+        self, client, usuario_administrador, cliente, cliente_otro
+    ):
+        _credencial(cliente, "DIAN")
+        _credencial(cliente_otro, "Hacienda", dias_sin_actualizar=100)
+        client.force_login(usuario_administrador)
+        url = reverse("clientes:reporte_credenciales_todos")
+        vencidas = client.get(url, {"estado": "requiere"}).context
+        assert [c.concepto for c in vencidas["credenciales"]] == ["Hacienda"]
+        assert vencidas["alertas"] == 1
+        vigentes = client.get(url, {"estado": "actualizada"}).context
+        assert [c.concepto for c in vigentes["credenciales"]] == ["DIAN"]
+
+    def test_filtra_por_cliente(self, client, usuario_administrador, cliente, cliente_otro):
+        _credencial(cliente, "DIAN")
+        _credencial(cliente_otro, "Hacienda")
+        client.force_login(usuario_administrador)
+        respuesta = client.get(reverse("clientes:reporte_credenciales_todos"), {"cliente": cliente_otro.pk})
+        assert [c.concepto for c in respuesta.context["credenciales"]] == ["Hacienda"]
+
+    def test_no_ofrece_descarga(self, client, usuario_administrador, cliente):
+        _credencial(cliente, "DIAN")
+        client.force_login(usuario_administrador)
+        contenido = client.get(reverse("clientes:reporte_credenciales_todos")).content.decode()
+        assert "Excel" not in contenido and "PDF" not in contenido and "download" not in contenido

@@ -12,16 +12,21 @@ import io
 from django.core.files.base import ContentFile
 from django.db import transaction
 from django.db.models import ProtectedError
+from django.utils.html import escape
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import cm
-from reportlab.platypus import Image, Paragraph, SimpleDocTemplate, Spacer
+from reportlab.platypus import KeepTogether, Paragraph, SimpleDocTemplate, Spacer
 
-from aplicaciones.comunes.pdf import encabezado_despacho
+from aplicaciones.comunes.pdf import encabezado_despacho, imagen_proporcional
 from aplicaciones.seguridad.models import ConfiguracionDespacho
 
 from . import selectores
 from .models import Documento, DocumentoDetalle, DocumentoValor
+
+# Espacio reservado para la firma del contador en el PDF.
+ANCHO_FIRMA = 5 * cm
+ALTO_FIRMA = 2.5 * cm
 
 
 @transaction.atomic
@@ -121,21 +126,33 @@ def construir_pdf_documento(documento, usuario_firmante):
     elementos.append(Spacer(1, 0.5 * cm))
     elementos.append(Paragraph(selectores.texto_certificado_renderizado(documento), estilos["Normal"]))
     elementos.append(Spacer(1, 2 * cm))
-
-    if usuario_firmante.firma:
-        elementos.append(Image(usuario_firmante.firma.path, width=5 * cm, height=2.5 * cm))
-    else:
-        elementos.append(Spacer(1, 2.5 * cm))
-    elementos.append(Paragraph(usuario_firmante.nombre, estilos["Normal"]))
-    if usuario_firmante.identificacion:
-        elementos.append(Paragraph(f"C.C. {usuario_firmante.identificacion}", estilos["Normal"]))
-    if usuario_firmante.numero_tarjeta_profesional:
-        elementos.append(
-            Paragraph(f"T.P. No. {usuario_firmante.numero_tarjeta_profesional}", estilos["Normal"])
-        )
+    elementos.append(bloque_firma(usuario_firmante, estilos))
 
     documento_pdf.build(elementos)
     return buffer.getvalue()
+
+
+def bloque_firma(usuario_firmante, estilos):
+    """
+    Firma y datos del contador que firma el documento.
+
+    Todo el bloque va al costado izquierdo, en la misma línea del cuerpo del
+    documento: la imagen de la firma (sin deformarla) y debajo el nombre, la
+    identificación y la tarjeta profesional. Se mantiene junto para que un
+    salto de página no separe la firma de los datos.
+    """
+    if usuario_firmante.firma:
+        firma = imagen_proporcional(usuario_firmante.firma.path, ANCHO_FIRMA, ALTO_FIRMA, alineacion="LEFT")
+    else:
+        firma = Spacer(1, ALTO_FIRMA)
+    elementos = [firma, Paragraph(escape(usuario_firmante.nombre), estilos["Normal"])]
+    if usuario_firmante.identificacion:
+        elementos.append(Paragraph(f"C.C. {escape(usuario_firmante.identificacion)}", estilos["Normal"]))
+    if usuario_firmante.numero_tarjeta_profesional:
+        elementos.append(
+            Paragraph(f"T.P. No. {escape(usuario_firmante.numero_tarjeta_profesional)}", estilos["Normal"])
+        )
+    return KeepTogether(elementos)
 
 
 @transaction.atomic

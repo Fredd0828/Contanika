@@ -17,8 +17,10 @@
             </div>
         </div>
         <div class="ph-actions">
-            {% if puede_editar %}
+            {% if puede_gestionar %}
             <a class="ph-link" href="{% url 'clientes:editar' cliente.pk %}"><i class="bi bi-pencil"></i> Editar</a>
+            {% endif %}
+            {% if puede_editar %}
             {% if cliente.estado == "Activo" %}
             <button type="button" class="ph-link" data-bs-toggle="modal" data-bs-target="#modalInactivar"><i class="bi bi-slash-circle"></i> Inactivar</button>
             {% endif %}
@@ -39,11 +41,13 @@
             <i class="bi bi-calendar2-check"></i> Vencimientos
         </button>
     </li>
+    {% if puede_ver_credenciales %}
     <li class="nav-item" role="presentation">
         <button class="nav-link" id="tab-credenciales-btn" data-bs-toggle="tab" data-bs-target="#tab-credenciales" type="button" role="tab" aria-controls="tab-credenciales" aria-selected="false">
             <i class="bi bi-key"></i> Credenciales
         </button>
     </li>
+    {% endif %}
     <li class="nav-item" role="presentation">
         <button class="nav-link" id="tab-documentos-btn" data-bs-toggle="tab" data-bs-target="#tab-documentos" type="button" role="tab" aria-controls="tab-documentos" aria-selected="false">
             <i class="bi bi-file-earmark-text-fill"></i> Documentos
@@ -54,11 +58,13 @@
             <i class="bi bi-search-heart-fill"></i> Hallazgos
         </button>
     </li>
+    {% if ve_honorarios %}
     <li class="nav-item" role="presentation">
         <button class="nav-link" id="tab-honorarios-btn" data-bs-toggle="tab" data-bs-target="#tab-honorarios" type="button" role="tab" aria-controls="tab-honorarios" aria-selected="false">
             <i class="bi bi-cash-coin"></i> Honorarios
         </button>
     </li>
+    {% endif %}
     <li class="nav-item" role="presentation">
         <button class="nav-link" id="tab-expediente-btn" data-bs-toggle="tab" data-bs-target="#tab-expediente" type="button" role="tab" aria-controls="tab-expediente" aria-selected="false">
             <i class="bi bi-journal-text"></i> Expediente
@@ -138,9 +144,11 @@
         {% include "clientes/vencimientos_panel.html" with vencimientos=vencimientos puede_editar=puede_editar cliente=cliente %}
     </div>
 
+    {% if puede_ver_credenciales %}
     <div class="tab-pane fade" id="tab-credenciales" role="tabpanel" aria-labelledby="tab-credenciales-btn">
         {% include "clientes/credencial_tabla.html" with credenciales=cliente.credenciales.all puede_editar=puede_editar cliente=cliente %}
     </div>
+    {% endif %}
 
     <div class="tab-pane fade" id="tab-documentos" role="tabpanel" aria-labelledby="tab-documentos-btn">
         {% include "clientes/documentos_panel.html" with documentos=documentos cliente=cliente %}
@@ -150,9 +158,11 @@
         {% include "clientes/hallazgos_panel.html" with hallazgos=hallazgos cliente=cliente %}
     </div>
 
+    {% if ve_honorarios %}
     <div class="tab-pane fade" id="tab-honorarios" role="tabpanel" aria-labelledby="tab-honorarios-btn">
         {% include "clientes/honorarios_panel.html" with honorario=honorario cuentas_cobro=cuentas_cobro cliente=cliente %}
     </div>
+    {% endif %}
 
     <div class="tab-pane fade" id="tab-expediente" role="tabpanel" aria-labelledby="tab-expediente-btn">
         {% include "clientes/expediente_panel.html" with anotaciones=anotaciones cliente=cliente %}

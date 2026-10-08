@@ -17,10 +17,12 @@
             <a class="ph-link" href="{% url 'clientes:detalle' cliente.pk %}"><i class="bi bi-person-vcard"></i> Ficha del cliente</a>
             <a class="ph-link" href="{% url 'expediente:lista' %}"><i class="bi bi-list-ul"></i> Todos los clientes</a>
             {% endif %}
+            {% if puede_anotar %}
             <button type="button" class="ph-btn" data-bs-toggle="modal" data-bs-target="#modalAnotacion"
                     data-url="{% url 'expediente:crear' %}{% if cliente %}?cliente={{ cliente.pk }}{% endif %}">
                 <i class="bi bi-plus-lg"></i> Nueva anotación
             </button>
+            {% endif %}
         </div>
     </div>
 

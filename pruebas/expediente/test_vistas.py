@@ -100,18 +100,29 @@ def test_ficha_del_cliente_muestra_pestana_expediente(
     assert list(respuesta.context["anotaciones"]) == [anotacion_cliente]
 
 
-def test_junior_no_abre_expediente_de_cliente_ajeno(client, usuario_junior, cliente):
+def test_junior_abre_el_expediente_de_cualquier_cliente_sin_poder_anotar_en_los_ajenos(
+    client, usuario_junior, cliente
+):
     client.force_login(usuario_junior)
     url = reverse("expediente:cliente", kwargs={"pk_cliente": cliente.pk})
-    assert client.get(url).status_code == 404
+    respuesta = client.get(url)
+    assert respuesta.status_code == 200
+    assert respuesta.context["puede_anotar"] is False
+    assert "Nueva anotación" not in respuesta.content.decode()
 
 
-def test_junior_en_lista_general_no_ve_clientes_ajenos(
+def test_junior_puede_anotar_en_el_expediente_de_su_cliente(client, usuario_junior, cliente_junior):
+    client.force_login(usuario_junior)
+    url = reverse("expediente:cliente", kwargs={"pk_cliente": cliente_junior.pk})
+    assert client.get(url).context["puede_anotar"] is True
+
+
+def test_junior_en_lista_general_ve_las_anotaciones_de_todos_los_clientes(
     client, usuario_junior, anotacion_cliente, anotacion_cliente_junior
 ):
     client.force_login(usuario_junior)
     respuesta = client.get(reverse("expediente:lista"))
-    assert list(respuesta.context["anotaciones"]) == [anotacion_cliente_junior]
+    assert set(respuesta.context["anotaciones"]) == {anotacion_cliente, anotacion_cliente_junior}
 
 
 # ---------------------------------------------------------------------------
@@ -224,10 +235,10 @@ def test_descargar_adjunto(client, usuario_senior, anotacion_cliente):
     assert b"".join(respuesta.streaming_content).startswith(b"%PDF")
 
 
-def test_junior_no_descarga_adjunto_de_cliente_ajeno(client, usuario_junior, anotacion_cliente):
+def test_junior_descarga_adjunto_de_cualquier_cliente(client, usuario_junior, anotacion_cliente):
     adjunto = _adjuntar(anotacion_cliente)
     client.force_login(usuario_junior)
-    assert client.get(reverse("expediente:descargar_adjunto", kwargs={"pk": adjunto.pk})).status_code == 404
+    assert client.get(reverse("expediente:descargar_adjunto", kwargs={"pk": adjunto.pk})).status_code == 200
 
 
 def test_no_descarga_adjunto_de_hallazgo_por_esta_ruta(client, usuario_administrador, anotacion_cliente):

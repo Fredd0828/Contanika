@@ -147,7 +147,7 @@ Numerales 3.1, 3.2 y 3.3, conclusiones (4, una por objetivo), presentación y su
 | # | Tema | Recomendación por defecto |
 |---|---|---|
 | T2 | WhatsApp | **Resuelta (25-sep-2026, M6):** correo por SMTP (variables `CORREO_*`) + WhatsApp por enlace `wa.me` con registro en Comunicaciones; los WhatsApp programados o masivos quedan en una bandeja de pendientes. API Business como mejora futura |
-| T3 | Alertas automáticas | **Resuelta para el M6 (25-sep-2026):** comando `procesar_cobros` + cron cada 15 min, probado con fechas simuladas. Las alertas del Calendario (M2) reutilizarán el mismo esquema |
+| T3 | Alertas automáticas | **Resuelta para el M6 (25-sep-2026):** comando `procesar_cobros` + cron cada 15 min, probado con fechas simuladas. **Resuelta para el M2 (1-oct-2026):** comando `procesar_alertas` (cron) para el correo, notificación interna en la campana de la barra superior y `wa.me` como enlace; ver AGENTS.md (Módulo 2) |
 | T4 | API DRF | Solo endpoints AJAX necesarios (Kanban, calendario, búsqueda incremental, notificaciones) |
 | T5 | Despliegue | Hosting con soporte Python + BD Supabase en la semana del 7 de diciembre |
 

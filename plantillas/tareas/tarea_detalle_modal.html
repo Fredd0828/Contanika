@@ -8,6 +8,7 @@
 </div>
 <div class="modal-body">
     <div class="row g-3 mb-3 align-items-end">
+        {% if puede_actualizar %}
         <div class="col-auto">
             <form method="post" action="{% url 'tareas:cambiar_estado' tarea.pk %}" class="d-flex gap-2 align-items-end">
                 {% csrf_token %}
@@ -18,6 +19,7 @@
                 <button type="submit" class="btn btn-outline-primary"><i class="bi bi-check2"></i> Cambiar</button>
             </form>
         </div>
+        {% endif %}
         <div class="col-auto text-muted small">
             Prioridad: <span class="kb-prio kb-prio-{{ tarea.prioridad|lower }}">{{ tarea.prioridad }}</span>
             · Responsable: {{ tarea.responsable.nombre|default:"Sin asignar" }}
@@ -78,6 +80,7 @@
     {% empty %}
     <p class="text-muted small">Sin observaciones registradas.</p>
     {% endfor %}
+    {% if puede_actualizar %}
     <form method="post" action="{% url 'tareas:agregar_observacion' tarea.pk %}" class="d-flex gap-2 align-items-end mb-4">
         {% csrf_token %}
         <div class="flex-grow-1">
@@ -85,6 +88,7 @@
         </div>
         <button type="submit" class="btn btn-outline-primary"><i class="bi bi-plus-lg"></i></button>
     </form>
+    {% endif %}
 
     <div class="sec-lbl">Historial</div>
     <div class="tl">

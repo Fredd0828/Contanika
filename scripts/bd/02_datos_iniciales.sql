@@ -1,7 +1,8 @@
 -- ============================================================================
 -- Datos iniciales del sistema Contanika (anexo del entregable 3.1)
 -- Catálogos: roles, módulos, reportes, permisos por rol, tipos de servicio,
--- métodos de pago, conceptos facturables, plantillas base con sus campos
+-- métodos de pago, conceptos facturables, obligaciones tributarias,
+-- plantillas base con sus campos
 -- (simples y repetibles), configuración del despacho y calendario oficial
 -- DIAN 2026. No incluye usuarios ni credenciales por seguridad.
 -- ============================================================================
@@ -176,10 +177,10 @@ COPY public.permiso_reporte_rol (id_permiso_reporte, habilitado, id_reporte, id_
 12	t	8	5
 13	t	3	6
 14	t	4	6
-15	t	5	6
-16	t	6	6
+15	f	5	6
+16	f	6	6
 17	t	7	6
-18	t	8	6
+18	f	8	6
 \.
 
 
@@ -213,7 +214,7 @@ COPY public.permiso_rol_modulo (id_permiso, habilitado, id_modulo, id_rol) FROM 
 23	t	13	6
 24	t	14	6
 25	t	15	6
-26	t	16	6
+26	f	16	6
 27	t	17	6
 28	t	18	6
 29	t	19	6
@@ -775,6 +776,27 @@ SELECT pg_catalog.setval('public.tabla_referencia_dian_id_referencia_seq', 440, 
 --
 
 SELECT pg_catalog.setval('public.tipo_servicio_id_tipo_servicio_seq', 9, true);
+
+
+--
+-- Data for Name: obligacion_tributaria; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.obligacion_tributaria (id_obligacion, nombre, ambito) FROM stdin;
+1	Renta personas naturales	Nacional
+2	Renta personas jurídicas	Nacional
+3	Renta grandes contribuyentes	Nacional
+4	Retención en la fuente	Nacional
+5	IVA bimestral	Nacional
+6	IVA cuatrimestral	Nacional
+7	RST anticipo bimestral	Nacional
+8	RST consolidada anual	Nacional
+9	Exógena nacional	Nacional
+10	Exógena distrital	Distrital
+\.
+
+
+SELECT pg_catalog.setval('public.obligacion_tributaria_id_obligacion_seq', 10, true);
 
 
 --

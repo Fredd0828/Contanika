@@ -6,9 +6,11 @@
             <a class="ph-link" href="{% url 'expediente:cliente' cliente.pk %}">
                 <i class="bi bi-funnel"></i> Expediente completo y filtros
             </a>
+            {% if a_cargo %}
             <a class="ph-btn" href="{% url 'expediente:crear' %}?cliente={{ cliente.pk }}">
                 <i class="bi bi-plus-lg"></i> Nueva anotación
             </a>
+            {% endif %}
         </div>
     </div>
 

@@ -2,6 +2,7 @@
 
 import pytest
 from django.urls import reverse
+from django.utils import timezone
 
 from aplicaciones.reportes.models import DescargaReporte, PermisoReporteRol, Reporte
 from aplicaciones.seguridad.models import Modulo, PermisoRolModulo
@@ -150,7 +151,7 @@ def test_ayuda_disponible_para_todos_y_enlazada_en_la_barra(client, usuario_juni
     assert respuesta.status_code == 200
     contenido = respuesta.content.decode()
     assert "Preguntas frecuentes" in contenido and "10. Reportes" in contenido
-    assert reverse("seguridad:ayuda") in client.get(reverse("seguridad:panel")).content.decode()
+    assert reverse("seguridad:ayuda") in client.get(reverse("seguridad:perfil")).content.decode()
 
 
 def test_pantalla_de_visibilidad_muestra_la_matriz(client, usuario_administrador, usuario_junior):
@@ -170,7 +171,8 @@ def test_historial_de_descargas_filtra_por_reporte_usuario_y_fecha(
     client.get(_url("clientes"), {"formato": "PDF"})
     client.get(_url("tareas"), {"formato": "Excel"})
     tareas = Reporte.objects.get(nombre_reporte=Reporte.TAREAS)
-    hoy = DescargaReporte.objects.first().fecha_hora.date().isoformat()
+    # El filtro usa la fecha local (Bogotá), no la de UTC: de noche difieren.
+    hoy = timezone.localtime(DescargaReporte.objects.first().fecha_hora).date().isoformat()
     filtros = {"reporte": tareas.pk, "usuario": usuario_administrador.pk, "desde": hoy, "hasta": hoy}
     respuesta = client.get(reverse("reportes:descargas"), filtros)
     assert [d.reporte for d in respuesta.context["descargas"]] == [tareas]

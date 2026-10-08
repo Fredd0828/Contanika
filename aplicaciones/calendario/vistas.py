@@ -49,7 +49,9 @@ from .servicios import (
     generar_vencimientos_masivo,
     guardar_alerta,
     guardar_anotacion,
+    guardar_vencimiento_editado,
     guardar_vencimiento_manual,
+    puede_actualizar_estado,
     validar_vencimiento,
 )
 
@@ -229,14 +231,12 @@ class DetalleVencimientoView(ModuloHabilitadoMixin, DetailView):
     context_object_name = "vencimiento"
 
     def get_queryset(self):
-        consulta = Vencimiento.objects.select_related("cliente", "responsable").prefetch_related("alertas")
-        if self.request.user.es_contador_junior:
-            consulta = consulta.filter(cliente__responsable=self.request.user)
-        return consulta
+        return Vencimiento.objects.select_related("cliente", "responsable").prefetch_related("alertas")
 
     def get_context_data(self, **kwargs):
         contexto = super().get_context_data(**kwargs)
         contexto["puede_editar"] = self.request.user.rol.nombre_rol in ROLES_EDITAN
+        contexto["puede_actualizar_estado"] = puede_actualizar_estado(self.request.user, self.object)
         contexto["formulario_alerta"] = ConfiguracionAlertaForm()
         contexto["formulario_estado"] = CambiarEstadoForm(
             initial={"estado_presentacion": self.object.estado_presentacion}
@@ -310,7 +310,7 @@ class EditarVencimientoView(ModuloHabilitadoMixin, RolRequeridoMixin, View):
         vencimiento = self.get_object(pk)
         formulario = VencimientoManualForm(request.POST, instance=vencimiento, usuario=request.user)
         if formulario.is_valid():
-            formulario.save()
+            guardar_vencimiento_editado(formulario)
             messages.success(request, "El vencimiento se actualizó correctamente.")
             return redirect("calendario:detalle", pk=vencimiento.pk)
         return render(
@@ -326,13 +326,15 @@ class EditarVencimientoView(ModuloHabilitadoMixin, RolRequeridoMixin, View):
 
 
 class CambiarEstadoVencimientoView(ModuloHabilitadoMixin, RolRequeridoMixin, View):
-    """Actualiza el estado de presentación de un vencimiento."""
+    """Actualiza el estado de presentación de un vencimiento (el Junior, solo los de sus clientes)."""
 
     codigo_modulo = Modulo.MOD02_CALENDARIO
-    roles_permitidos = ROLES_EDITAN
+    roles_permitidos = ROLES_EDITAN + (Rol.CONTADOR_JUNIOR,)
 
     def post(self, request, pk):
-        vencimiento = get_object_or_404(Vencimiento, pk=pk)
+        vencimiento = get_object_or_404(Vencimiento.objects.select_related("cliente"), pk=pk)
+        if not puede_actualizar_estado(request.user, vencimiento):
+            raise PermissionDenied("Solo puede actualizar vencimientos de sus clientes.")
         formulario = CambiarEstadoForm(request.POST)
         if formulario.is_valid():
             cambiar_estado_presentacion(vencimiento, formulario.cleaned_data["estado_presentacion"])
@@ -403,6 +405,19 @@ class CalcularVencimientosClienteView(ModuloHabilitadoMixin, RolRequeridoMixin, 
                 f"Cálculo completado: {resumen['creados']} vencimientos creados, "
                 f"{resumen['actualizados']} actualizados, "
                 f"{resumen['omitidos']} sin cambios.",
+            )
+        if resumen["sin_coincidencia"]:
+            messages.warning(
+                request,
+                "No hay fecha DIAN para el documento de este cliente en: "
+                + ", ".join(resumen["sin_coincidencia"])
+                + ". Revise que esas obligaciones correspondan a su tipo de persona.",
+            )
+        if not cliente.obligaciones.exists():
+            messages.info(
+                request,
+                "Este cliente no tiene obligaciones marcadas: edítelo y elija qué impuestos "
+                "o anticipos presenta para calcular sus vencimientos.",
             )
         if resumen["sin_referencia"]:
             messages.warning(

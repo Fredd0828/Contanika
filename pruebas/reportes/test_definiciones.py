@@ -151,3 +151,23 @@ def test_formatear_valores():
     assert exportadores.formatear(date(2026, 3, 1), "fecha") == "01/03/2026"
     assert exportadores.formatear(12.5, "porcentaje") == "+12,5 %"
     assert exportadores.formatear(None, "pesos") == "—"
+
+
+def test_el_grafico_de_excel_usa_la_paleta_de_la_plataforma(usuario_administrador, datos_reportes):
+    """Sin color explícito, Excel pinta las barras con el azul de su tema."""
+    from openpyxl import Workbook
+
+    from aplicaciones.comunes import paleta
+
+    resultado = POR_SLUG["ingresos"].generar(usuario_administrador, {}, hoy=HOY)
+    libro = Workbook()
+    exportadores._grafico_excel(libro, resultado.grafico)
+
+    series = libro["Gráfico"]._charts[0].series
+    colores = [serie.graphicalProperties.solidFill.srgbClr for serie in series]
+    esperados = [paleta.sin_numeral(color) for color in paleta.SERIES_GRAFICO]
+    assert colores == esperados[: len(series)]
+
+
+def test_el_encabezado_de_las_tablas_exportadas_es_el_teal_de_la_plataforma():
+    assert exportadores.COLOR_ENCABEZADO == "15616D"

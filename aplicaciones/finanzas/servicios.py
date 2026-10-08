@@ -25,6 +25,7 @@ from reportlab.lib.units import cm
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 from aplicaciones.clientes.models import Cliente
+from aplicaciones.comunes import paleta
 from aplicaciones.comunes.pdf import encabezado_despacho
 from aplicaciones.seguridad.models import ConfiguracionDespacho
 
@@ -206,15 +207,15 @@ def _seccion_abonos_pdf(cuenta, estilos, ancho):
     tabla.setStyle(
         TableStyle(
             [
-                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0f766e")),
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor(paleta.TEAL)),
                 ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
                 ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
                 ("FONTNAME", (1, -3), (-1, -1), "Helvetica-Bold"),
-                ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#fef3c7")),
+                ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor(paleta.CREMA)),
                 ("ALIGN", (2, 0), (2, -1), "RIGHT"),
                 ("ALIGN", (1, -3), (1, -1), "RIGHT"),
                 ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e1")),
+                ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor(paleta.BORDE)),
                 ("TOPPADDING", (0, 0), (-1, -1), 4),
                 ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
             ]
@@ -299,13 +300,13 @@ def construir_pdf_cuenta_cobro(cuenta):
     tabla.setStyle(
         TableStyle(
             [
-                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0f766e")),
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor(paleta.TEAL)),
                 ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
                 ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
                 ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
                 ("ALIGN", (1, 0), (1, -1), "RIGHT"),
                 ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e1")),
+                ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor(paleta.BORDE)),
                 ("TOPPADDING", (0, 0), (-1, -1), 4),
                 ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
             ]

@@ -6,9 +6,11 @@
             <a class="ph-link" href="{% url 'hallazgos:lista' %}">
                 <i class="bi bi-list-ul"></i> Ver todos
             </a>
+            {% if a_cargo %}
             <a class="ph-btn" href="{% url 'hallazgos:crear' %}?cliente={{ cliente.pk }}">
                 <i class="bi bi-plus-lg"></i> Registrar hallazgo
             </a>
+            {% endif %}
         </div>
     </div>
 

@@ -12,6 +12,7 @@ urlpatterns = [
     path("cerrar-sesion/", vistas.CerrarSesionView.as_view(), name="cerrar_sesion"),
     path("perfil/", vistas.PerfilView.as_view(), name="perfil"),
     path("ayuda/", vistas.AyudaView.as_view(), name="ayuda"),
+    path("ayuda/guias/<slug:slug>/", vistas.GuiaAyudaView.as_view(), name="guia"),
     path("perfil/contrasena/", vistas.CambiarClaveView.as_view(), name="cambiar_clave"),
     path("equipo/", vistas.PanelEquipoView.as_view(), name="equipo"),
     path("equipo/usuarios/", vistas.ListaUsuariosView.as_view(), name="usuarios"),

@@ -5,6 +5,7 @@ import io
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from PIL import Image as PILImage
+from reportlab.lib.enums import TA_CENTER
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import cm
 from reportlab.platypus import Image
@@ -222,3 +223,53 @@ def test_encabezado_despacho_con_membrete_escala_la_imagen_sin_deformarla(despac
     assert isinstance(imagen, Image)
     assert imagen.drawWidth == pytest.approx(12 * cm)
     assert imagen.drawHeight == pytest.approx(3 * cm)
+
+
+def test_encabezado_despacho_centra_la_ciudad_bajo_el_nombre(despacho):
+    """Sin membrete, el nombre y la ciudad forman un solo bloque centrado."""
+    titulo, ciudad = encabezado_despacho(despacho, getSampleStyleSheet(), ancho_maximo=16 * cm)
+    assert titulo.style.alignment == TA_CENTER
+    assert ciudad.style.alignment == TA_CENTER
+
+
+# ---------------------------------------------------------------------------
+# Firma del contador en el PDF
+# ---------------------------------------------------------------------------
+
+
+def _firma(usuario, ancho, alto):
+    buffer = io.BytesIO()
+    PILImage.new("RGB", (ancho, alto), color="black").save(buffer, format="PNG")
+    usuario.firma = SimpleUploadedFile("firma.png", buffer.getvalue(), content_type="image/png")
+    usuario.save()
+    return usuario
+
+
+def test_la_firma_va_al_costado_izquierdo_sobre_los_datos_del_contador(usuario_firmante):
+    bloque = servicios.bloque_firma(_firma(usuario_firmante, 400, 100), getSampleStyleSheet())
+
+    firma, nombre, identificacion, tarjeta = bloque._content
+    assert isinstance(firma, Image)
+    assert firma.hAlign == "LEFT"
+    assert [p.getPlainText() for p in (nombre, identificacion, tarjeta)] == [
+        usuario_firmante.nombre,
+        "C.C. 1032456789",
+        "T.P. No. 123456-T",
+    ]
+
+
+def test_la_firma_se_escala_sin_deformarse(usuario_firmante):
+    """Una firma ancha ocupa el ancho reservado; una alta, el alto; nunca se estira."""
+    ancha = servicios.bloque_firma(_firma(usuario_firmante, 400, 100), getSampleStyleSheet())._content[0]
+    assert ancha.drawWidth == pytest.approx(servicios.ANCHO_FIRMA)
+    assert ancha.drawHeight == pytest.approx(servicios.ANCHO_FIRMA / 4)
+
+    alta = servicios.bloque_firma(_firma(usuario_firmante, 100, 100), getSampleStyleSheet())._content[0]
+    assert alta.drawHeight == pytest.approx(servicios.ALTO_FIRMA)
+    assert alta.drawWidth == pytest.approx(servicios.ALTO_FIRMA)
+
+
+def test_sin_firma_cargada_se_deja_el_espacio_para_firmar(usuario_administrador):
+    bloque = servicios.bloque_firma(usuario_administrador, getSampleStyleSheet())
+    assert not isinstance(bloque._content[0], Image)
+    assert bloque._content[1].getPlainText() == usuario_administrador.nombre

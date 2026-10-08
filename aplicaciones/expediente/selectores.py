@@ -13,24 +13,24 @@ from .models import Anotacion
 
 def clientes_visibles(usuario):
     """
-    Clientes cuyo expediente puede consultar y anotar el usuario.
-
-    El Contador Junior solo accede a sus clientes asignados (HU027-1); los
-    demás roles acceden a todos, incluidos los inactivos, porque su historial
-    se conserva.
+    Clientes cuyo expediente puede consultar el usuario: todos, incluidos los
+    inactivos, porque su historial se conserva (decisión del usuario,
+    1-oct-2026; antes el Contador Junior solo veía los asignados).
     """
-    consulta = Cliente.objects.all()
+    return Cliente.objects.all()
+
+
+def clientes_anotables(usuario):
+    """Clientes a los que el usuario puede agregar anotaciones (el Junior, solo los suyos)."""
+    consulta = clientes_visibles(usuario)
     if usuario.es_contador_junior:
         consulta = consulta.filter(responsable=usuario)
     return consulta
 
 
 def anotaciones_visibles(usuario):
-    """Anotaciones de los clientes visibles para el usuario (HU027-5: no solo las propias)."""
-    consulta = Anotacion.objects.select_related("cliente", "usuario")
-    if usuario.es_contador_junior:
-        consulta = consulta.filter(cliente__responsable=usuario)
-    return consulta
+    """Anotaciones de todos los clientes y de todos los usuarios (HU027-5: no solo las propias)."""
+    return Anotacion.objects.select_related("cliente", "usuario")
 
 
 def filtrar_anotaciones(usuario, cliente=None, tipo=None, desde=None, hasta=None, incluir_archivadas=False):

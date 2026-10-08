@@ -7,6 +7,7 @@ tarea y el futuro reporte de tareas (Módulo 10).
 
 from datetime import date, timedelta
 
+from django.db.models import Q
 from django.utils import timezone
 
 from .models import HistorialTarea, Tarea
@@ -24,13 +25,20 @@ def tareas_visibles(usuario):
     """
     Tareas que el usuario puede ver según su rol.
 
-    El Contador Junior solo ve las tareas asignadas a él; los demás roles
-    ven el tablero completo del equipo.
+    El Contador Junior ve las tareas asignadas a él y las de los clientes que
+    tiene a su cargo (aunque las haya asignado otro rol), para trabajar con la
+    misma información que el equipo; los demás roles ven el tablero completo.
+    Que pueda ver una tarea no le permite moverla: ver `puede_actualizar_tarea`.
     """
     consulta = Tarea.objects.select_related("cliente", "responsable")
     if usuario.es_contador_junior:
-        consulta = consulta.filter(responsable=usuario)
+        consulta = consulta.filter(Q(responsable=usuario) | Q(cliente__responsable=usuario))
     return consulta
+
+
+def puede_actualizar_tarea(usuario, tarea):
+    """El Junior solo actualiza (estado y observaciones) las tareas asignadas a él."""
+    return not usuario.es_contador_junior or tarea.responsable_id == usuario.id_usuario
 
 
 def filtrar_tareas(usuario, cliente=None, responsable=None, prioridad=None, tipo_tarea=None):

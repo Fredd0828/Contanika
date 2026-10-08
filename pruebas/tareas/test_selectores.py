@@ -48,6 +48,20 @@ def test_junior_solo_ve_sus_tareas(usuario_junior, tarea_admin, tarea_junior):
     assert visibles == [tarea_junior]
 
 
+def test_junior_ve_tareas_de_sus_clientes_asignadas_a_otros(
+    usuario_junior, usuario_administrador, cliente_junior
+):
+    """Las tareas de un cliente a cargo del Junior le llegan aunque las asigne otro rol."""
+    de_su_cliente = Tarea.objects.create(
+        cliente=cliente_junior, titulo="Conciliación bancaria", responsable=usuario_administrador
+    )
+    assert list(tareas_visibles(usuario_junior)) == [de_su_cliente]
+
+
+def test_junior_no_ve_tareas_de_clientes_ajenos_de_otros(usuario_junior, tarea_admin):
+    assert list(tareas_visibles(usuario_junior)) == []
+
+
 def test_admin_ve_todas_las_tareas(usuario_administrador, tarea_admin, tarea_junior):
     visibles = set(tareas_visibles(usuario_administrador))
     assert visibles == {tarea_admin, tarea_junior}

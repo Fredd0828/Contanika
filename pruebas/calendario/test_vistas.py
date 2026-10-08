@@ -84,11 +84,13 @@ def test_calendario_vista_semana_y_dia(client, usuario_administrador, vencimient
         assert "Comercializadora La Rebaja" in respuesta.content.decode()
 
 
-def test_calendario_junior_no_ve_clientes_ajenos(client, usuario_junior, vencimiento, vencimiento_junior):
-    """El Junior solo ve los vencimientos de sus clientes en el calendario."""
+def test_calendario_junior_ve_los_vencimientos_de_todos_los_clientes(
+    client, usuario_junior, vencimiento, vencimiento_junior
+):
+    """El Junior ve el mismo calendario que el resto del equipo."""
     client.force_login(usuario_junior)
     contenido = client.get(reverse("calendario:calendario"), {"fecha": "2026-03-17"}).content.decode()
-    assert "Comercializadora La Rebaja" not in contenido
+    assert "Comercializadora La Rebaja" in contenido
 
     contenido = client.get(reverse("calendario:calendario"), {"fecha": "2026-04-20"}).content.decode()
     assert "Papelería El Lápiz" in contenido
@@ -136,11 +138,32 @@ def test_lista_con_parametro_de_filtro_muestra_pestana_completa(
 # ---------------------------------------------------------------------------
 
 
-def test_detalle_junior_cliente_ajeno_devuelve_404(client, usuario_junior, vencimiento):
-    """IDOR: el Junior no puede ver el detalle de un vencimiento ajeno."""
+def test_detalle_junior_ve_vencimientos_de_cualquier_cliente(client, usuario_junior, vencimiento):
+    """El Junior consulta el detalle de cualquier vencimiento, sin poder editarlo."""
     client.force_login(usuario_junior)
     respuesta = client.get(reverse("calendario:detalle", args=[vencimiento.pk]))
-    assert respuesta.status_code == 404
+    assert respuesta.status_code == 200
+    assert respuesta.context["puede_editar"] is False
+
+
+def test_junior_ve_las_anotaciones_del_equipo_de_otros_roles(client, usuario_junior, usuario_administrador):
+    """Las anotaciones de visibilidad Equipo del Administrador llegan al calendario del Junior."""
+    AnotacionCalendario.objects.create(
+        fecha=date(2026, 3, 17),
+        contenido="Reunión de cierre trimestral",
+        autor=usuario_administrador,
+        visibilidad=AnotacionCalendario.EQUIPO,
+    )
+    AnotacionCalendario.objects.create(
+        fecha=date(2026, 3, 17),
+        contenido="Nota privada de la administradora",
+        autor=usuario_administrador,
+        visibilidad=AnotacionCalendario.PRIVADA,
+    )
+    client.force_login(usuario_junior)
+    contenido = client.get(reverse("calendario:calendario"), {"fecha": "2026-03-17"}).content.decode()
+    assert "Reunión de cierre trimestral" in contenido
+    assert "Nota privada de la administradora" not in contenido
 
 
 def test_detalle_junior_su_cliente_si_carga(client, usuario_junior, vencimiento_junior):
@@ -176,6 +199,102 @@ def test_senior_crea_vencimiento_manual(client, usuario_senior, cliente):
     assert creado.es_automatico_dian is False
 
 
+def test_editar_la_fecha_de_un_vencimiento_automatico_lo_deja_validado(
+    client, usuario_senior, cliente, vencimiento
+):
+    """Corregir la fecha de un vencimiento DIAN equivale a validarlo."""
+    client.force_login(usuario_senior)
+    respuesta = client.post(
+        reverse("calendario:editar_vencimiento", args=[vencimiento.pk]),
+        {
+            "cliente": cliente.pk,
+            "tipo_obligacion": vencimiento.tipo_obligacion,
+            "ambito": Vencimiento.NACIONAL,
+            "fecha_vencimiento": "2026-03-20",
+            "estado_presentacion": Vencimiento.PENDIENTE,
+        },
+    )
+    assert respuesta.status_code == 302
+    vencimiento.refresh_from_db()
+    assert vencimiento.fecha_vencimiento == date(2026, 3, 20)
+    assert vencimiento.estado_validacion == Vencimiento.VALIDADO
+
+
+def test_editar_sin_cambiar_la_fecha_no_valida(client, usuario_senior, cliente, vencimiento):
+    """Cambiar solo el estado de presentación no marca el vencimiento como validado."""
+    client.force_login(usuario_senior)
+    client.post(
+        reverse("calendario:editar_vencimiento", args=[vencimiento.pk]),
+        {
+            "cliente": cliente.pk,
+            "tipo_obligacion": vencimiento.tipo_obligacion,
+            "ambito": Vencimiento.NACIONAL,
+            "fecha_vencimiento": "2026-03-17",
+            "estado_presentacion": Vencimiento.EN_PROGRESO,
+        },
+    )
+    vencimiento.refresh_from_db()
+    assert vencimiento.estado_validacion == Vencimiento.PENDIENTE_VALIDAR
+
+
+def test_junior_marca_el_avance_de_un_vencimiento_de_su_cliente(client, usuario_junior, vencimiento_junior):
+    client.force_login(usuario_junior)
+    respuesta = client.post(
+        reverse("calendario:cambiar_estado", args=[vencimiento_junior.pk]),
+        {"estado_presentacion": Vencimiento.EN_PROGRESO},
+    )
+    assert respuesta.status_code == 302
+    vencimiento_junior.refresh_from_db()
+    assert vencimiento_junior.estado_presentacion == Vencimiento.EN_PROGRESO
+
+
+def test_junior_no_cambia_el_estado_de_un_vencimiento_de_cliente_ajeno(client, usuario_junior, vencimiento):
+    client.force_login(usuario_junior)
+    respuesta = client.post(
+        reverse("calendario:cambiar_estado", args=[vencimiento.pk]),
+        {"estado_presentacion": Vencimiento.PRESENTADA},
+    )
+    assert respuesta.status_code == 403
+    vencimiento.refresh_from_db()
+    assert vencimiento.estado_presentacion == Vencimiento.PENDIENTE
+
+
+def test_junior_puede_actualizar_un_vencimiento_ajeno_si_es_su_responsable(
+    client, usuario_junior, vencimiento
+):
+    vencimiento.responsable = usuario_junior
+    vencimiento.save()
+    client.force_login(usuario_junior)
+    respuesta = client.post(
+        reverse("calendario:cambiar_estado", args=[vencimiento.pk]),
+        {"estado_presentacion": Vencimiento.EN_PROGRESO},
+    )
+    assert respuesta.status_code == 302
+
+
+def test_detalle_muestra_el_cambio_de_estado_solo_donde_el_junior_puede(
+    client, usuario_junior, vencimiento, vencimiento_junior
+):
+    client.force_login(usuario_junior)
+    propio = client.get(reverse("calendario:detalle", args=[vencimiento_junior.pk]))
+    assert propio.context["puede_actualizar_estado"] is True
+    assert reverse("calendario:cambiar_estado", args=[vencimiento_junior.pk]) in propio.content.decode()
+    # El Junior no valida ni edita: eso sigue siendo del Administrador y el Senior.
+    assert reverse("calendario:validar", args=[vencimiento_junior.pk]) not in propio.content.decode()
+
+    ajeno = client.get(reverse("calendario:detalle", args=[vencimiento.pk]))
+    assert ajeno.context["puede_actualizar_estado"] is False
+    assert reverse("calendario:cambiar_estado", args=[vencimiento.pk]) not in ajeno.content.decode()
+
+
+def test_junior_no_valida_vencimientos(client, usuario_junior, vencimiento_junior):
+    client.force_login(usuario_junior)
+    respuesta = client.post(
+        reverse("calendario:validar", args=[vencimiento_junior.pk]), {"accion": "validar"}
+    )
+    assert respuesta.status_code == 403
+
+
 def test_cambiar_estado_presentacion(client, usuario_senior, vencimiento):
     """El cambio de estado actualiza el vencimiento."""
     client.force_login(usuario_senior)
@@ -195,16 +314,6 @@ def test_validar_vencimiento(client, usuario_senior, vencimiento):
     assert respuesta.status_code == 302
     vencimiento.refresh_from_db()
     assert vencimiento.estado_validacion == Vencimiento.VALIDADO
-
-
-def test_junior_no_puede_cambiar_estado(client, usuario_junior, vencimiento_junior):
-    """El Junior no puede cambiar estados de presentación."""
-    client.force_login(usuario_junior)
-    respuesta = client.post(
-        reverse("calendario:cambiar_estado", args=[vencimiento_junior.pk]),
-        {"estado_presentacion": Vencimiento.PRESENTADA},
-    )
-    assert respuesta.status_code == 403
 
 
 # ---------------------------------------------------------------------------

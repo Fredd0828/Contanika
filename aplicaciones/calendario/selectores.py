@@ -20,17 +20,13 @@ LIMITE_RESUMEN = 10
 
 def vencimientos_visibles(usuario):
     """
-    Vencimientos que el usuario puede ver según su rol.
+    Vencimientos que el usuario puede ver.
 
-    El Contador Junior solo ve los vencimientos de los clientes que tiene
-    asignados; los demás roles ven todos.
+    Todos los roles ven el calendario completo del despacho, para trabajar con
+    la misma información que el equipo (decisión del usuario, 1-oct-2026; antes
+    el Contador Junior solo veía los de sus clientes asignados).
     """
-    consulta = Vencimiento.objects.select_related("cliente", "responsable", "tarea").prefetch_related(
-        "alertas"
-    )
-    if usuario.es_contador_junior:
-        consulta = consulta.filter(cliente__responsable=usuario)
-    return consulta
+    return Vencimiento.objects.select_related("cliente", "responsable", "tarea").prefetch_related("alertas")
 
 
 def filtrar_vencimientos(
@@ -48,7 +44,7 @@ def filtrar_vencimientos(
     Aplica los filtros desplegables del calendario y del listado.
 
     Todos los filtros son opcionales; la consulta base ya respeta la
-    visibilidad por rol (Junior solo sus clientes asignados). `origen`
+    visibilidad. `origen`
     distingue los vencimientos tributarios de los generados por una tarea
     del Kanban marcada con "mostrar en calendario" (Módulo 3).
     """
@@ -76,11 +72,7 @@ def filtrar_vencimientos(
 
 def vencimientos_por_cliente(usuario, cliente):
     """
-    Vencimientos de un cliente concreto, respetando la visibilidad por rol.
-
-    Si un Contador Junior intenta consultar un cliente que no tiene asignado,
-    la consulta devuelve vacío y la vista responderá 404.
-    """
+    Vencimientos de un cliente concreto."""
     return filtrar_vencimientos(usuario, cliente=cliente.pk)
 
 
@@ -127,6 +119,53 @@ def anotaciones_visibles(usuario, fecha_inicio=None, fecha_fin=None):
     if fecha_fin:
         visibles = visibles.filter(fecha__lte=fecha_fin)
     return visibles
+
+
+def alertas_en_curso(usuario=None, hoy=None):
+    """
+    Alertas cuyo aviso ya llegó y cuyo vencimiento sigue pendiente.
+
+    Una alerta está en curso desde `fecha_vencimiento - dias_anticipacion`
+    hasta la fecha del vencimiento, siempre que no esté presentado. Con
+    `usuario`, solo las de los vencimientos que tiene asignados: el
+    responsable del vencimiento o, si no tiene, el del cliente (HU040-3).
+    """
+    hoy = hoy or timezone.localdate()
+    consulta = (
+        ConfiguracionAlerta.objects.select_related(
+            "vencimiento__cliente__responsable", "vencimiento__responsable"
+        )
+        .filter(vencimiento__fecha_vencimiento__gte=hoy)
+        .exclude(vencimiento__estado_presentacion=Vencimiento.PRESENTADA)
+    )
+    if usuario is not None:
+        consulta = consulta.filter(
+            Q(vencimiento__responsable=usuario)
+            | Q(vencimiento__responsable__isnull=True, vencimiento__cliente__responsable=usuario)
+        )
+    return [alerta for alerta in consulta if alerta.fecha_aviso <= hoy]
+
+
+def avisos_para_usuario(usuario, hoy=None):
+    """
+    Avisos de vencimientos próximos que se muestran dentro del sistema (la campana).
+
+    Un aviso por vencimiento, del más cercano al más lejano, sin importar por
+    qué canal se configuró la alerta: la notificación interna se muestra
+    siempre, aunque falle el correo o WhatsApp (HU040-5).
+    """
+    hoy = hoy or timezone.localdate()
+    por_vencimiento = {}
+    for alerta in alertas_en_curso(usuario, hoy):
+        aviso = por_vencimiento.setdefault(
+            alerta.vencimiento_id,
+            {"vencimiento": alerta.vencimiento, "whatsapp": False},
+        )
+        aviso["whatsapp"] = aviso["whatsapp"] or alerta.canal == ConfiguracionAlerta.WHATSAPP
+    avisos = sorted(por_vencimiento.values(), key=lambda a: a["vencimiento"].fecha_vencimiento)
+    for aviso in avisos:
+        aviso["dias"] = (aviso["vencimiento"].fecha_vencimiento - hoy).days
+    return avisos
 
 
 def opciones_filtro_calendario():

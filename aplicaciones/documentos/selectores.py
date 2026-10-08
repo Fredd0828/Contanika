@@ -70,15 +70,13 @@ def firmantes_disponibles():
 
 def documentos_visibles(usuario):
     """
-    Documentos que el usuario puede ver según su rol.
+    Documentos que el usuario puede consultar y descargar.
 
-    El Contador Junior solo ve los documentos de los clientes que tiene
-    asignados como responsable.
+    Todos los roles ven los documentos de todos los clientes, para saber qué ya
+    se expidió (decisión del usuario, 1-oct-2026). Generar sigue limitado a los
+    clientes asignados al Contador Junior (`clientes_para_generar`).
     """
-    consulta = Documento.objects.select_related("cliente", "plantilla", "usuario_generador")
-    if usuario.es_contador_junior:
-        consulta = consulta.filter(cliente__responsable=usuario)
-    return consulta
+    return Documento.objects.select_related("cliente", "plantilla", "usuario_generador")
 
 
 def filtrar_historico(usuario, plantilla=None, desde=None, hasta=None):

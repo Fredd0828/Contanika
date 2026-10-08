@@ -70,14 +70,18 @@
                 <label class="form-label" for="{{ formulario.correo_cliente.id_for_label }}">Correo del cliente</label>
                 {{ formulario.correo_cliente }}
             </div>
+            {% if formulario.responsable %}
             <div class="col-md-4">
                 <label class="form-label" for="{{ formulario.responsable.id_for_label }}">Responsable asignado</label>
                 {{ formulario.responsable }}
             </div>
+            {% endif %}
+            {% if formulario.estado %}
             <div class="col-md-4">
                 <label class="form-label" for="{{ formulario.estado.id_for_label }}">Estado</label>
                 {{ formulario.estado }}
             </div>
+            {% endif %}
         </div>
     </div>
 

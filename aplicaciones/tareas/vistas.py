@@ -31,6 +31,7 @@ from .selectores import (
     filtrar_tareas,
     notificaciones_usuario,
     opciones_filtro_tareas,
+    puede_actualizar_tarea,
     tareas_visibles,
 )
 from .servicios import (
@@ -109,6 +110,7 @@ class DetalleTareaView(ModuloHabilitadoMixin, View):
             "formulario": TareaForm(instance=tarea, usuario=request.user) if puede_editar else None,
             "formulario_estado": CambiarEstadoTareaForm(initial={"estado": tarea.estado}),
             "formulario_observacion": ObservacionTareaForm(),
+            "puede_actualizar": puede_actualizar_tarea(request.user, tarea),
         }
         return render(request, self._template(request), contexto)
 
@@ -243,6 +245,9 @@ class AgregarObservacionView(ModuloHabilitadoMixin, View):
 
     def post(self, request, pk):
         tarea = get_object_or_404(tareas_visibles(request.user), pk=pk)
+        if not puede_actualizar_tarea(request.user, tarea):
+            messages.error(request, "Solo puede agregar observaciones a las tareas asignadas a usted.")
+            return _redirigir_o_recargar(request, "tareas:detalle", pk=tarea.pk)
         formulario = ObservacionTareaForm(request.POST)
         if formulario.is_valid():
             agregar_observacion(tarea, request.user, formulario.cleaned_data["contenido"])

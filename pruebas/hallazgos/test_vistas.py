@@ -137,10 +137,22 @@ def test_junior_no_crea_para_cliente_ajeno(client, usuario_junior, cliente, clie
     assert clientes_disponibles == [cliente_junior]
 
 
-def test_junior_detalle_hallazgo_ajeno_devuelve_404(client, usuario_junior, hallazgo_cliente):
+def test_junior_consulta_hallazgo_ajeno_en_solo_lectura(client, usuario_junior, hallazgo_cliente):
     client.force_login(usuario_junior)
     respuesta = client.get(reverse("hallazgos:detalle", args=[hallazgo_cliente.pk]))
-    assert respuesta.status_code == 404
+    assert respuesta.status_code == 200
+    assert respuesta.context["puede_gestionar"] is False
+    contenido = respuesta.content.decode()
+    assert reverse("hallazgos:editar", args=[hallazgo_cliente.pk]) not in contenido
+    assert reverse("hallazgos:cambiar_estado", args=[hallazgo_cliente.pk]) not in contenido
+    assert reverse("hallazgos:agregar_adjunto", args=[hallazgo_cliente.pk]) not in contenido
+
+
+def test_junior_gestiona_el_detalle_de_su_propio_hallazgo(client, usuario_junior, hallazgo_cliente_junior):
+    client.force_login(usuario_junior)
+    respuesta = client.get(reverse("hallazgos:detalle", args=[hallazgo_cliente_junior.pk]))
+    assert respuesta.context["puede_gestionar"] is True
+    assert reverse("hallazgos:editar", args=[hallazgo_cliente_junior.pk]) in respuesta.content.decode()
 
 
 def test_junior_su_propio_hallazgo_carga(client, usuario_junior, hallazgo_cliente_junior):
@@ -278,15 +290,15 @@ def test_junior_no_agrega_adjunto_a_hallazgo_ajeno(client, usuario_junior, halla
     assert respuesta.status_code == 404
 
 
-def test_junior_no_descarga_adjunto_de_hallazgo_ajeno(
+def test_junior_descarga_pero_no_elimina_adjunto_de_hallazgo_ajeno(
     client, usuario_administrador, usuario_junior, hallazgo_cliente
 ):
     client.force_login(usuario_administrador)
     adjunto = _subir_adjunto(client, hallazgo_cliente)
 
     client.force_login(usuario_junior)
-    respuesta = client.get(reverse("hallazgos:descargar_adjunto", args=[adjunto.pk]))
-    assert respuesta.status_code == 404
+    assert client.get(reverse("hallazgos:descargar_adjunto", args=[adjunto.pk])).status_code == 200
+    assert client.post(reverse("hallazgos:eliminar_adjunto", args=[adjunto.pk])).status_code == 404
 
 
 # ---------------------------------------------------------------------------

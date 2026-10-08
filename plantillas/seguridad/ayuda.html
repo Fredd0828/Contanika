@@ -5,6 +5,40 @@
 <div class="row g-3">
     <div class="col-lg-8">
         <div class="panel">
+            <div class="ph">
+                <div>
+                    <div class="ph-title"><i class="bi bi-signpost-split"></i> Guías paso a paso</div>
+                    <div class="ph-meta mt-1">Cómo hacer cada proceso del sistema. Solo ve las guías de lo que su rol puede hacer.</div>
+                </div>
+            </div>
+            {% if grupos_guias %}
+            <div class="ay-buscador">
+                <i class="bi bi-search"></i>
+                <input type="search" id="buscarGuia" placeholder="Buscar un proceso: cliente, abono, vencimiento…" aria-label="Buscar una guía" autocomplete="off">
+            </div>
+            {% for grupo in grupos_guias %}
+            <section class="ay-grupo">
+                <h3 class="ay-grupo-titulo">{{ grupo.nombre }}</h3>
+                <div class="ay-guias">
+                    {% for guia in grupo.guias %}
+                    <a class="ay-guia" href="{% url 'seguridad:guia' guia.slug %}" data-texto="{{ guia.titulo|lower }} {{ guia.resumen|lower }} {{ grupo.nombre|lower }}">
+                        <span class="ay-guia-icono"><i class="bi {{ guia.icono }}"></i></span>
+                        <span class="ay-guia-cuerpo">
+                            <span class="ay-guia-titulo">{{ guia.titulo }}</span>
+                            <span class="ay-guia-resumen">{{ guia.resumen }}</span>
+                        </span>
+                    </a>
+                    {% endfor %}
+                </div>
+            </section>
+            {% endfor %}
+            <p class="text-muted small mb-0 d-none" id="sinGuias">Ninguna guía coincide con la búsqueda.</p>
+            {% else %}
+            <p class="text-muted small mb-0">Su rol no tiene procesos habilitados. Consulte al Administrador.</p>
+            {% endif %}
+        </div>
+
+        <div class="panel mt-3">
             <div class="ph"><div class="ph-title"><i class="bi bi-question-circle"></i> Guía rápida de los módulos</div></div>
             <div class="accordion" id="guiaModulos">
                 <div class="accordion-item">
@@ -79,12 +113,12 @@
                 <dd>El Administrador decide qué módulos ve cada rol. Si lo necesita, solicítele que lo habilite para su rol.</dd>
                 <dt>Me equivoqué en una anotación o en un abono, ¿cómo lo corrijo?</dt>
                 <dd>Por trazabilidad no se editan ni se borran. Registre una anotación aclaratoria; el Administrador puede archivar la anotación incorrecta.</dd>
-                <dt>¿Por qué solo veo algunos clientes?</dt>
-                <dd>El Contador Junior trabaja únicamente con los clientes que tiene asignados.</dd>
+                <dt>¿Por qué no puedo modificar la información de algunos clientes?</dt>
+                <dd>El Contador Junior consulta todos los clientes, pero solo registra hallazgos, documentos y anotaciones en los que tiene asignados; las credenciales, los honorarios y los reportes los ve únicamente de esos clientes.</dd>
                 <dt>¿Dónde descargo un listado en Excel?</dt>
                 <dd>En Reportes. Los demás módulos solo descargan documentos individuales (certificados y cuentas de cobro).</dd>
                 <dt>¿Debo cerrar sesión para ver la ayuda?</dt>
-                <dd class="mb-0">No. El ícono <i class="bi bi-question-circle"></i> de la barra superior abre esta página desde cualquier pantalla.</dd>
+                <dd class="mb-0">No. La opción «Ayuda» del menú lateral y el ícono <i class="bi bi-question-circle"></i> de la barra superior abren esta página desde cualquier pantalla.</dd>
             </dl>
         </div>
     </div>
@@ -106,4 +140,30 @@
         </div>
     </div>
 </div>
+<script>
+    // Filtra las guías mientras se escribe, sin distinguir tildes ni mayúsculas.
+    document.addEventListener("DOMContentLoaded", function () {
+        var buscador = document.getElementById("buscarGuia");
+        if (!buscador) { return; }
+        function normalizar(texto) {
+            return texto.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+        }
+        buscador.addEventListener("input", function () {
+            var palabras = normalizar(buscador.value).split(/\s+/).filter(Boolean);
+            var visibles = 0;
+            document.querySelectorAll(".ay-grupo").forEach(function (grupo) {
+                var enGrupo = 0;
+                grupo.querySelectorAll(".ay-guia").forEach(function (guia) {
+                    var texto = normalizar(guia.dataset.texto);
+                    var coincide = palabras.every(function (palabra) { return texto.indexOf(palabra) !== -1; });
+                    guia.classList.toggle("d-none", !coincide);
+                    if (coincide) { enGrupo += 1; }
+                });
+                grupo.classList.toggle("d-none", enGrupo === 0);
+                visibles += enGrupo;
+            });
+            document.getElementById("sinGuias").classList.toggle("d-none", visibles > 0);
+        });
+    });
+</script>
 {% endblock %}

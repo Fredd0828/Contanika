@@ -6,9 +6,11 @@
             <a class="ph-link" href="{% url 'documentos:historico' %}">
                 <i class="bi bi-list-ul"></i> Ver histórico completo
             </a>
+            {% if a_cargo %}
             <a class="ph-btn" href="{% url 'documentos:generar' %}?cliente={{ cliente.pk }}">
                 <i class="bi bi-plus-lg"></i> Generar documento
             </a>
+            {% endif %}
         </div>
     </div>
 

@@ -1429,3 +1429,373 @@ Se cargaron `01_esquema_contanika.sql` y `02_datos_iniciales.sql` con `psql`
 Nota: el script trae los comandos `\restrict`/`\unrestrict` de `pg_dump` 16,
 propios de `psql`; para cargarlo usar `psql -f`, no la herramienta de
 consultas de pgAdmin.
+
+## Jueves 1 de octubre de 2026 — Cálculo de vencimientos al registrar un cliente
+
+**Problema reportado:** al registrar un cliente con su NIT o cédula no se
+calculaban los vencimientos (p. ej. la renta de una persona natural, que
+depende de los dos últimos dígitos del documento).
+
+**Causas encontradas** (revisando los clientes de la BD local):
+1. El cálculo solo corría al pulsar «Calcular vencimientos» en la ficha; al
+   guardar el cliente no pasaba nada.
+2. El grupo DIAN se decidía por el tipo de documento: NIT → 1 dígito, cédula →
+   2 dígitos. Una persona natural registrada con NIT buscaba «5» y la renta de
+   personas naturales está cargada como «05»; con cédula pasaba al revés con
+   IVA y retención (que van por el último dígito). No encontraba fechas.
+3. Clientes sin obligaciones marcadas quedaban con el calendario vacío sin
+   ninguna explicación.
+
+**Cambios:**
+- `calendario.servicios.calcular_grupo_nit` → `calcular_grupos_dian`: devuelve
+  el último dígito y los dos últimos, y la búsqueda toma el grupo que exista
+  para cada obligación. Funciona igual con NIT o cédula.
+- Al crear o editar un cliente se calculan sus vencimientos (si el rol tiene
+  el M2 habilitado) y se muestra el resultado. Si no marcó obligaciones, un
+  aviso le pide elegir qué impuestos o anticipos presenta.
+- Nuevo aviso `sin_coincidencia`: obligaciones con fechas cargadas pero
+  ninguna para ese documento (p. ej. «Renta personas jurídicas» en una
+  persona natural). También aparece en «Calcular vencimientos» de la ficha.
+
+- **Fechas corregidas no se pisan:** como ahora se recalcula en cada guardado,
+  recalcular ya no cambia un vencimiento «Validado». Al editar la fecha de un
+  vencimiento automático DIAN, queda «Validado»
+  (`servicios.guardar_vencimiento_editado`; el spec dice que el contador lo
+  valida tal cual o lo modifica).
+
+**Verificación:** 163 pruebas de `calendario` y `clientes` en verde (8 nuevas),
+`ruff` sin hallazgos. En la BD local se calculó para los clientes 15, 16 y 18
+(en el 18, de `1019087764`, se marcó «Renta personas naturales» y salió el
+25-sep-2026, grupo 64).
+
+### Pendientes
+- Cliente 17 (NIT `5555555555`): tiene una renta manual (28-sep, sin período)
+  y la tabla DIAN trae 21-sep (grupo 55); no se recalculó para no duplicarla.
+  Decidir con el usuario cuál conservar.
+- `sin_coincidencia` solo avisa si no hay fecha para el documento; una renta
+  de personas jurídicas marcada a una persona natural genera fecha si el último
+  dígito coincide. Evaluar un aviso por tipo de persona.
+- Evaluar si conviene sugerir obligaciones por tipo de persona al crear.
+
+## Jueves 1 de octubre de 2026 — Sincronía de información para el Contador Junior
+
+**Pedido del usuario:** como Contador Junior debe poder gestionar clientes, ver
+las tareas que le asignan otros roles y las anotaciones del calendario, o sea
+trabajar con la misma información que el equipo. Decisiones (preguntadas):
+clientes crear/editar y ver todos; tareas las suyas y las de sus clientes;
+calendario completo del despacho.
+
+**Cambios:**
+- **Clientes (M1):** el Junior ve todos los clientes, crea y edita cualquiera
+  (`ROLES_GESTIONAN`). El formulario no le ofrece «Responsable» ni «Estado»: el
+  cliente nuevo queda a su nombre y el existente conserva responsable y estado.
+  Sigue sin inactivar ni importar. Las credenciales solo se muestran en los
+  clientes a su cargo (la pestaña no aparece en los demás), siempre sin editar.
+- **Tareas (M3):** `tareas_visibles` incluye, además de las asignadas a él, las
+  de los clientes que tiene a su cargo. Solo cambia el estado y agrega
+  observaciones a las suyas (`puede_actualizar_tarea`; en la tarjeta ajena se
+  ocultan el selector de estado y el formulario de observaciones, y no se
+  puede arrastrar).
+- **Calendario (M2):** `vencimientos_visibles` ya no filtra por rol: el Junior
+  ve todos los vencimientos y consulta su detalle (sin editar). Las anotaciones
+  ya se mostraban según su visibilidad (Equipo, su rol o etiquetadas); se
+  agregó una prueba de que ve las del equipo y no las privadas.
+- Hallazgos, documentos, expediente, comunicaciones, finanzas y reportes siguen
+  limitados a los clientes asignados: en la ficha de un cliente ajeno esas
+  pestañas aparecen vacías para el Junior.
+
+**Verificación:** 225 pruebas de `clientes`, `calendario` y `tareas` en verde;
+se reescribieron 8 pruebas que verificaban la regla anterior y se agregaron 12 nuevas.
+
+### Pendientes
+- Word: HU del Junior en clientes («puede ver pero no editar el perfil»,
+  «solo ve los clientes asignados»), calendario («solo los vencimientos de sus
+  clientes») y tareas («solo las asignadas a su usuario»); credenciales solo en
+  clientes a cargo.
+- Decidir si hallazgos, documentos, expediente y comunicaciones también se
+  abren al Junior para todos los clientes (hoy vacíos en clientes ajenos).
+- El Junior no puede marcar vencimientos como «En progreso/Presentada» aunque
+  la HU de calendario lo dice (criterio 4); hoy solo Administrador y Senior.
+
+## Jueves 1 de octubre de 2026 — Cierre de huecos de los módulos 1, 2 y 5-9
+
+**Pedido:** hacer las correcciones necesarias tras la revisión de los módulos.
+
+1. **Junior: lectura en toda la ficha del cliente.** Hallazgos, documentos,
+   expediente y comunicaciones ahora se consultan para todos los clientes
+   (`hallazgos_visibles`, `documentos_visibles`, `expediente.clientes_visibles`
+   y `anotaciones_visibles`, `comunicaciones`). La escritura sigue limitada a los
+   clientes asignados con selectores aparte (`hallazgos_gestionables`,
+   `clientes_para_generar`, `clientes_anotables`); en un hallazgo ajeno el detalle
+   es de solo lectura y en la ficha de un cliente ajeno se ocultan los botones
+   de crear (`a_cargo`). Finanzas y reportes no cambian.
+2. **Junior marca el avance de vencimientos** (HU de calendario, criterio 4):
+   `puede_actualizar_estado` (clientes a su cargo o vencimientos de los que es
+   responsable). Validar y editar siguen siendo del Administrador y el Senior.
+3. **Reporte de credenciales consolidado** (M1, spec): `clientes/credenciales/reporte/`,
+   con filtros por cliente y estado, sin descarga; el Junior solo ve las de sus clientes.
+4. **Alertas automáticas del Calendario** (HU040, el mayor hueco: se configuraban
+   pero nada las disparaba):
+   - Columna `configuracion_alerta.fecha_envio` (migración `calendario 0004`,
+     aplicada en la BD local).
+   - `servicios.procesar_alertas` y comando `procesar_alertas` (cron): envía por
+     correo al responsable, registra la `Comunicacion` automática, no repite, reintenta
+     si falla y vuelve a avisar si el vencimiento cambia de fecha.
+   - Campana en la barra superior con los vencimientos próximos del usuario
+     (siempre visible, aunque falle el correo) y enlace `wa.me` para las alertas
+     de WhatsApp. WhatsApp no se marca como enviada: una persona pulsa Enviar (T2).
+5. **Script SQL (entregable 3.1):** faltaban las tablas `obligacion_tributaria` y
+   `cliente_obligacion` (agregadas en el M1, nunca llegaron al script) y el
+   catálogo de 10 obligaciones. Se agregaron junto con `fecha_envio`. Verificado
+   cargando ambos scripts con `psql` (`ON_ERROR_STOP`) en una base temporal:
+   **42 tablas**, 42 comentarios, 259 columnas idénticas a la BD local, 3
+   disparadores de `abono`, 10 obligaciones sembradas.
+6. Prueba de reportes que fallaba de noche (fecha UTC vs. Bogotá) corregida.
+
+**Verificación:** 744 pruebas en verde; `ruff`, `bandit` y `check` sin hallazgos.
+
+### Pendientes
+- Cron en WSL y producción: `procesar_alertas` (cada hora) y `procesar_cobros`.
+- Word: tabla `configuracion_alerta` (columna `fecha_envio`), tablas
+  `obligacion_tributaria` y `cliente_obligacion` (son 42 en total, no 36),
+  HU del Junior (clientes, tareas, calendario, hallazgos, documentos, expediente,
+  comunicaciones y credenciales) y HU040 (la alerta de WhatsApp es un enlace).
+- Cliente 17: decidir cuál renta conservar (manual 28-sep o tabla DIAN 21-sep).
+
+## Jueves 1 de octubre de 2026 — PDF: firma a la izquierda y ciudad centrada
+
+**Pedido del usuario:** en los PDF con firma, la firma debe ir al costado
+izquierdo y la ciudad debe ser congruente con su posición y el texto.
+
+Se revisaron los PDF reales (certificado y cuenta de cobro):
+- La firma salía centrada (ReportLab centra las imágenes) mientras el nombre,
+  la cédula y la tarjeta profesional estaban a la izquierda; además se
+  estiraba a 5 × 2,5 cm fijos y se deformaba.
+- «Bogotá D.C.» quedaba suelta a la izquierda bajo el nombre del despacho,
+  que va centrado.
+
+**Cambios:**
+- `comunes/pdf.py`: `imagen_proporcional(ruta, ancho, alto, alineacion)` escala
+  sin deformar; `encabezado_despacho` centra la ciudad bajo el nombre (aplica a
+  documentos, cuentas de cobro y reportes).
+- `documentos/servicios.bloque_firma`: firma alineada a la izquierda y a
+  escala, con los datos del contador debajo, en un `KeepTogether` para que un
+  salto de página no los separe. Los datos del contador ahora se escapan.
+
+**Verificación:** vista previa con el documento 2 y la cuenta 3 de la BD local
+(sin guardar); 297 pruebas de documentos, finanzas y reportes en verde (4 nuevas).
+Los PDF ya generados conservan el diseño anterior; los nuevos salen con este.
+
+### Pendientes
+- Los meses salen con mayúscula («1 de Octubre de 2026»); en español van en
+  minúscula. Preguntar al usuario si se corrige en todos los PDF y mensajes.
+
+## Jueves 1 de octubre de 2026 — Barrido de colores: fuera el azul de Bootstrap
+
+**Pedido del usuario:** revisar todos los módulos y verificar que los colores
+concuerden con la paleta de la plataforma; notaba un azul que no armoniza.
+
+**Diagnóstico** (49 páginas de los 10 módulos renderizadas con la BD local, solo
+lectura, y capturadas con el navegador sin ventana): el azul era el color
+primario de Bootstrap (`#0d6efd`), que aparecía en todo componente que
+`contanika.css` no reemplazaba: pestañas (ficha del cliente, Equipo y roles),
+enlaces sin clase, casillas e interruptores (módulos por rol, visibilidad de
+reportes, envío masivo), avisos informativos, acordeón de Ayuda, desplegables,
+barras de progreso y anillos de foco. Los botones solo estaban corregidos en
+su estado normal: pulsados o deshabilitados volvían al azul.
+
+**Cambios:**
+- `contanika.css`, sección «Armonía con Bootstrap»: se reemplazan las
+  variables de color de Bootstrap (`--bs-primary`, `--bs-link-color`,
+  `--bs-info`, `--bs-focus-ring-color` y sus variantes) por el teal y el navy de
+  la paleta, más las reglas de casillas, interruptores, acordeón, desplegables y
+  controles nativos (`accent-color`, selección de texto). Los botones se definen
+  con las variables `--bs-btn-*` para cubrir todos los estados.
+- Calendario: los vencimientos municipales usaban un morado ajeno a la paleta;
+  ahora usan el marrón (`--brown`).
+- `comunes/paleta.py`: la paleta para lo que se genera fuera del navegador. La
+  usan los reportes (encabezados de tabla, series de los gráficos en pantalla,
+  PDF y Excel) y la cuenta de cobro (encabezado, rejilla y fila de saldo). El
+  gráfico de Excel no fijaba colores y salía con el azul del tema de Office.
+
+**Verificación:** el azul de Bootstrap pasó de 133.189 píxeles a 0 en las 49
+páginas (medido sobre las capturas de antes y después). 765 pruebas en verde;
+las nuevas amarran la paleta de PDF/Excel a las variables del CSS y fallan si
+vuelve a aparecer el azul de Bootstrap en la hoja de estilos.
+
+### Pendientes
+- Los estados que solo aparecen al interactuar (foco, pulsado, acordeón
+  abierto) se corrigieron por las variables pero no quedaron en captura:
+  revisarlos en pantalla.
+- Los PDF ya generados conservan los colores anteriores.
+
+## Viernes 2 de octubre de 2026 — Panel principal como tablero gráfico
+
+**Pedido del usuario:** mejorar el panel principal: quitar los módulos y armar
+secciones útiles (vencimientos, finanzas, tareas y otros temas) con interfaz
+gráfica.
+
+**Cambios:**
+- Se quitó la cuadrícula «Módulos del sistema» (repetía el menú lateral) y las
+  cuatro cifras anteriores (clientes activos/inactivos, servicios, usuarios).
+- Franja de cifras con enlace al módulo: vencen en 7 días, vencidos sin
+  presentar, tareas atrasadas, cartera por cobrar (con lo que está en mora),
+  hallazgos abiertos y clientes activos. El color del ícono avisa (rojo si hay
+  vencidos, atrasadas o mora).
+- **Vencimientos:** por presentar esta semana y la próxima, presentados del
+  mes, gráfico de barras por semana de las próximas 8 semanas (por presentar y
+  presentados) y lista de lo más urgente (hasta 2 vencidos y los que siguen).
+- Distribución en dos columnas parejas (pedido del usuario): Vencimientos y
+  Finanzas en la primera fila, con la misma estructura (cifras, gráfico,
+  lista); Tareas y Hallazgos en la segunda; Carga del equipo al final.
+- **Tareas:** barras por columna del Kanban, avance del tablero y las próximas
+  tareas del usuario (si no tiene, las del equipo que puede ver).
+- **Finanzas:** facturado y cobrado del mes, saldo en mora, gráfico de los
+  últimos 6 meses, recaudo acumulado y clientes con saldo pendiente.
+- **Hallazgos** sin cerrar por estado y prioridad, y **carga del equipo**
+  (Administrador y Senior).
+- `aplicaciones/seguridad/panel.py` (nuevo) arma las secciones con los
+  selectores de visibilidad de cada módulo: el Junior ve en Finanzas solo sus
+  clientes y en Tareas solo las que ya veía. Un módulo inhabilitado para el rol
+  no aparece. Sin migraciones ni cambios en la base de datos.
+- Colores de los gráficos tomados de `comunes/paleta.py` y comprobados para
+  daltonismo; cada gráfico tiene su tabla de datos desplegable.
+- Responsive (requisito recordado por el usuario): revisado en 360, 390, 768,
+  1024, 1280 y 1440 px. En teléfono las cifras de cada sección pasan a filas
+  «etiqueta – valor», los clientes con saldo muestran el nombre completo con el
+  monto debajo y los gráficos omiten etiquetas en vez de girarlas.
+
+### Cómo verificarlo (entorno local)
+Entrar a `http://127.0.0.1:8000/` con Paula (Administrador) y con un Contador
+Junior: el Junior no ve «Carga del equipo» y sus cifras de Finanzas son solo de
+sus clientes. Las tarjetas y las filas de las listas llevan al detalle.
+
+### Resultado de las pruebas
+`pruebas/seguridad/test_panel.py` (17 pruebas nuevas): cifras de cada sección,
+agrupación por semana, visibilidad por rol, módulo inhabilitado y la vista. Se
+retiró la prueba de las tarjetas de módulos.
+
+### Pendientes
+- En la BD local hay muchos vencimientos de 2026 ya pasados que siguen en
+  «Pendiente»; el panel los cuenta como vencidos sin presentar. Decidir con el
+  usuario si se marcan como presentados o si el conteo debe partir de una fecha.
+- Captura del panel para el Word.
+- **pr01 — endurecimiento de seguridad** (pedido del usuario, 1-oct-2026; se
+  ejecuta solo cuando él avise). Antes de implementar, auditar qué cubre ya
+  Django y el proyecto y qué falta. Los 20 controles:
+  1. Ocultar las claves API.
+  2. Eliminar secretos de Git.
+  3. Usar una clave pública de BD.
+  4. Activar RLS.
+  5. Cifrar datos sensibles.
+  6. Forzar autenticación del servidor.
+  7. Restringir acceso a registros.
+  8. Bloquear manipulación de campos.
+  9. Proteger cookies de sesión.
+  10. Hashear contraseñas.
+  11. Limitar intentos de inicio de sesión.
+  12. Añadir protección contra bots.
+  13. Monitorizar consultas de BD.
+  14. Validar todas las entradas.
+  15. Escapar contenido del usuario.
+  16. Restringir subida de archivos.
+  17. Limitar respuestas de API.
+  18. Añadir cabeceras de seguridad.
+  19. Forzar HTTPS.
+  20. Escanear dependencias.
+
+
+---
+
+## Martes 6 de octubre de 2026 — Guías paso a paso en la ayuda, mapa de navegación y cron
+
+### Qué se hizo
+- **Ayuda con guías de procesos** (pedido del usuario; amplía la HU053): 21
+  guías paso a paso (crear un cliente, importar desde Excel, calcular
+  vencimientos, generar una cuenta de cobro, registrar un abono, crear un
+  usuario, etc.) en `aplicaciones/seguridad/guias.py`. Cada guía trae resumen,
+  «Antes de empezar», pasos numerados con los nombres reales de botones y
+  campos, notas, guías relacionadas y un botón que lleva a la pantalla.
+  - Cada usuario ve solo las guías de lo que puede hacer: se filtran por rol y
+    por módulo habilitado. Una guía ajena responde 403 y una inexistente 404.
+  - `seguridad:ayuda` lista las guías por módulo con un buscador (sin tildes ni
+    mayúsculas); `seguridad:guia` (`/ayuda/guias/<slug>/`) muestra una.
+  - Se corrigió una pregunta frecuente que decía que el Junior solo veía sus
+    clientes (ya no es así desde el 1-oct).
+- **Buscador de la barra superior:** estaba deshabilitado («Disponible al
+  completar el módulo de clientes»). Ahora busca por nombre o razón social y
+  lleva al listado de clientes; no aparece si el rol no tiene el Módulo 1.
+- **Mapa de navegación (entregable 3.3):** comando
+  `python gestionar.py generar_mapa_navegacion`, que lee las rutas reales y
+  escribe `documentacion/MAPA_NAVEGACION.md`: diagrama general, diagrama y
+  tabla por módulo (ruta, métodos, acceso por rol, qué hace) y resumen de
+  acceso por rol y módulo. 107 rutas.
+- **Cron:** `scripts/instalar_cron.sh` programa `procesar_cobros` (cada 15
+  minutos) y `procesar_alertas` (cada hora), con registros en `registros/`.
+  Tiene `--ver` y `--quitar`. **No se instaló**: en la BD local el cobro
+  automático está activo y el cron generaría cuentas de cobro reales; lo
+  ejecuta el usuario cuando lo decida.
+- **Lista de cambios para el Word:** `documentacion/CAMBIOS_WORD.md` (stack,
+  6 tablas nuevas con sus columnas, columnas cambiadas, disparadores, alcance,
+  historias de usuario modificadas, entregables y capturas pendientes).
+
+### Cómo verificarlo (entorno local)
+Pulsar el ícono de ayuda de la barra superior: aparecen las guías agrupadas por
+módulo. Abrir «Crear un cliente» y seguir el botón «Ir a Nuevo cliente». Entrar
+como Contador Junior: no ve las guías de honorarios ni de usuarios. Escribir un
+nombre en el buscador de la barra superior y pulsar Enter.
+
+### Resultado de las pruebas
+`pruebas/seguridad/test_ayuda.py` (catálogo, visibilidad por rol y módulo,
+vistas, escape de texto y buscador) y `pruebas/seguridad/test_mapa_navegacion.py`.
+Responsive revisado en 360, 768, 1024 y 1440 px.
+
+### Pendientes
+- Instalar el cron (`bash scripts/instalar_cron.sh`) cuando el usuario lo decida.
+- Capturas de la ayuda para el Word.
+- Si cambia un botón, un campo o un permiso, actualizar su guía en `guias.py`.
+- Siguen abiertos los pendientes del 2 de octubre (vencimientos pasados en
+  «Pendiente», captura del panel y **pr01**).
+
+
+---
+
+## Miércoles 7 de octubre de 2026 — Contador Junior sin panel ni honorarios, y Ayuda en el menú
+
+### Qué se hizo
+Pedido del usuario tras entrar con el perfil del Contador Junior.
+- **Panel principal:** el Junior ya no lo ve. No aparece en su menú y, al
+  entrar o abrir `/`, llega a su primer módulo: Calendario; si no lo tiene,
+  Tareas; si no, la primera entrada de su menú (`menu.ruta_de_inicio`).
+  Administrador y Senior siguen igual.
+- **Honorarios y reportes financieros del Junior:** quedan inhabilitados de
+  entrada el Módulo 6 y los reportes de Cartera, Cuentas de cobro e Ingresos
+  mensuales del despacho. Es el valor inicial (`cargar_datos_iniciales` y
+  `scripts/bd/02_datos_iniciales.sql`); el Administrador lo cambia cuando
+  quiera en Equipo y roles → «Módulos por rol» y Reportes → «Visibilidad por
+  rol», y el comando no pisa lo que él configure.
+  - En la BD local se actualizaron esas cuatro filas del rol Contador Junior
+    (`permiso_rol_modulo` y `permiso_reporte_rol`).
+- **Ficha del cliente:** la pestaña «Honorarios» ya no aparece (ni se
+  consultan sus datos) si el rol no tiene el Módulo 6. Antes se mostraba
+  aunque el módulo estuviera inhabilitado.
+- **Ayuda en el menú lateral:** nueva sección «Soporte» con la opción «Ayuda»,
+  visible para todos los roles; se conserva el ícono de la barra superior.
+
+### Cómo verificarlo (entorno local)
+Entrar como Contador Junior: llega al Calendario; el menú no tiene «Panel» ni
+«Honorarios» y sí «Ayuda»; en Reportes solo ve Clientes, Vencimientos y Tareas;
+la ficha de un cliente no tiene la pestaña «Honorarios»; `/honorarios/`
+responde 403. Entrar como Paula: todo igual, con «Ayuda» en el menú.
+
+### Resultado de las pruebas
+`pruebas/seguridad/test_panel.py`: inicio del Junior, Ayuda en el menú, ficha
+sin honorarios y valores iniciales de permisos (sin pisar cambios).
+
+### Pendientes
+- Las demás pestañas de la ficha del cliente (vencimientos, documentos,
+  hallazgos, expediente, comunicaciones) se siguen mostrando aunque su módulo
+  esté inhabilitado para el rol; el módulo sí bloquea sus pantallas. Decidir si
+  se ocultan igual que «Honorarios».
+- Siguen abiertos: instalar el cron, capturas, vencimientos pasados en
+  «Pendiente» y **pr01**.

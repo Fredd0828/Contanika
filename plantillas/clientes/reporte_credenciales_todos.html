@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block titulo %}Reporte de credenciales{% endblock %}
+
+{% block contenido %}
+<div class="panel">
+    <div class="ph mb-0">
+        <div>
+            <div class="ph-title" style="font-size:18px">
+                <i class="bi bi-key"></i> Reporte de credenciales de todos los clientes
+            </div>
+            <div class="ph-meta mt-1">Solo se consulta en pantalla: no tiene descarga.</div>
+        </div>
+        <div class="ph-actions">
+            <a class="ph-link" href="{% url 'clientes:lista' %}"><i class="bi bi-arrow-left"></i> Volver a clientes</a>
+        </div>
+    </div>
+</div>
+
+<div class="panel">
+    <form method="get" class="row g-2 align-items-end mb-3">
+        <div class="col-md-5">
+            <label class="form-label" for="filtro-cliente">Cliente</label>
+            <select class="form-select" id="filtro-cliente" name="cliente">
+                <option value="">Todos los clientes</option>
+                {% for cliente in clientes %}
+                <option value="{{ cliente.pk }}" {% if filtros.cliente == cliente.pk|stringformat:"s" %}selected{% endif %}>{{ cliente.nombre_razon_social }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label" for="filtro-estado">Estado</label>
+            <select class="form-select" id="filtro-estado" name="estado">
+                <option value="">Todas</option>
+                <option value="requiere" {% if filtros.estado == "requiere" %}selected{% endif %}>Requieren actualización (más de 90 días)</option>
+                <option value="actualizada" {% if filtros.estado == "actualizada" %}selected{% endif %}>Actualizadas</option>
+            </select>
+        </div>
+        <div class="col-md-3 d-flex gap-2">
+            <button type="submit" class="ph-btn"><i class="bi bi-funnel"></i> Filtrar</button>
+            <a class="ph-link" href="{% url 'clientes:reporte_credenciales_todos' %}">Limpiar</a>
+        </div>
+    </form>
+
+    <div class="table-responsive">
+        <table class="tbl">
+            <thead>
+                <tr>
+                    <th>Cliente</th>
+                    <th>Concepto</th>
+                    <th>Usuario</th>
+                    <th>Contraseña</th>
+                    <th>Última actualización</th>
+                    <th>Días sin actualizar</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for credencial in credenciales %}
+                <tr>
+                    <td>
+                        <a class="ph-link" href="{% url 'clientes:detalle' credencial.cliente_id %}">{{ credencial.cliente.nombre_razon_social }}</a>
+                        <div class="text-muted small">{{ credencial.cliente.nit_cedula }}</div>
+                    </td>
+                    <td>{{ credencial.concepto }}</td>
+                    <td>{{ credencial.usuario_acceso }}</td>
+                    <td>
+                        <div class="input-group" style="max-width: 200px;">
+                            <input type="password" class="form-control form-control-sm" value="{{ credencial.clave_plana }}" readonly>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="togglePass(this)" title="Mostrar/ocultar">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                    </td>
+                    <td>{{ credencial.fecha_ultima_actualizacion|date:"d/m/Y H:i" }}</td>
+                    <td>{{ credencial.dias_sin_actualizacion }}</td>
+                    <td>
+                        {% if credencial.requiere_actualizacion %}
+                        <span class="badge-est be-w"><i class="bi bi-exclamation-triangle-fill"></i> Requiere actualización</span>
+                        {% else %}
+                        <span class="badge-est be-g">Actualizada</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-4">No hay credenciales para mostrar.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if credenciales %}
+    <div class="mt-3">
+        <small class="text-muted">
+            Total: {{ credenciales|length }} credencial{{ credenciales|length|pluralize:"es" }} ·
+            {{ alertas }} requieren actualización
+        </small>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    function togglePass(btn) {
+        const input = btn.parentElement.querySelector('input[type="password"], input[type="text"]');
+        const icon = btn.querySelector('i');
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.remove('bi-eye');
+            icon.classList.add('bi-eye-slash');
+        } else {
+            input.type = 'password';
+            icon.classList.remove('bi-eye-slash');
+            icon.classList.add('bi-eye');
+        }
+    }
+</script>
+{% endblock %}

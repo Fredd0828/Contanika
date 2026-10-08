@@ -53,10 +53,9 @@ def test_administrador_ve_todos_los_vencimientos(
     assert vencimientos_visibles(usuario_administrador).count() == 2
 
 
-def test_junior_solo_ve_vencimientos_de_sus_clientes(usuario_junior, vencimiento_admin, vencimiento_junior):
-    visibles = vencimientos_visibles(usuario_junior)
-    assert visibles.count() == 1
-    assert visibles.first() == vencimiento_junior
+def test_junior_ve_todos_los_vencimientos_del_despacho(usuario_junior, vencimiento_admin, vencimiento_junior):
+    """Todos los roles comparten el mismo calendario (decisión del 1-oct-2026)."""
+    assert set(vencimientos_visibles(usuario_junior)) == {vencimiento_admin, vencimiento_junior}
 
 
 # ---------------------------------------------------------------------------
@@ -81,10 +80,10 @@ def test_filtrar_por_tipo_obligacion(usuario_administrador, vencimiento_admin, v
     assert list(resultado) == [vencimiento_admin]
 
 
-def test_filtrar_respeta_visibilidad_junior(usuario_junior, vencimiento_admin, vencimiento_junior):
-    """Aunque el Junior filtre por un cliente ajeno, no obtiene resultados."""
+def test_junior_filtra_por_cualquier_cliente(usuario_junior, vencimiento_admin, vencimiento_junior):
+    """El Junior puede filtrar el calendario por un cliente que no tiene asignado."""
     resultado = filtrar_vencimientos(usuario_junior, cliente=vencimiento_admin.cliente_id)
-    assert resultado.count() == 0
+    assert list(resultado) == [vencimiento_admin]
 
 
 # ---------------------------------------------------------------------------
@@ -214,11 +213,15 @@ def test_vencimientos_proximos_limita_a_diez(usuario_administrador, cliente):
     assert len(list(vencimientos_proximos(usuario_administrador))) == 10
 
 
-def test_vencimientos_proximos_respeta_visibilidad_junior(usuario_junior, cliente, cliente_junior):
+def test_vencimientos_proximos_incluyen_los_de_todos_los_clientes_para_el_junior(
+    usuario_junior, cliente, cliente_junior
+):
     hoy = date.today()
-    Vencimiento.objects.create(cliente=cliente, tipo_obligacion="IVA bimestral", fecha_vencimiento=hoy)
-    del_junior = Vencimiento.objects.create(
+    ajeno = Vencimiento.objects.create(
+        cliente=cliente, tipo_obligacion="IVA bimestral", fecha_vencimiento=hoy
+    )
+    propio = Vencimiento.objects.create(
         cliente=cliente_junior, tipo_obligacion="IVA bimestral", fecha_vencimiento=hoy
     )
 
-    assert list(vencimientos_proximos(usuario_junior)) == [del_junior]
+    assert set(vencimientos_proximos(usuario_junior)) == {ajeno, propio}

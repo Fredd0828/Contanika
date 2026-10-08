@@ -31,6 +31,7 @@
                 </tbody>
             </table>
 
+            {% if puede_actualizar %}
             <form method="post" action="{% url 'tareas:cambiar_estado' tarea.pk %}" class="d-flex gap-2 align-items-end mt-3">
                 {% csrf_token %}
                 <div>
@@ -39,6 +40,7 @@
                 </div>
                 <button type="submit" class="ph-btn"><i class="bi bi-check2"></i></button>
             </form>
+            {% endif %}
 
             <a class="ph-link mt-3 d-inline-flex" href="{% url 'clientes:detalle' tarea.cliente_id %}#tab-expediente">
                 <i class="bi bi-folder2-open"></i> Ver expediente completo del cliente
@@ -63,6 +65,7 @@
             {% empty %}
             <p class="text-muted small">Sin observaciones registradas.</p>
             {% endfor %}
+            {% if puede_actualizar %}
             <form method="post" action="{% url 'tareas:agregar_observacion' tarea.pk %}" class="d-flex gap-2 align-items-end mb-4">
                 {% csrf_token %}
                 <div class="flex-grow-1">
@@ -70,6 +73,7 @@
                 </div>
                 <button type="submit" class="ph-btn"><i class="bi bi-plus-lg"></i></button>
             </form>
+            {% endif %}
 
             <div class="sec-lbl">Historial</div>
             <div class="tl">

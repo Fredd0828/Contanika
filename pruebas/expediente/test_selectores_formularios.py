@@ -19,10 +19,18 @@ pytestmark = pytest.mark.django_db
 # ---------------------------------------------------------------------------
 
 
-def test_junior_solo_ve_anotaciones_de_sus_clientes(
+def test_junior_ve_las_anotaciones_de_todos_los_clientes(
     usuario_junior, anotacion_cliente, anotacion_cliente_junior
 ):
-    assert list(selectores.anotaciones_visibles(usuario_junior)) == [anotacion_cliente_junior]
+    assert set(selectores.anotaciones_visibles(usuario_junior)) == {
+        anotacion_cliente,
+        anotacion_cliente_junior,
+    }
+
+
+def test_junior_solo_puede_anotar_en_sus_clientes(usuario_junior, cliente, cliente_junior):
+    assert list(selectores.clientes_anotables(usuario_junior)) == [cliente_junior]
+    assert cliente in selectores.clientes_visibles(usuario_junior)
 
 
 def test_junior_ve_anotaciones_de_otros_usuarios_en_sus_clientes(usuario_junior, anotacion_cliente_junior):

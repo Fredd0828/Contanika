@@ -19,10 +19,13 @@ pytestmark = pytest.mark.django_db
 # ---------------------------------------------------------------------------
 
 
-def test_junior_solo_ve_comunicaciones_de_sus_clientes(
+def test_junior_ve_las_comunicaciones_de_todos_los_clientes(
     usuario_junior, comunicacion_automatica, comunicacion_manual_junior
 ):
-    assert list(selectores.comunicaciones_visibles(usuario_junior)) == [comunicacion_manual_junior]
+    assert set(selectores.comunicaciones_visibles(usuario_junior)) == {
+        comunicacion_automatica,
+        comunicacion_manual_junior,
+    }
 
 
 def test_senior_ve_todas_ordenadas_de_la_mas_reciente(

@@ -51,7 +51,7 @@
                 Este vencimiento se generó desde una tarea del tablero Kanban: la fecha y el
                 estado se actualizan automáticamente al editar la tarea.
             </p>
-            {% elif puede_editar %}
+            {% elif puede_actualizar_estado %}
             <div class="d-flex gap-2 mt-3 flex-wrap">
                 <form method="post" action="{% url 'calendario:cambiar_estado' vencimiento.pk %}">
                     {% csrf_token %}
@@ -63,7 +63,7 @@
                         <button type="submit" class="ph-btn"><i class="bi bi-check2"></i></button>
                     </div>
                 </form>
-                {% if vencimiento.es_automatico_dian %}
+                {% if vencimiento.es_automatico_dian and puede_editar %}
                 <form method="post" action="{% url 'calendario:validar' vencimiento.pk %}" class="ms-auto">
                     {% csrf_token %}
                     {% if vencimiento.estado_validacion == "Validado" %}

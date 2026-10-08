@@ -13,11 +13,13 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model, update_session_auth_hash
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView, LogoutView
+from django.core.exceptions import PermissionDenied
+from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.views.generic import ListView, TemplateView, View
 
-from . import selectores, servicios
+from . import guias, menu, panel, selectores, servicios
 from .formularios import (
     CambiarClaveForm,
     FiltroUsuariosForm,
@@ -25,17 +27,10 @@ from .formularios import (
     UsuarioCrearForm,
     UsuarioEditarForm,
 )
-from .menu import ROLES_POR_RUTA, SECCIONES_MENU
 from .models import Modulo, Rol
 from .permisos import ModuloHabilitadoMixin, RolRequeridoMixin
 
 Usuario = get_user_model()
-
-# Ruta de cada módulo construido, tomada del menú lateral, para que la tarjeta
-# del panel principal quede navegable en cuanto el módulo tenga ruta.
-RUTAS_MODULOS = {
-    codigo: ruta for _, elementos in SECCIONES_MENU for _, ruta, _, codigo in elementos if codigo and ruta
-}
 
 ROLES_PANEL_EQUIPO = (Rol.ADMINISTRADOR, Rol.CONTADOR_SENIOR)
 
@@ -57,51 +52,24 @@ class PanelView(LoginRequiredMixin, TemplateView):
     """
     Panel principal del sistema.
 
-    Muestra al usuario únicamente los módulos que su rol tiene habilitados
-    según la configuración de permiso_rol_modulo (RQF031).
+    Tablero gráfico con vencimientos, tareas, finanzas, hallazgos y carga del
+    equipo. Cada sección aparece solo si el rol tiene habilitado su módulo
+    (RQF031) y con la misma información que el usuario ve dentro del módulo.
     """
 
     template_name = "seguridad/panel.html"
 
-    def _ruta_para(self, usuario, codigo):
-        ruta = RUTAS_MODULOS.get(codigo)
-        roles = ROLES_POR_RUTA.get(ruta)
-        if roles and usuario.rol.nombre_rol not in roles:
-            return None
-        return ruta
+    def dispatch(self, request, *args, **kwargs):
+        # Quien no ve el panel (Contador Junior) empieza en su primer módulo.
+        if request.user.is_authenticated:
+            inicio = menu.ruta_de_inicio(request.user)
+            if inicio != menu.RUTA_PANEL:
+                return redirect(inicio)
+        return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
-        from aplicaciones.clientes.models import Cliente, ClienteServicio
-
         contexto = super().get_context_data(**kwargs)
-        usuario = self.request.user
-        contexto["modulos"] = [
-            {"modulo": modulo, "url": self._ruta_para(usuario, modulo.codigo_modulo)}
-            for modulo in Modulo.objects.all()
-            if usuario.tiene_modulo_habilitado(modulo.codigo_modulo)
-        ]
-        contexto["indicadores"] = [
-            {
-                "etiqueta": "Clientes activos",
-                "valor": Cliente.objects.filter(estado=Cliente.ACTIVO).count(),
-                "color": "c-green",
-            },
-            {
-                "etiqueta": "Clientes inactivos",
-                "valor": Cliente.objects.filter(estado=Cliente.INACTIVO).count(),
-                "color": "c-text",
-            },
-            {
-                "etiqueta": "Servicios registrados",
-                "valor": ClienteServicio.objects.count(),
-                "color": "c-teal",
-            },
-            {
-                "etiqueta": "Usuarios del equipo",
-                "valor": Usuario.objects.filter(estado=Usuario.ACTIVO).count(),
-                "color": "c-orange",
-            },
-        ]
+        contexto["tablero"] = panel.armar_tablero(self.request.user)
         return contexto
 
 
@@ -352,7 +320,10 @@ class CambiarClaveView(LoginRequiredMixin, View):
 
 
 class AyudaView(LoginRequiredMixin, TemplateView):
-    """Guía rápida de los módulos, preguntas frecuentes y contacto de soporte del despacho."""
+    """
+    Guías paso a paso de los procesos, guía rápida de los módulos, preguntas
+    frecuentes y contacto de soporte del despacho.
+    """
 
     template_name = "seguridad/ayuda.html"
 
@@ -361,4 +332,30 @@ class AyudaView(LoginRequiredMixin, TemplateView):
 
         contexto = super().get_context_data(**kwargs)
         contexto["despacho"] = ConfiguracionDespacho.objects.first()
+        contexto["grupos_guias"] = guias.guias_por_grupo(self.request.user)
+        return contexto
+
+
+class GuiaAyudaView(LoginRequiredMixin, TemplateView):
+    """
+    Una guía paso a paso. Solo abre las guías de procesos que el usuario puede
+    hacer (su rol y sus módulos habilitados); las demás responden 403.
+    """
+
+    template_name = "seguridad/guia.html"
+
+    def get_context_data(self, **kwargs):
+        guia = guias.POR_SLUG.get(kwargs["slug"])
+        if guia is None:
+            raise Http404("La guía no existe.")
+        if not guias.es_visible(guia, self.request.user):
+            raise PermissionDenied("Esta guía no aplica para su rol.")
+        contexto = super().get_context_data(**kwargs)
+        contexto["guia"] = guia
+        contexto["url_pantalla"] = reverse(guia.ruta) if guia.ruta else None
+        contexto["relacionadas"] = [
+            guias.POR_SLUG[slug]
+            for slug in guia.relacionadas
+            if guias.es_visible(guias.POR_SLUG[slug], self.request.user)
+        ]
         return contexto

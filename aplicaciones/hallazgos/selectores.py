@@ -12,12 +12,19 @@ from .models import Hallazgo
 
 def hallazgos_visibles(usuario):
     """
-    Hallazgos que el usuario puede ver según su rol.
+    Hallazgos que el usuario puede consultar.
 
-    El Contador Junior solo ve los hallazgos de sus clientes asignados; los
-    demás roles ven todos.
+    Todos los roles ven los hallazgos de todos los clientes, para trabajar con
+    la misma información del equipo (decisión del usuario, 1-oct-2026). Que el
+    Contador Junior pueda ver un hallazgo no le permite modificarlo: ver
+    `hallazgos_gestionables`.
     """
-    consulta = Hallazgo.objects.select_related("cliente", "responsable")
+    return Hallazgo.objects.select_related("cliente", "responsable")
+
+
+def hallazgos_gestionables(usuario):
+    """Hallazgos que el usuario puede editar, cambiar de estado o adjuntar (el Junior, solo los suyos)."""
+    consulta = hallazgos_visibles(usuario)
     if usuario.es_contador_junior:
         consulta = consulta.filter(cliente__responsable=usuario)
     return consulta

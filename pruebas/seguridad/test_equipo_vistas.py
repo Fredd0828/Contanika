@@ -8,7 +8,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 from PIL import Image as PILImage
 
-from aplicaciones.seguridad.models import Modulo, PermisoRolModulo, Usuario
+from aplicaciones.seguridad.models import PermisoRolModulo, Usuario
 
 from ..conftest import CLAVE_PRUEBAS
 
@@ -60,25 +60,9 @@ def test_senior_consulta_el_panel_de_equipo(client, usuario_senior):
 def test_junior_no_ve_panel_de_equipo_ni_el_menu(client, usuario_junior):
     client.force_login(usuario_junior)
     assert client.get(reverse("seguridad:equipo")).status_code == 403
-    menu = client.get(reverse("seguridad:panel")).context["menu_lateral"]
+    menu = client.get(reverse("seguridad:ayuda")).context["menu_lateral"]
     etiquetas = [item["etiqueta"] for seccion in menu for item in seccion["items"]]
     assert "Equipo y roles" not in etiquetas
-
-
-def test_panel_principal_enlaza_modulos_construidos(client, usuario_administrador):
-    for codigo, nombre in (
-        (Modulo.MOD07_COMUNICACIONES, "Comunicaciones"),
-        (Modulo.MOD09_EXPEDIENTE, "Expediente"),
-    ):
-        Modulo.objects.create(codigo_modulo=codigo, nombre_modulo=nombre)
-    client.force_login(usuario_administrador)
-    modulos = {
-        m["modulo"].codigo_modulo: m["url"] for m in client.get(reverse("seguridad:panel")).context["modulos"]
-    }
-    assert modulos == {
-        Modulo.MOD07_COMUNICACIONES: "comunicaciones:lista",
-        Modulo.MOD09_EXPEDIENTE: "expediente:lista",
-    }
 
 
 # ---------------------------------------------------------------------------
@@ -220,7 +204,7 @@ def test_inhabilitar_modulo_lo_quita_del_menu_y_bloquea_la_url(
     assert not PermisoRolModulo.objects.get(rol=usuario_junior.rol, modulo=modulo_clientes).habilitado
 
     client.force_login(usuario_junior)
-    menu = client.get(reverse("seguridad:panel")).context["menu_lateral"]
+    menu = client.get(reverse("seguridad:ayuda")).context["menu_lateral"]
     etiquetas = [item["etiqueta"] for seccion in menu for item in seccion["items"]]
     assert "Clientes" not in etiquetas
     respuesta = client.get(reverse("clientes:lista"))

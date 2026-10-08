@@ -40,11 +40,26 @@ def hallazgo_cliente_junior(cliente_junior, usuario_administrador):
     )
 
 
-def test_hallazgos_visibles_junior_filtra_por_cliente_asignado(
+def test_hallazgos_visibles_junior_ve_los_de_todos_los_clientes(
     usuario_junior, hallazgo_cliente, hallazgo_cliente_junior
 ):
     visibles = selectores.hallazgos_visibles(usuario_junior)
-    assert list(visibles) == [hallazgo_cliente_junior]
+    assert set(visibles) == {hallazgo_cliente, hallazgo_cliente_junior}
+
+
+def test_hallazgos_gestionables_junior_solo_los_de_sus_clientes(
+    usuario_junior, hallazgo_cliente, hallazgo_cliente_junior
+):
+    assert list(selectores.hallazgos_gestionables(usuario_junior)) == [hallazgo_cliente_junior]
+
+
+def test_hallazgos_gestionables_admin_son_todos(
+    usuario_administrador, hallazgo_cliente, hallazgo_cliente_junior
+):
+    assert set(selectores.hallazgos_gestionables(usuario_administrador)) == {
+        hallazgo_cliente,
+        hallazgo_cliente_junior,
+    }
 
 
 def test_hallazgos_visibles_admin_ve_todos(usuario_administrador, hallazgo_cliente, hallazgo_cliente_junior):
