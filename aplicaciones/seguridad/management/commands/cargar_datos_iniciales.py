@@ -176,7 +176,7 @@ REPORTES = [
 ]
 
 # Lo que el Contador Junior no ve al crear el sistema (el Administrador puede habilitarlo).
-MODULOS_SIN_JUNIOR = (Modulo.MOD06_FINANZAS,)
+MODULOS_SIN_JUNIOR = (Modulo.MOD06_FINANZAS, Modulo.SEC_PANEL)
 REPORTES_SIN_JUNIOR = (Reporte.CARTERA, Reporte.CUENTAS_COBRO, Reporte.INGRESOS)
 
 

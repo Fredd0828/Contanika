@@ -43,23 +43,18 @@ def tarea_junior(cliente_junior, usuario_junior):
 # ---------------------------------------------------------------------------
 
 
-def test_junior_solo_ve_sus_tareas(usuario_junior, tarea_admin, tarea_junior):
-    visibles = list(tareas_visibles(usuario_junior))
-    assert visibles == [tarea_junior]
+@pytest.mark.parametrize("nombre_usuario", ["usuario_junior", "usuario_senior", "usuario_administrador"])
+def test_todo_el_equipo_ve_todas_las_tareas(request, nombre_usuario, tarea_admin, tarea_junior):
+    """El tablero es el mismo para todos: propias, de sus clientes y de clientes ajenos."""
+    usuario = request.getfixturevalue(nombre_usuario)
+    assert set(tareas_visibles(usuario)) == {tarea_admin, tarea_junior}
 
 
-def test_junior_ve_tareas_de_sus_clientes_asignadas_a_otros(
-    usuario_junior, usuario_administrador, cliente_junior
-):
-    """Las tareas de un cliente a cargo del Junior le llegan aunque las asigne otro rol."""
-    de_su_cliente = Tarea.objects.create(
-        cliente=cliente_junior, titulo="Conciliación bancaria", responsable=usuario_administrador
-    )
-    assert list(tareas_visibles(usuario_junior)) == [de_su_cliente]
+def test_el_filtro_del_junior_ofrece_todos_los_clientes(usuario_junior, cliente, cliente_junior):
+    from aplicaciones.tareas.formularios import FiltroTareasForm
 
-
-def test_junior_no_ve_tareas_de_clientes_ajenos_de_otros(usuario_junior, tarea_admin):
-    assert list(tareas_visibles(usuario_junior)) == []
+    formulario = FiltroTareasForm(usuario=usuario_junior)
+    assert set(formulario.fields["cliente"].queryset) == {cliente, cliente_junior}
 
 
 def test_admin_ve_todas_las_tareas(usuario_administrador, tarea_admin, tarea_junior):

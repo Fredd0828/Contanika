@@ -14,7 +14,7 @@ SECCIONES_MENU = [
     (
         "Principal",
         [
-            ("Panel", "seguridad:panel", "bi-grid-fill", None),
+            ("Panel", "seguridad:panel", "bi-grid-fill", Modulo.SEC_PANEL),
             ("Clientes", "clientes:lista", "bi-people-fill", Modulo.MOD01_CLIENTES),
         ],
     ),
@@ -53,16 +53,15 @@ SECCIONES_MENU = [
 RUTA_PANEL = "seguridad:panel"
 
 # Rutas del menú que, además del módulo habilitado, exigen ciertos roles. El
-# Contador Junior no tiene funciones en Equipo y roles (su perfil propio está
-# siempre disponible desde la barra lateral) ni usa el panel principal: su
-# trabajo está en los módulos operativos (decisión del usuario, 7-oct-2026).
+# Contador Junior no tiene funciones en Equipo y roles (sus pantallas son de
+# Administrador y Senior), así que no se le muestra. Lo demás no se fija por
+# rol aquí: lo decide el Administrador en «Módulos por rol», incluido el panel.
 ROLES_POR_RUTA = {
-    RUTA_PANEL: (Rol.ADMINISTRADOR, Rol.CONTADOR_SENIOR),
     "seguridad:equipo": (Rol.ADMINISTRADOR, Rol.CONTADOR_SENIOR),
 }
 
-# Pantalla a la que llega quien no ve el panel: la primera de esta lista que
-# tenga habilitada; si no tiene ninguna, la primera entrada de su menú.
+# Pantalla a la que llega quien tiene el panel inhabilitado: la primera de esta
+# lista que tenga habilitada; si no tiene ninguna, la primera entrada de su menú.
 INICIO_SIN_PANEL = ("calendario:calendario", "tareas:tablero")
 
 

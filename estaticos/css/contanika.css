@@ -1912,8 +1912,16 @@ a.cal-ev:hover {
     box-shadow: 0 0 0 3px rgba(var(--teal-rgb), 0.15);
 }
 
-.ay-grupo + .ay-grupo {
-    margin-top: 18px;
+/* Los módulos se reparten en tres columnas (dos en tableta, una en teléfono);
+   cada módulo queda entero en su columna, con sus guías apiladas. */
+.ay-grupos {
+    columns: 3;
+    column-gap: 22px;
+}
+
+.ay-grupo {
+    break-inside: avoid;
+    margin-bottom: 18px;
 }
 
 .ay-grupo-titulo {
@@ -1922,15 +1930,28 @@ a.cal-ev:hover {
     font-weight: 700;
     letter-spacing: 0.6px;
     text-transform: uppercase;
-    color: var(--muted);
+    color: var(--teal-oscuro);
     margin: 0 0 8px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid var(--teal-suave);
 }
 
-/* Las tarjetas se reparten solas: tres columnas en escritorio, una en teléfono. */
 .ay-guias {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
+    grid-template-columns: 1fr;
     gap: 8px;
+}
+
+@media (max-width: 1199px) {
+    .ay-grupos {
+        columns: 2;
+    }
+}
+
+@media (max-width: 640px) {
+    .ay-grupos {
+        columns: 1;
+    }
 }
 
 .ay-guias-columna {

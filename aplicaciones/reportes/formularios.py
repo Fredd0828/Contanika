@@ -26,16 +26,23 @@ def _opciones(valores, vacio):
     return [("", vacio)] + [(valor, valor) for valor in valores]
 
 
-def clientes_visibles(usuario):
-    """Clientes que el usuario puede incluir en un reporte (Senior y Junior: los asignados)."""
+def clientes_visibles(usuario, todo_el_equipo=False):
+    """
+    Clientes que el usuario puede incluir en un reporte. En los reportes de
+    todo el equipo (clientes, vencimientos y tareas) son todos; en los
+    financieros, Senior y Junior solo los que tienen asignados.
+    """
     consulta = Cliente.objects.order_by("nombre_razon_social")
-    if not usuario.es_administrador:
+    if not todo_el_equipo and not usuario.es_administrador:
         consulta = consulta.filter(responsable=usuario)
     return consulta
 
 
 class FiltroBase(FormularioBase):
     """Período (desde/hasta) y responsable, comunes a los reportes."""
+
+    # True en los reportes que todo el equipo ve completos (clientes, vencimientos y tareas).
+    todo_el_equipo = False
 
     desde = _campo_fecha("Desde")
     hasta = _campo_fecha("Hasta")
@@ -49,7 +56,7 @@ class FiltroBase(FormularioBase):
         if "responsable" in self.fields:
             self.fields["responsable"].queryset = Usuario.objects.filter(estado=Usuario.ACTIVO)
         if "cliente" in self.fields:
-            self.fields["cliente"].queryset = clientes_visibles(usuario)
+            self.fields["cliente"].queryset = clientes_visibles(usuario, self.todo_el_equipo)
 
     def clean(self):
         datos = super().clean()
@@ -78,6 +85,8 @@ class FiltroBase(FormularioBase):
 class FiltroClientesForm(FiltroBase):
     """Reporte de clientes: régimen, ciudad, estado, servicio y responsable; período = fecha de registro."""
 
+    todo_el_equipo = True
+
     regimen = forms.ChoiceField(required=False, label="Régimen")
     ciudad = forms.ChoiceField(required=False, label="Ciudad")
     estado = forms.ChoiceField(
@@ -89,7 +98,7 @@ class FiltroClientesForm(FiltroBase):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        visibles = clientes_visibles(self.usuario)
+        visibles = clientes_visibles(self.usuario, self.todo_el_equipo)
         regimenes = visibles.exclude(regimen_tributario="").values_list("regimen_tributario", flat=True)
         ciudades = visibles.exclude(ciudad="").values_list("ciudad", flat=True)
         self.fields["regimen"].choices = _opciones(sorted(set(regimenes)), "Todos")
@@ -100,6 +109,8 @@ class FiltroClientesForm(FiltroBase):
 
 class FiltroVencimientosForm(FiltroBase):
     """Reporte de vencimientos (HU029): período, cliente, tipo, ámbito, estado y responsable."""
+
+    todo_el_equipo = True
 
     cliente = forms.ModelChoiceField(
         required=False, label="Cliente", queryset=Cliente.objects.none(), empty_label="Todos"
@@ -155,6 +166,8 @@ class FiltroCuentasCobroForm(FiltroBase):
 
 class FiltroTareasForm(FiltroBase):
     """Reporte de tareas (HU051): cliente, responsable, estado, prioridad y rango de vencimiento."""
+
+    todo_el_equipo = True
 
     cliente = forms.ModelChoiceField(
         required=False, label="Cliente", queryset=Cliente.objects.none(), empty_label="Todos"

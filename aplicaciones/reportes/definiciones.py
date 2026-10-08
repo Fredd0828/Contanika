@@ -2,9 +2,12 @@
 Definición de los seis reportes del módulo 10 (spec y HU028, HU029, HU048, HU051).
 
 Cada definición indica su formulario de filtros y arma un `ResultadoReporte`
-a partir de los filtros validados. Senior y Junior solo ven la información
-de sus clientes asignados (HU029-1, HU051-4); el de ingresos es siempre el
-total consolidado del despacho (spec del Módulo 10).
+a partir de los filtros validados. Los reportes de clientes, vencimientos y
+tareas traen la información de todo el despacho para cualquier rol, igual que
+sus módulos (decisión del usuario, 7-oct-2026; modifica HU029-1 y HU051-4).
+En los financieros (cartera y cuentas de cobro), Senior y Junior solo ven sus
+clientes asignados; el de ingresos es siempre el total consolidado del
+despacho (spec del Módulo 10).
 """
 
 from collections import OrderedDict
@@ -31,7 +34,7 @@ MESES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "
 
 
 def _restringir(usuario, consulta, campo_responsable):
-    """Senior y Junior solo ven la información de sus clientes asignados."""
+    """Reportes financieros: Senior y Junior solo ven la información de sus clientes asignados."""
     if usuario.es_administrador:
         return consulta
     return consulta.filter(**{campo_responsable: usuario})
@@ -61,13 +64,11 @@ class ReporteClientes(DefinicionReporte):
     formulario = formularios.FiltroClientesForm
 
     def generar(self, usuario, filtros, hoy=None):
-        consulta = _restringir(
-            usuario,
-            Cliente.objects.select_related("responsable").prefetch_related(
-                "servicios__tipo_servicio", "municipios_adicionales"
-            ),
-            "responsable",
-        ).order_by("nombre_razon_social")
+        consulta = (
+            Cliente.objects.select_related("responsable")
+            .prefetch_related("servicios__tipo_servicio", "municipios_adicionales")
+            .order_by("nombre_razon_social")
+        )
         if filtros.get("desde"):
             consulta = consulta.filter(fecha_registro__gte=filtros["desde"])
         if filtros.get("hasta"):
@@ -140,11 +141,9 @@ class ReporteVencimientos(DefinicionReporte):
 
     def generar(self, usuario, filtros, hoy=None):
         hoy = hoy or timezone.localdate()
-        consulta = _restringir(
-            usuario,
-            Vencimiento.objects.select_related("cliente", "responsable"),
-            "cliente__responsable",
-        ).order_by("fecha_vencimiento", "cliente__nombre_razon_social")
+        consulta = Vencimiento.objects.select_related("cliente", "responsable").order_by(
+            "fecha_vencimiento", "cliente__nombre_razon_social"
+        )
         for campo, filtro in (
             ("desde", "fecha_vencimiento__gte"),
             ("hasta", "fecha_vencimiento__lte"),
@@ -430,9 +429,7 @@ class ReporteTareas(DefinicionReporte):
     def generar(self, usuario, filtros, hoy=None):
         hoy = hoy or timezone.localdate()
         consulta = (
-            _restringir(
-                usuario, Tarea.objects.select_related("cliente", "responsable"), "cliente__responsable"
-            )
+            Tarea.objects.select_related("cliente", "responsable")
             .prefetch_related("historial__usuario")
             .order_by("fecha_vencimiento", "cliente__nombre_razon_social")
         )

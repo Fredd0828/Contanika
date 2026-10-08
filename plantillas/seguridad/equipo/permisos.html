@@ -7,12 +7,15 @@
 <div class="panel">
     <div class="ph">
         <div>
-            <div class="ph-title"><i class="bi bi-toggles"></i> Módulos habilitados por rol</div>
+            <div class="ph-title"><i class="bi bi-toggles"></i> Módulos y secciones habilitados por rol</div>
             <div class="ph-meta mt-1">
-                Un módulo inhabilitado desaparece del menú y bloquea el acceso por URL para ese rol; sus datos se conservan.
-                El inicio de sesión y el perfil propio siempre están disponibles.
+                Active o desactive lo que ve cada rol. Un módulo inhabilitado desaparece del menú, de la ficha del cliente
+                (su pestaña) y del panel principal (su sección), y bloquea el acceso por URL; sus datos se conservan.
+                Sin «Panel principal», el rol entra directo a su primer módulo.
+                El inicio de sesión, el perfil propio y la ayuda siempre están disponibles.
             </div>
         </div>
+        <a class="ph-link" href="{% url 'reportes:visibilidad' %}"><i class="bi bi-bar-chart-line"></i> Reportes por rol</a>
     </div>
 
     <form method="post">
@@ -21,7 +24,7 @@
             <table class="tbl">
                 <thead>
                     <tr>
-                        <th>Módulo</th>
+                        <th>Módulo o sección</th>
                         {% for rol in roles %}<th class="text-center">{{ rol.nombre_rol }}</th>{% endfor %}
                     </tr>
                 </thead>

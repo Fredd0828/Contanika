@@ -106,9 +106,19 @@ def test_filtros_invalidos_no_descargan(client, usuario_administrador):
     assert not DescargaReporte.objects.exists()
 
 
-def test_junior_no_puede_filtrar_por_cliente_ajeno(client, usuario_junior, datos_reportes, cliente):
+def test_junior_filtra_por_cualquier_cliente_en_los_reportes_del_equipo(
+    client, usuario_junior, datos_reportes, cliente
+):
     client.force_login(usuario_junior)
     respuesta = client.get(_url("tareas"), {"cliente": cliente.pk})
+    assert respuesta.context["resultado"] is not None
+
+
+def test_junior_no_puede_filtrar_por_cliente_ajeno_en_un_reporte_financiero(
+    client, usuario_junior, datos_reportes, cliente
+):
+    client.force_login(usuario_junior)
+    respuesta = client.get(_url("cartera"), {"cliente": cliente.pk})
     assert respuesta.context["resultado"] is None  # el cliente no está entre las opciones válidas
 
 

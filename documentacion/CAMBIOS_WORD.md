@@ -137,6 +137,10 @@ Los tipos exactos de todas las columnas están en `scripts/bd/01_esquema_contani
   comunicaciones de todos los clientes, pero solo escribe en los asignados. Credenciales, finanzas y
   reportes: solo de sus clientes. Afecta las HU de los módulos 1, 2, 3, 4, 5, 7 y 9 que lo limitaban a
   sus clientes asignados.
+- [ ] **Visibilidad para todo el equipo (7-oct-2026):** clientes, vencimientos y tareas los ven
+  completos los tres roles, en los módulos y en sus reportes (modifica HU029-1 y HU051-4). Lo que cada
+  rol puede modificar no cambia. El Administrador activa o desactiva por rol los módulos, el panel
+  principal y cada reporte.
 - [ ] **HU015 (hallazgos):** el Contador Junior no solo consulta: registra y gestiona los hallazgos de
   sus clientes asignados; no elimina.
 - [ ] **HU026 (expediente):** bitácora inmutable. No hay edición ni eliminación; el Administrador

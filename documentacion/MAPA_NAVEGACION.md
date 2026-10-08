@@ -345,4 +345,4 @@ Número de rutas que cada rol puede abrir, sobre el total del módulo.
 | MOD09 · Expediente y bitácora por cliente | 6 | 6 | 4 | 4 |
 | MOD10 · Reportes y análisis | 4 | 4 | 2 | 2 |
 
-Entradas del menú que además se ocultan por rol: `seguridad:equipo`, `seguridad:panel`.
+Entradas del menú que además se ocultan por rol: `seguridad:equipo`.

@@ -38,11 +38,16 @@ class Rol(models.Model):
 
 class Modulo(models.Model):
     """
-    Catálogo de los diez módulos funcionales del sistema.
+    Catálogo de los diez módulos funcionales del sistema y de las secciones
+    generales que el Administrador también habilita por rol.
 
     El código MOD01…MOD10 se usa en el menú, en los mixins de acceso y en la
     tabla permiso_rol_modulo para habilitar o inhabilitar módulos por rol.
+    `SEC_PANEL` no es un módulo: es el panel principal, que se habilita o
+    inhabilita por rol en la misma matriz (decisión del usuario, 7-oct-2026).
     """
+
+    SEC_PANEL = "PANEL"
 
     MOD01_CLIENTES = "MOD01"
     MOD02_CALENDARIO = "MOD02"
@@ -66,6 +71,7 @@ class Modulo(models.Model):
         (MOD08_EQUIPO, "Gestión de equipo y roles"),
         (MOD09_EXPEDIENTE, "Expediente y bitácora por cliente"),
         (MOD10_REPORTES, "Reportes y análisis"),
+        (SEC_PANEL, "Panel principal"),
     ]
 
     id_modulo = models.AutoField(primary_key=True)

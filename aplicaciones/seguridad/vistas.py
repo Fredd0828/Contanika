@@ -60,7 +60,7 @@ class PanelView(LoginRequiredMixin, TemplateView):
     template_name = "seguridad/panel.html"
 
     def dispatch(self, request, *args, **kwargs):
-        # Quien no ve el panel (Contador Junior) empieza en su primer módulo.
+        # Quien tiene el panel inhabilitado para su rol empieza en su primer módulo.
         if request.user.is_authenticated:
             inicio = menu.ruta_de_inicio(request.user)
             if inicio != menu.RUTA_PANEL:

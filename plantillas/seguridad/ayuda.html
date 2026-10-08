@@ -3,7 +3,7 @@
 
 {% block contenido %}
 <div class="row g-3">
-    <div class="col-lg-8">
+    <div class="col-12">
         <div class="panel">
             <div class="ph">
                 <div>
@@ -16,6 +16,7 @@
                 <i class="bi bi-search"></i>
                 <input type="search" id="buscarGuia" placeholder="Buscar un proceso: cliente, abono, vencimiento…" aria-label="Buscar una guía" autocomplete="off">
             </div>
+            <div class="ay-grupos">
             {% for grupo in grupos_guias %}
             <section class="ay-grupo">
                 <h3 class="ay-grupo-titulo">{{ grupo.nombre }}</h3>
@@ -32,13 +33,17 @@
                 </div>
             </section>
             {% endfor %}
+            </div>
             <p class="text-muted small mb-0 d-none" id="sinGuias">Ninguna guía coincide con la búsqueda.</p>
             {% else %}
             <p class="text-muted small mb-0">Su rol no tiene procesos habilitados. Consulte al Administrador.</p>
             {% endif %}
         </div>
+    </div>
 
-        <div class="panel mt-3">
+
+    <div class="col-lg-4 col-md-12">
+        <div class="panel h-100">
             <div class="ph"><div class="ph-title"><i class="bi bi-question-circle"></i> Guía rápida de los módulos</div></div>
             <div class="accordion" id="guiaModulos">
                 <div class="accordion-item">
@@ -103,8 +108,11 @@
                 </div>
             </div>
         </div>
+    </div>
 
-        <div class="panel mt-3">
+
+    <div class="col-lg-4 col-md-6">
+        <div class="panel h-100">
             <div class="ph"><div class="ph-title"><i class="bi bi-chat-square-text"></i> Preguntas frecuentes</div></div>
             <dl class="mb-0 small">
                 <dt>Olvidé mi contraseña, ¿qué hago?</dt>
@@ -123,8 +131,8 @@
         </div>
     </div>
 
-    <div class="col-lg-4">
-        <div class="panel">
+    <div class="col-lg-4 col-md-6">
+        <div class="panel h-100">
             <div class="ph"><div class="ph-title"><i class="bi bi-headset"></i> Soporte del despacho</div></div>
             {% if despacho %}
             <dl class="row mb-0 small">
