@@ -28,6 +28,12 @@
                     <input type="password" name="{{ form.password.html_name }}" id="{{ form.password.id_for_label }}"
                            autocomplete="current-password" required>
                 </div>
+                {# Campo señuelo contra robots: las personas no lo ven ni lo alcanzan con el teclado. #}
+                <div class="campo-senuelo" aria-hidden="true">
+                    <label for="{{ form.sitio_web.id_for_label }}">No diligencie este campo</label>
+                    <input type="text" name="{{ form.sitio_web.html_name }}" id="{{ form.sitio_web.id_for_label }}"
+                           tabindex="-1" autocomplete="off">
+                </div>
                 <button type="submit" class="login-btn"><i class="bi bi-box-arrow-in-right"></i> Iniciar sesión</button>
             </form>
         </div>

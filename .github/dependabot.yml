@@ -1,0 +1,20 @@
+# Escaneo automático de dependencias (pr01, control 20).
+# Dependabot revisa cada semana las librerías de Python y las acciones de
+# GitHub, y abre un pull request cuando hay una versión que corrige una
+# vulnerabilidad o una actualización disponible.
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels:
+      - dependencias
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    labels:
+      - dependencias

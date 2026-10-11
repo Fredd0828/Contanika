@@ -65,6 +65,8 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "axes.middleware.AxesMiddleware",
+    "aplicaciones.comunes.middleware.CabecerasSeguridadMiddleware",
+    "aplicaciones.comunes.middleware.MonitorConsultasMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -186,4 +188,117 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 25,
+    # Límite de peticiones por usuario y por visitante sin sesión (pr01).
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {"anon": "30/minute", "user": "300/minute"},
+}
+
+# ===============================================================
+# Endurecimiento de seguridad (pr01), común a todos los entornos.
+# Lo que exige HTTPS (redirección, HSTS, cookies seguras) está en produccion.py.
+# ===============================================================
+
+# --- Cookies de sesión y CSRF ---
+# HttpOnly: JavaScript no puede leer la cookie de sesión. SameSite: el
+# navegador no la envía en peticiones que nacen en otro sitio.
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SAMESITE = "Lax"
+# La sesión se cierra sola tras este tiempo sin uso y al cerrar el navegador.
+SESSION_COOKIE_AGE = config("SESION_DURACION_HORAS", default=8, cast=int) * 60 * 60
+SESSION_SAVE_EVERY_REQUEST = True
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
+# --- Cabeceras de seguridad ---
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = "same-origin"
+SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
+X_FRAME_OPTIONS = "DENY"
+
+# Política de seguridad de contenido (la envía CabecerasSeguridadMiddleware).
+# 'unsafe-inline' se mantiene porque las plantillas llevan scripts y estilos
+# en línea; aun así solo se carga código del propio sitio y de jsDelivr.
+_CDN = "https://cdn.jsdelivr.net"
+CSP_DIRECTIVAS = {
+    "default-src": ["'self'"],
+    "script-src": ["'self'", "'unsafe-inline'", _CDN],
+    "style-src": ["'self'", "'unsafe-inline'", _CDN, "https://fonts.googleapis.com"],
+    "font-src": ["'self'", "data:", _CDN, "https://fonts.gstatic.com"],
+    "img-src": ["'self'", "data:", "blob:"],
+    "connect-src": ["'self'"],
+    "object-src": ["'none'"],
+    "base-uri": ["'self'"],
+    "frame-ancestors": ["'none'"],
+    # WhatsApp: «Abrir WhatsApp» envía un formulario que redirige a wa.me.
+    "form-action": ["'self'", "https://wa.me", "https://api.whatsapp.com"],
+}
+# El sistema no usa cámara, micrófono, ubicación ni pagos: se le niegan al navegador.
+POLITICA_PERMISOS = "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+
+# --- Subida de archivos ---
+# Tope del cuerpo de una petición sin archivos y del total de campos de un formulario.
+DATA_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 2000
+DATA_UPLOAD_MAX_NUMBER_FILES = 10
+# Los archivos subidos quedan sin permiso de ejecución.
+FILE_UPLOAD_PERMISSIONS = 0o640
+FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o750
+
+# --- Panel de administración de Django ---
+# En producción conviene publicarlo en una dirección que no sea la habitual
+# (RUTA_ADMIN en el .env, terminada en «/»), para que los robots no lo encuentren.
+RUTA_ADMIN = config("RUTA_ADMIN", default="admin/")
+
+# --- Límite de peticiones ---
+# Tras el proxy del servidor, la IP real del visitante llega en X-Forwarded-For.
+CONFIAR_EN_PROXY = config("CONFIAR_EN_PROXY", default=False, cast=bool)
+
+# --- Monitoreo de consultas a la base de datos ---
+BD_CONSULTA_LENTA_MS = config("BD_CONSULTA_LENTA_MS", default=500, cast=int)
+BD_MAXIMO_CONSULTAS = config("BD_MAXIMO_CONSULTAS", default=150, cast=int)
+
+# --- Registros (carpeta registros/, fuera del repositorio) ---
+RUTA_REGISTROS = RUTA_BASE / "registros"
+RUTA_REGISTROS.mkdir(exist_ok=True)
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "detallado": {"format": "{asctime} {levelname} {name}: {message}", "style": "{"},
+    },
+    "handlers": {
+        "consola": {"class": "logging.StreamHandler", "formatter": "detallado"},
+        "seguridad": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": RUTA_REGISTROS / "seguridad.log",
+            "maxBytes": 2 * 1024 * 1024,
+            "backupCount": 5,
+            "formatter": "detallado",
+            "encoding": "utf-8",
+            "delay": True,
+        },
+        "consultas": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": RUTA_REGISTROS / "consultas.log",
+            "maxBytes": 2 * 1024 * 1024,
+            "backupCount": 5,
+            "formatter": "detallado",
+            "encoding": "utf-8",
+            "delay": True,
+        },
+    },
+    "loggers": {
+        # Peticiones sospechosas, CSRF rechazado y hosts no permitidos.
+        "django.security": {"handlers": ["seguridad", "consola"], "level": "WARNING", "propagate": False},
+        # Respuestas 4xx y 5xx (accesos denegados y errores).
+        "django.request": {"handlers": ["seguridad", "consola"], "level": "WARNING", "propagate": False},
+        # Intentos fallidos y bloqueos del inicio de sesión.
+        "axes": {"handlers": ["seguridad"], "level": "WARNING", "propagate": False},
+        # Consultas lentas y peticiones con demasiadas consultas.
+        "contanika.consultas": {"handlers": ["consultas", "consola"], "level": "WARNING", "propagate": False},
+    },
 }

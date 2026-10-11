@@ -160,13 +160,18 @@ de navegación: una ruta nueva queda cubierta sin escribir su prueba.
 | Enlace público del PDF | Enlace firmado con vencimiento a 30 días; es la única ruta pública además del inicio de sesión | `pruebas/finanzas/test_vistas_envios.py`, `test_envios.py`, `test_seguridad_transversal.py` |
 | Datos personales (Ley 1581) | Acceso por sesión y rol; credenciales cifradas; descargas registradas | `pruebas/reportes/test_vistas.py` |
 
+El endurecimiento posterior (cabeceras, política de contenido, archivos protegidos, cookies, robots,
+límite de peticiones, monitoreo de consultas, secretos y scripts de la base de datos) está descrito
+control por control en [PR01_SEGURIDAD.md](PR01_SEGURIDAD.md) y se prueba en
+`pruebas/seguridad/test_pr01.py`.
+
 ## 3. Resultado del pase de calidad
 
 Se completa con cada pase (`bash scripts/calidad.sh`).
 
 | Verificación | Resultado al 7-oct-2026 |
 |---|---|
-| Pruebas automatizadas | 1169 pruebas, todas en verde |
+| Pruebas automatizadas | 1225 pruebas, todas en verde |
 | Cobertura | 96 % del código de `aplicaciones` (meta: 70 % por módulo y 85 % en servicios críticos); el archivo más bajo está en 77 % |
 | `ruff` (estilo y formato) | Sin hallazgos |
 | `bandit` (seguridad del código) | Sin hallazgos |
@@ -177,4 +182,4 @@ Se completa con cada pase (`bash scripts/calidad.sh`).
 ## 4. Pendiente de la Fase 4
 
 - Pruebas de aceptación con Paula Andrea (diciembre).
-- Endurecimiento de seguridad «pr01» (20 controles), en espera del aviso del usuario.
+- De «pr01»: los pasos que se aplican en el servidor al desplegar (roles de base de datos, RLS, secretos nuevos y HTTPS).

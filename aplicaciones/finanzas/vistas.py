@@ -25,6 +25,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.generic import ListView, View
 
 from aplicaciones.clientes.models import Cliente
+from aplicaciones.comunes.vistas import LimitePeticionesMixin
 from aplicaciones.seguridad.models import Modulo, Rol
 from aplicaciones.seguridad.permisos import ModuloHabilitadoMixin, RolRequeridoMixin
 
@@ -707,12 +708,15 @@ class EjecutarProcesoCobroView(ModuloHabilitadoMixin, RolRequeridoMixin, View):
         return redirect("finanzas:configuracion")
 
 
-class PdfPublicoView(View):
+class PdfPublicoView(LimitePeticionesMixin, View):
     """
     PDF de la cuenta de cobro para el cliente, sin sesión, por el enlace
     firmado que recibe en WhatsApp o en el recordatorio. Un token alterado o
-    vencido responde 404.
+    vencido responde 404. Como es pública, cada dirección IP tiene un tope de
+    peticiones por minuto (429 al pasarse), para que nadie pruebe enlaces en masa.
     """
+
+    limite_por_minuto = 20
 
     def get(self, request, token):
         cuenta = envios.cuenta_desde_token(token)

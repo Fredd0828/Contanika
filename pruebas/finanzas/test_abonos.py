@@ -45,8 +45,10 @@ def test_disparador_calcula_saldos_ignorando_los_valores_enviados(cuenta_cliente
 
 
 def test_abonos_sucesivos_encadenan_saldos_y_estados(
-    cuenta_cliente, usuario_administrador, metodo_transferencia
+    generar_cuenta, cliente, usuario_administrador, metodo_transferencia
 ):
+    # El disparador compara con la fecha real: la cuenta debe estar al día el día que corra la prueba.
+    cuenta_cliente = generar_cuenta(cliente, fecha_vencimiento_pago=timezone.localdate() + timedelta(days=30))
     primero = _abonar(cuenta_cliente, "400000", usuario_administrador, metodo_transferencia)
     assert (primero.saldo_anterior, primero.saldo_resultante) == (Decimal("1000000"), Decimal("600000"))
     assert cuenta_cliente.estado_pago == CuentaCobro.ABONADA

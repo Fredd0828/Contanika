@@ -17,9 +17,9 @@ Contexto técnico y convenciones de trabajo para agentes de código que colabore
 | Ruta del proyecto | `/home/fredd/documentos/ubuntu/contanika/codigo/` |
 | Servidor local | `.venv/bin/python gestionar.py runserver 127.0.0.1:8000` |
 | Calidad | `bash scripts/calidad.sh` |
-| Credenciales dev | `paula@befrec.co` / `Contanika2026*` |
+| Credenciales dev | En `CREDENCIALES_PRUEBA.md` (no se versiona). Nunca escribir contraseñas en archivos del repositorio |
 | Repositorio | https://github.com/fredd0828/Contanika |
-| Rama de trabajo | `feature/fase-4-calidad` |
+| Rama de trabajo | `feature/pr01-seguridad` |
 | Rama principal | `main` |
 
 **Nota Git:** una rama por módulo, creada a partir de la última rama de trabajo (no siempre desde
@@ -164,6 +164,30 @@ models.py → servicios.py → selectores.py → formularios.py → vistas.py �
 - Inyección SQL: usar ORM; nunca concatenar SQL manualmente.
 - Credenciales: cifradas con Fernet (`CREDENCIAL_CLAVE_CIFRADO` en `.env`).
 - Fuerza bruta: django-axes activo.
+- **pr01 (endurecimiento, 7-oct-2026)** — detalle en `documentacion/PR01_SEGURIDAD.md`:
+  - Cabeceras: `comunes.middleware.CabecerasSeguridadMiddleware` envía la CSP
+    (`CSP_DIRECTIVAS` en `settings/base.py`). **Al cargar algo de un dominio
+    nuevo (script, estilo, fuente, imagen, destino de un formulario), agregarlo
+    a `CSP_DIRECTIVAS`** o el navegador lo bloquea. Todo lo que venga de un CDN
+    lleva `integrity` (SRI) y `crossorigin`; al cambiar de versión, recalcular
+    la huella (`curl -s URL | openssl dgst -sha384 -binary | openssl base64 -A`).
+  - Archivos subidos: no hay ruta estática de `media/`. `comunes.vistas.MediaProtegidaView`
+    solo entrega fotos, firmas y membrete a quien corresponde. Un archivo nuevo
+    que deba verse por dirección se autoriza ahí; los demás se descargan por
+    una vista del módulo que valide rol y cliente.
+  - Subidas: validar con `comunes.formularios` (`validar_archivo_adjunto`,
+    `validar_excel_subido`, `validar_imagen_subida`), que comprueban extensión,
+    tamaño y que el contenido sea del formato que dice la extensión.
+  - Rutas públicas (sin sesión): solo inicio de sesión, `robots.txt` y el PDF
+    firmado. Una nueva debe heredar de `comunes.vistas.LimitePeticionesMixin` y
+    agregarse a `RUTAS_PUBLICAS` del mapa de navegación.
+  - Registros en `registros/` (no se versionan): `seguridad.log` y
+    `consultas.log` (consultas lentas, `MonitorConsultasMiddleware`).
+  - Producción (`settings/produccion.py`) no arranca con secretos de
+    desarrollo ni con `BD_USUARIO=postgres`. Scripts de BD para el despliegue:
+    `scripts/bd/03_rol_aplicacion.sql` y `04_activar_rls.sql`.
+  - Nunca escribir contraseñas ni claves en archivos versionados: hay una
+    prueba que lo impide.
 - Variables sensibles: solo en `.env`, nunca en el código.
 
 ---

@@ -4,7 +4,7 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 
-from aplicaciones.comunes.formularios import FormularioBase, ModeloFormularioBase
+from aplicaciones.comunes.formularios import FormularioBase, ModeloFormularioBase, validar_excel_subido
 
 from .models import (
     AnotacionCalendario,
@@ -59,12 +59,7 @@ class ImportarDianForm(FormularioBase):
 
     def clean_archivo(self):
         """Valida la extensión y el tamaño antes de procesar el archivo."""
-        archivo = self.cleaned_data["archivo"]
-        if not archivo.name.lower().endswith(".xlsx"):
-            raise forms.ValidationError("El archivo debe estar en formato Excel (.xlsx).")
-        if archivo.size > 5 * 1024 * 1024:
-            raise forms.ValidationError("El archivo no debe superar los 5 MB.")
-        return archivo
+        return validar_excel_subido(self.cleaned_data["archivo"])
 
 
 class VencimientoManualForm(ModeloFormularioBase):

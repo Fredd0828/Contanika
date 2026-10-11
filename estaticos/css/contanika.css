@@ -2119,3 +2119,13 @@ a.cal-ev:hover {
 .ay-notas li + li {
     margin-top: 8px;
 }
+
+/* ══════════ SEGURIDAD: campo señuelo contra robots ══════════ */
+/* Fuera de la pantalla (no `display: none`, que algunos robots detectan). */
+.campo-senuelo {
+    position: absolute;
+    left: -10000px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}

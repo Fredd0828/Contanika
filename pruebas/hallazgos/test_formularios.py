@@ -1,5 +1,7 @@
 """Pruebas de los formularios del módulo 5: hallazgos y revisiones contables."""
 
+from datetime import date
+
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 
@@ -17,6 +19,16 @@ def test_hallazgo_form_restringe_cliente_para_junior(usuario_junior, cliente, cl
 def test_hallazgo_form_admin_ve_todos_los_clientes(usuario_administrador, cliente, cliente_junior):
     clientes = set(HallazgoForm(usuario=usuario_administrador).fields["cliente"].queryset)
     assert {cliente, cliente_junior} <= clientes
+
+
+def test_hallazgo_form_muestra_las_fechas_del_periodo_al_editar(usuario_administrador):
+    """Un campo `type="date"` solo acepta año-mes-día; con otro formato el navegador lo deja vacío."""
+    formulario = HallazgoForm(
+        usuario=usuario_administrador,
+        initial={"fecha_inicio_periodo": date(2026, 8, 1), "fecha_fin_periodo": date(2026, 8, 31)},
+    )
+    assert 'value="2026-08-01"' in str(formulario["fecha_inicio_periodo"])
+    assert 'value="2026-08-31"' in str(formulario["fecha_fin_periodo"])
 
 
 def test_cambiar_estado_form_exige_observacion_para_cerrar():

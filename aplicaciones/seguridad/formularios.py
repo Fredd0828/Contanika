@@ -2,9 +2,14 @@
 
 from django import forms
 from django.contrib.auth import password_validation
-from django.contrib.auth.forms import PasswordChangeForm
+from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
 
-from aplicaciones.comunes.formularios import FormularioBase, MixinEstilosBootstrap, ModeloFormularioBase
+from aplicaciones.comunes.formularios import (
+    FormularioBase,
+    MixinEstilosBootstrap,
+    ModeloFormularioBase,
+    validar_imagen_subida,
+)
 
 from .models import Rol, Usuario
 
@@ -12,10 +17,27 @@ TAMANO_MAXIMO_IMAGEN = 2 * 1024 * 1024
 
 
 def _validar_imagen(archivo, descripcion):
-    """El tipo lo valida `ImageField`; aquí se limita el tamaño."""
-    if archivo and hasattr(archivo, "size") and archivo.size > TAMANO_MAXIMO_IMAGEN:
-        raise forms.ValidationError(f"La imagen de {descripcion} no debe superar los 2 MB.")
-    return archivo
+    """`ImageField` comprueba que sea una imagen real; aquí, el formato y el tamaño."""
+    return validar_imagen_subida(archivo, descripcion, TAMANO_MAXIMO_IMAGEN)
+
+
+class InicioSesionForm(AuthenticationForm):
+    """
+    Inicio de sesión con trampa para robots (pr01).
+
+    `sitio_web` es un campo señuelo: está oculto para las personas, pero los
+    robots que rellenan todos los campos lo completan. Si llega con valor, el
+    intento se rechaza con el mismo mensaje que una contraseña errada, sin
+    comprobar las credenciales. El bloqueo por intentos fallidos lo hace
+    django-axes.
+    """
+
+    sitio_web = forms.CharField(required=False)
+
+    def clean(self):
+        if self.cleaned_data.get("sitio_web"):
+            raise self.get_invalid_login_error()
+        return super().clean()
 
 
 def campo_confirmar_administrador():

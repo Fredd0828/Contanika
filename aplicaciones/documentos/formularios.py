@@ -4,13 +4,19 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.forms import inlineformset_factory
 
-from aplicaciones.comunes.formularios import FormularioBase, ModeloFormularioBase
+from aplicaciones.comunes.formularios import (
+    FormularioBase,
+    ModeloFormularioBase,
+    validar_imagen_subida,
+)
 from aplicaciones.seguridad.models import ConfiguracionDespacho
 
 from . import selectores
 from .models import CampoPlantilla, Documento, Plantilla
 
 Usuario = get_user_model()
+
+TAMANO_MAXIMO_IMAGEN = 2 * 1024 * 1024
 
 
 class GenerarDocumentoForm(ModeloFormularioBase):
@@ -135,15 +141,12 @@ class MiFirmaForm(ModeloFormularioBase):
         model = Usuario
         fields = ["firma", "identificacion", "numero_tarjeta_profesional"]
         widgets = {
-            "firma": forms.ClearableFileInput(attrs={"accept": "image/*"}),
+            "firma": forms.ClearableFileInput(attrs={"accept": ".jpg,.jpeg,.png"}),
         }
 
     def clean_firma(self):
-        """Valida el tamaño de la imagen antes de guardarla (el tipo lo valida `ImageField`)."""
-        archivo = self.cleaned_data.get("firma")
-        if archivo and hasattr(archivo, "size") and archivo.size > 2 * 1024 * 1024:
-            raise forms.ValidationError("La imagen de la firma no debe superar los 2 MB.")
-        return archivo
+        """Solo JPG o PNG de hasta 2 MB (que sea una imagen real lo valida `ImageField`)."""
+        return validar_imagen_subida(self.cleaned_data.get("firma"), "la firma", TAMANO_MAXIMO_IMAGEN)
 
 
 class DatosDespachoForm(ModeloFormularioBase):
@@ -153,15 +156,12 @@ class DatosDespachoForm(ModeloFormularioBase):
         model = ConfiguracionDespacho
         fields = ["nombre_despacho", "nit_despacho", "membrete", "ciudad", "direccion", "telefono", "correo"]
         widgets = {
-            "membrete": forms.ClearableFileInput(attrs={"accept": "image/*"}),
+            "membrete": forms.ClearableFileInput(attrs={"accept": ".jpg,.jpeg,.png"}),
         }
 
     def clean_membrete(self):
-        """Valida el tamaño de la imagen antes de guardarla (el tipo lo valida `ImageField`)."""
-        archivo = self.cleaned_data.get("membrete")
-        if archivo and hasattr(archivo, "size") and archivo.size > 2 * 1024 * 1024:
-            raise forms.ValidationError("La imagen del membrete no debe superar los 2 MB.")
-        return archivo
+        """Solo JPG o PNG de hasta 2 MB (que sea una imagen real lo valida `ImageField`)."""
+        return validar_imagen_subida(self.cleaned_data.get("membrete"), "el membrete", TAMANO_MAXIMO_IMAGEN)
 
 
 class FiltroHistoricoForm(FormularioBase):
