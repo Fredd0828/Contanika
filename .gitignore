@@ -21,6 +21,7 @@ bandit_reporte.json
 estaticos_recolectados/
 media/
 *.log
+registros/
 
 # Sistema operativo / editor
 .DS_Store

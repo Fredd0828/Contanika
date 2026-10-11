@@ -112,8 +112,15 @@ def test_el_inicio_de_sesion_normal_sigue_funcionando(client, usuario_junior):
 
 
 def test_robots_txt_pide_no_recorrer_el_sistema(client):
+    """Los buscadores solo pueden leer la página web de inicio; el resto del sistema, no."""
     respuesta = client.get("/robots.txt")
-    assert respuesta.status_code == 200 and "Disallow: /" in respuesta.content.decode()
+    assert respuesta.status_code == 200
+    assert respuesta.content.decode().splitlines() == ["User-agent: *", "Allow: /$", "Disallow: /"]
+
+
+def test_solo_la_pagina_web_de_inicio_se_deja_indexar(client):
+    assert client.get(reverse("seguridad:inicio")).headers["X-Robots-Tag"] == "index, follow"
+    assert client.get(reverse("seguridad:iniciar_sesion")).headers["X-Robots-Tag"] == "noindex, nofollow"
 
 
 # ---------------------------------------------------------------------------

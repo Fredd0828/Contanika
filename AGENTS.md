@@ -182,7 +182,11 @@ models.py → servicios.py → selectores.py → formularios.py → vistas.py �
     `seguridad:inicio`), el inicio de sesión, `robots.txt` y el PDF firmado.
     La página de inicio presenta la plataforma y lleva al inicio de sesión;
     no consulta la base de datos ni muestra datos del despacho (su calendario
-    es un dibujo de ejemplo). El panel quedó en `/panel/`. Estilos `.pw-*`. Una nueva debe heredar de `comunes.vistas.LimitePeticionesMixin` y
+    es un dibujo de ejemplo). El panel quedó en `/panel/`. Estilos `.pw-*`.
+    Es la única página que los buscadores pueden indexar (`robots.txt` y su
+    propia cabecera `X-Robots-Tag`); el resto del sistema sigue con «noindex».
+    La marca es solo «Contanika»: ni la página web ni el inicio de sesión
+    nombran al despacho que usa la plataforma. Una nueva debe heredar de `comunes.vistas.LimitePeticionesMixin` y
     agregarse a `RUTAS_PUBLICAS` del mapa de navegación.
   - Registros en `registros/` (no se versionan): `seguridad.log` y
     `consultas.log` (consultas lentas, `MonitorConsultasMiddleware`).

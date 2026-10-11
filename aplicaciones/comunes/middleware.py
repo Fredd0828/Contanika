@@ -37,7 +37,8 @@ class CabecerasSeguridadMiddleware:
         respuesta = self.get_response(request)
         respuesta.headers.setdefault("Content-Security-Policy", self.csp)
         respuesta.headers.setdefault("Permissions-Policy", settings.POLITICA_PERMISOS)
-        # Es un sistema interno: ninguna de sus páginas debe aparecer en buscadores.
+        # Las páginas del sistema no deben aparecer en buscadores. La página web
+        # de inicio trae su propia cabecera y por eso no se le cambia.
         respuesta.headers.setdefault("X-Robots-Tag", "noindex, nofollow")
         return respuesta
 

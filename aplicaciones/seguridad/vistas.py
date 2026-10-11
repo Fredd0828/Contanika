@@ -51,7 +51,10 @@ class PaginaInicioView(LimitePeticionesMixin, TemplateView):
     def get(self, request, *args, **kwargs):
         if request.user.is_authenticated:
             return redirect("seguridad:panel")
-        return super().get(request, *args, **kwargs)
+        respuesta = super().get(request, *args, **kwargs)
+        # Única página que puede aparecer en buscadores (el resto lleva «noindex»).
+        respuesta.headers["X-Robots-Tag"] = "index, follow"
+        return respuesta
 
 
 class IniciarSesionView(LoginView):

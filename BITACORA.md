@@ -2049,6 +2049,11 @@ abre el inicio de sesión y, con las credenciales, se llega al panel.
 `pruebas/seguridad` en verde (525 pruebas), 3 nuevas en `test_vistas.py`.
 Revisada a 360, 768, 1024 y 1440 px.
 
-### Pendientes
-- `robots.txt` sigue pidiendo a los buscadores no recorrer el sitio: la
-  página no aparecerá en Google mientras no se cambie.
+### Ajustes posteriores (mismo día)
+- La marca es solo «Contanika»: se quitó «Befrec Y Asociados SAS, Bogotá D.C.»
+  de la página web y del inicio de sesión (el despacho es un usuario de la
+  plataforma).
+- Buscadores: `robots.txt` deja leer solo la página web de inicio (`Allow: /$`)
+  y esa página envía `X-Robots-Tag: index, follow`; el resto sigue con
+  «noindex».
+- `registros/` agregado al `.gitignore`.

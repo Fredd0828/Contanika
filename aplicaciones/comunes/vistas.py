@@ -95,7 +95,12 @@ def direccion_ip(request):
 
 
 class RobotsView(View):
-    """`robots.txt`: pide a los buscadores y rastreadores que no recorran el sistema."""
+    """
+    `robots.txt`: pide a los buscadores y rastreadores que no recorran el sistema.
+
+    Solo se les deja leer la página web de inicio (`/`), que es pública y no
+    muestra datos del despacho.
+    """
 
     def get(self, request):
-        return HttpResponse("User-agent: *\nDisallow: /\n", content_type="text/plain")
+        return HttpResponse("User-agent: *\nAllow: /$\nDisallow: /\n", content_type="text/plain")
