@@ -177,7 +177,10 @@ def seccion_tareas(usuario, hoy):
     base = tareas_visibles(usuario)
     conteo = dict(base.order_by().values_list("estado").annotate(cantidad=Count("pk")))
     por_estado = _anchos(
-        [{"estado": estado, "cantidad": conteo.get(estado, 0)} for estado, _ in Tarea.OPCIONES_ESTADO]
+        [
+            {"estado": estado, "cantidad": conteo.get(estado, 0), "terminado": estado == Tarea.TERMINADO}
+            for estado, _ in Tarea.OPCIONES_ESTADO
+        ]
     )
     total = sum(fila["cantidad"] for fila in por_estado)
     terminadas = conteo.get(Tarea.TERMINADO, 0)
@@ -265,12 +268,14 @@ def seccion_finanzas(usuario, hoy):
                 {
                     "nombre": "Facturado",
                     "valores": [float(mes["facturado"]) for mes in filas_meses],
-                    "color": paleta.TEAL,
+                    "color": paleta.TEAL_CLARO,
                 },
                 {
+                    # El naranja queda para lo que está por vencer: aquí lo cobrado
+                    # es la parte sólida de lo facturado.
                     "nombre": "Cobrado",
                     "valores": [float(mes["cobrado"]) for mes in filas_meses],
-                    "color": paleta.NARANJA,
+                    "color": paleta.TEAL,
                 },
             ],
         },

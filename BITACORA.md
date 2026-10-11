@@ -1948,3 +1948,107 @@ quedan las 53 tablas con RLS, el sistema funciona con `contanika_app` y
   Falta el proyecto de Supabase y el servidor donde correrá el sistema.
 - Mejora futura: pasar los scripts en línea a archivos para quitar
   `'unsafe-inline'` de la CSP.
+
+## Domingo 11 de octubre de 2026 — Panel redistribuido y menú lateral plegable
+
+Rama `feature/panel-distribucion`, creada desde `feature/pr01-seguridad`.
+Pedido del usuario: otra distribución del panel, menú lateral plegable y un
+aspecto más profesional cambiando dimensiones, sin tocar los colores.
+
+- **Panel:** las seis cifras en una sola fila arriba; en medio, Vencimientos y
+  Tareas; abajo, Finanzas, Hallazgos y Carga del equipo en una misma línea.
+  Dentro de Vencimientos y Finanzas el gráfico y la lista van lado a lado, con
+  lo que las tarjetas de una misma fila quedan de altura pareja. Tarjetas con
+  esquinas y márgenes más amplios, cifras más grandes, entrada escalonada y
+  barras que crecen al cargar (se omite si el equipo pide menos movimiento).
+- **Menú lateral:** el botón de la barra superior lo pliega a una franja de
+  íconos y el navegador recuerda la elección; el nombre de cada entrada sale al
+  pasar el cursor. En teléfono y tableta sigue siendo un cajón, ahora con velo
+  y cierre con la tecla Escape.
+- **Menú en ventanas bajas:** al reducir la altura aparecía la barra de
+  desplazamiento gris del navegador sobre el menú oscuro. Ahora el menú se
+  compacta para caber (comprobado hasta 600 px de alto, plegado y desplegado)
+  y, si la ventana es aún más baja, la barra es delgada y del tono del menú.
+- **Degradados:** a pedido del usuario, un único degradado del navy al teal en
+  la franja superior de tarjetas y secciones, en las barras y en los
+  medidores. Una primera versión con más degradados (un tinte por tarjeta,
+  íconos de color sólido) no le pareció armoniosa y se descartó.
+- Sin cambios en la base de datos ni en los colores.
+
+### Cómo verificarlo (entorno local)
+Abrir el panel y pulsar el botón de tres líneas junto al saludo: el menú se
+pliega y el tablero se reacomoda. Recargar: sigue plegado.
+
+### Resultado de las pruebas
+Revisado en Chrome a 390, 768, 1024, 1280 y 1440 px, con el menú plegado y
+desplegado: sin desborde horizontal ni cifras cortadas. Clientes, Tareas y un
+reporte no se descuadran con el menú plegado. Prueba nueva en
+`pruebas/seguridad/test_panel.py`.
+
+## Domingo 11 de octubre de 2026 — Panel: mejor uso de los colores
+
+Misma rama (`feature/panel-distribucion`). Pedido del usuario: usar mejor los
+colores del panel con la misma paleta y un aspecto más profesional. Se trabajó
+primero sobre una maqueta, en tres rondas, y se aplicó la versión aprobada.
+
+- **Resumen del despacho:** las seis cifras van en un bloque oscuro (navy a
+  teal oscuro), el único degradado del tablero. Todas llevan el mismo ícono;
+  el estado de cada una va en un punto de color junto al detalle, con leyenda
+  Vencido / Próximo / Al día.
+- **Encabezados de sección:** banda crema de borde a borde con el ícono en un
+  recuadro teal. Se quitó la raya degradada de cada tarjeta.
+- **Estados:** rojo solo para lo vencido, atrasado o en mora; naranja para lo
+  que está por vencer; verde para lo cumplido. En las listas van como punto de
+  color y texto oscuro, sin recuadro. Las etiquetas rojas y naranjas usan
+  texto marrón para que se lean bien. La fecha de cada vencimiento toma el
+  tinte de su urgencia y la cifra «En mora» se resalta cuando hay mora.
+- **Barras y medidores:** color liso en vez de degradado; «Terminado» y el
+  avance del tablero en verde; la sobrecarga del equipo en rojo.
+- **Gráfico de Finanzas:** Facturado en teal claro y Cobrado en teal (antes
+  teal y naranja), para que el naranja signifique una sola cosa.
+- Sin cambios en la base de datos. Color nuevo en `paleta.py`: `TEAL_CLARO`.
+
+### Cómo verificarlo (entorno local)
+Abrir el panel como Administrador: resumen oscuro arriba, encabezados crema y
+los estados con su punto de color.
+
+### Resultado de las pruebas
+`pruebas/seguridad/test_panel.py` y `pruebas/comunes/test_paleta.py` en verde
+(49 pruebas). Revisado con datos de ejemplo a 390, 768, 1024 y 1440 px.
+
+### Pendientes
+- Decidir si la prioridad Baja pasa a gris también en el Kanban y en
+  Hallazgos (hoy solo en el panel).
+
+## Domingo 11 de octubre de 2026 — Página web de inicio (pública)
+
+Pedida por el usuario: una página web con un botón de ingreso que lleva al
+inicio de sesión y, tras iniciar sesión, al panel.
+
+- **Ruta nueva** `/` (`seguridad:inicio`, `PaginaInicioView`): pública, con
+  límite de peticiones por minuto. Con sesión abierta redirige al panel.
+- **El panel se mudó** de `/` a `/panel/` (`seguridad:panel` conserva el
+  nombre, así que enlaces y redirecciones siguen funcionando).
+- **Contenido:** presentación, cifras, los diez módulos en tarjetas, «Cómo
+  funciona» (calendario y tablero de tareas), los tres roles, seguridad y los
+  pasos para ingresar. No consulta la base de datos; las pantallas que
+  aparecen (panel, calendario, tablero, cartera) son dibujos de ejemplo hechos
+  en HTML y CSS, porque la CSP no deja cargar imágenes de otros sitios.
+- **Diseño** (segunda versión, pedida por el usuario: más color, degradados,
+  módulos, secciones e imágenes): misma paleta y fuentes (Montserrat y Open
+  Sans), con dos degradados, el oscuro (navy → teal oscuro) y el naranja del
+  botón de ingreso. Estilos `.pw-*` en `contanika.css`. El inicio de sesión
+  ganó un enlace para volver.
+- Sin cambios en la base de datos. Mapa de navegación regenerado.
+
+### Cómo verificarlo (entorno local)
+Sin sesión, abrir `http://127.0.0.1:8000/`: aparece la página web. «Ingresar»
+abre el inicio de sesión y, con las credenciales, se llega al panel.
+
+### Resultado de las pruebas
+`pruebas/seguridad` en verde (525 pruebas), 3 nuevas en `test_vistas.py`.
+Revisada a 360, 768, 1024 y 1440 px.
+
+### Pendientes
+- `robots.txt` sigue pidiendo a los buscadores no recorrer el sitio: la
+  página no aparecerá en Google mientras no se cambie.

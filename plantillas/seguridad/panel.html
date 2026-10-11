@@ -4,28 +4,44 @@
 {% block titulo %}Panel principal{% endblock %}
 
 {% block contenido %}
+<div class="pp-tablero">
 {% if tablero.indicadores %}
-<div class="pp-kpis">
-    {% for indicador in tablero.indicadores %}
-    <a class="pp-kpi pp-tono-{{ indicador.tono }}" href="{{ indicador.url }}">
-        <div class="pp-kpi-cabeza">
-            <div class="pp-kpi-etq">{{ indicador.etiqueta }}</div>
-            <div class="pp-kpi-icono"><i class="bi {{ indicador.icono }}"></i></div>
+{# Resumen: el único bloque oscuro del tablero. El estado de cada cifra va en el punto de su detalle. #}
+<section class="pp-resumen" aria-label="Resumen del despacho">
+    <div class="pp-resumen-cabeza">
+        <div>
+            <div class="pp-resumen-titulo">Resumen del despacho</div>
+            <div class="pp-resumen-sub">Lo que pide atención va marcado con color</div>
         </div>
-        <div class="pp-kpi-num"{% if indicador.exacto %} title="{{ indicador.exacto }}"{% endif %}>{{ indicador.valor }}</div>
-        <div class="pp-kpi-det">{{ indicador.detalle }}</div>
-    </a>
-    {% endfor %}
-</div>
+        <div class="pp-leyenda">
+            <span class="pp-marca pp-tono-rojo">Vencido</span>
+            <span class="pp-marca pp-tono-naranja">Próximo</span>
+            <span class="pp-marca pp-tono-verde">Al día</span>
+        </div>
+    </div>
+    <div class="pp-kpis">
+        {% for indicador in tablero.indicadores %}
+        <a class="pp-kpi pp-tono-{{ indicador.tono }}" href="{{ indicador.url }}">
+            <div class="pp-kpi-cabeza">
+                <div class="pp-kpi-etq">{{ indicador.etiqueta }}</div>
+                <div class="pp-kpi-icono"><i class="bi {{ indicador.icono }}"></i></div>
+            </div>
+            <div class="pp-kpi-num"{% if indicador.exacto %} title="{{ indicador.exacto }}"{% endif %}>{{ indicador.valor }}</div>
+            <div class="pp-kpi-det"><span class="pp-punto"></span>{{ indicador.detalle }}</div>
+        </a>
+        {% endfor %}
+    </div>
+</section>
 {% else %}
 <div class="alert alert-warning mb-0">Su rol no tiene módulos habilitados. Contacte al Administrador.</div>
 {% endif %}
 
-<div class="pp-grid">
+{# Fila del medio: lo que se atiende a diario. #}
+<div class="pp-medio">
     {# ───────────── Vencimientos ───────────── #}
     {% with seccion=tablero.vencimientos %}
     {% if seccion %}
-    <section class="panel">
+    <section class="panel pp-sec-vencimientos">
         <div class="ph">
             <div>
                 <div class="ph-title"><i class="bi bi-calendar2-check-fill"></i> Vencimientos</div>
@@ -33,7 +49,7 @@
             </div>
             <div class="ph-actions">
                 <a class="ph-link" href="{% url 'calendario:lista' %}"><i class="bi bi-list-ul"></i> Listado</a>
-                <a class="ph-link" href="{% url 'calendario:calendario' %}"><i class="bi bi-calendar3"></i> Calendario</a>
+                <a class="ph-link ph-link-pri" href="{% url 'calendario:calendario' %}"><i class="bi bi-calendar3"></i> Calendario</a>
             </div>
         </div>
 
@@ -54,9 +70,12 @@
             </div>
         </div>
 
+        {# Con ancho suficiente, el gráfico y la lista van lado a lado. #}
+        <div class="pp-duo">
+        <div class="pp-duo-a">
         <div class="sec-lbl">Vencimientos por semana, próximas {{ seccion.semanas|length }} semanas</div>
         {% if seccion.hay_semanas %}
-        <div class="pp-lienzo" style="height:190px">
+        <div class="pp-lienzo">
             <canvas id="graficoVencimientos" role="img" aria-label="Vencimientos por semana: por presentar y presentados"></canvas>
         </div>
         <details class="pp-tabla">
@@ -77,12 +96,14 @@
         {% else %}
         <div class="pp-vacio"><i class="bi bi-calendar2-x"></i> No hay vencimientos registrados para las próximas semanas.</div>
         {% endif %}
+        </div>
 
-        <div class="sec-lbl mt-3">Lo más urgente</div>
+        <div class="pp-duo-b">
+        <div class="sec-lbl">Lo más urgente</div>
         <div class="pp-lista">
             {% for item in seccion.lista %}
             <a class="pp-item" href="{% url 'calendario:detalle' item.vencimiento.pk %}">
-                <div class="pp-fecha">
+                <div class="pp-fecha{% if item.dias_atraso %} pp-fecha-r{% elif item.dias <= 1 %} pp-fecha-w{% endif %}">
                     <b>{{ item.vencimiento.fecha_vencimiento|date:"j" }}</b>
                     <span>{{ item.vencimiento.fecha_vencimiento|date:"M" }}</span>
                 </div>
@@ -104,93 +125,8 @@
             <div class="pp-vacio"><i class="bi bi-check2-circle"></i> No hay obligaciones pendientes.</div>
             {% endfor %}
         </div>
-    </section>
-    {% endif %}
-    {% endwith %}
-
-    {# ───────────── Finanzas ───────────── #}
-    {% with seccion=tablero.finanzas %}
-    {% if seccion %}
-    <section class="panel">
-        <div class="ph">
-            <div>
-                <div class="ph-title"><i class="bi bi-cash-coin"></i> Finanzas</div>
-                <div class="ph-meta mt-1">{% if seccion.consolidado %}Consolidado del despacho{% else %}Solo sus clientes asignados{% endif %}</div>
-            </div>
-            <a class="ph-link" href="{% url 'finanzas:cartera' %}"><i class="bi bi-wallet2"></i> Cartera</a>
         </div>
-
-        <div class="pp-cifras">
-            <div class="pp-cifra">
-                <div class="pp-cifra-etq">Facturado este mes</div>
-                <div class="pp-cifra-num">{{ seccion.facturado_mes|pesos }}</div>
-            </div>
-            <div class="pp-cifra">
-                <div class="pp-cifra-etq">Cobrado este mes</div>
-                <div class="pp-cifra-num">{{ seccion.cobrado_mes|pesos }}</div>
-            </div>
-            <div class="pp-cifra">
-                <div class="pp-cifra-etq">{% if seccion.en_mora %}<i class="bi bi-exclamation-triangle c-red"></i> {% endif %}En mora</div>
-                <div class="pp-cifra-num">{{ seccion.en_mora|pesos }}</div>
-            </div>
         </div>
-
-        <div class="sec-lbl">Facturado y cobrado, últimos {{ seccion.meses|length }} meses</div>
-        {% if seccion.hay_meses %}
-        <div class="pp-lienzo" style="height:190px">
-            <canvas id="graficoFinanzas" role="img" aria-label="Facturado y cobrado por mes"></canvas>
-        </div>
-        <details class="pp-tabla">
-            <summary>Ver los datos en tabla</summary>
-            <table class="tbl">
-                <thead><tr><th>Mes</th><th class="text-end">Facturado</th><th class="text-end">Cobrado</th></tr></thead>
-                <tbody>
-                    {% for mes in seccion.meses %}
-                    <tr>
-                        <td>{{ mes.etiqueta }}</td>
-                        <td class="text-end">{{ mes.facturado|pesos }}</td>
-                        <td class="text-end">{{ mes.cobrado|pesos }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </details>
-        {% else %}
-        <div class="pp-vacio"><i class="bi bi-receipt"></i> Sin cuentas de cobro ni abonos en este período.</div>
-        {% endif %}
-
-        {% if seccion.recaudo is not None %}
-        <div class="sec-lbl mt-3">Recaudo acumulado</div>
-        <div class="pp-medidor-fila">
-            <div class="pp-medidor" role="progressbar" aria-valuenow="{{ seccion.recaudo }}" aria-valuemin="0" aria-valuemax="100" aria-label="Recaudo acumulado">
-                <span style="width:{{ seccion.recaudo }}%"></span>
-            </div>
-            <strong>{{ seccion.recaudo }} %</strong>
-        </div>
-        <p class="pp-nota">De todo lo facturado, lo que ya se cobró. Por cobrar: {{ seccion.saldo|pesos }}</p>
-        {% endif %}
-
-        {% if seccion.deudores %}
-        <div class="sec-lbl mt-3">Clientes con saldo pendiente</div>
-        <div class="pp-lista">
-            {% for fila in seccion.deudores %}
-            <a class="pp-item pp-item-doble" href="{% url 'clientes:detalle' fila.cliente.pk %}#tab-honorarios">
-                <div class="pp-item-cuerpo">
-                    <div class="pp-item-titulo">{{ fila.cliente.nombre_razon_social }}</div>
-                    <div class="pp-item-sub">{{ fila.cuentas_pendientes }} cuenta{{ fila.cuentas_pendientes|pluralize }} pendiente{{ fila.cuentas_pendientes|pluralize }}</div>
-                </div>
-                {% if fila.mora_critica %}
-                <span class="badge-est be-r"><i class="bi bi-exclamation-triangle"></i> {{ fila.dias_mora }} días de mora</span>
-                {% elif fila.dias_mora %}
-                <span class="badge-est be-w">{{ fila.dias_mora }} día{{ fila.dias_mora|pluralize }} de mora</span>
-                {% else %}
-                <span class="badge-est be-g">Al día</span>
-                {% endif %}
-                <strong class="pp-monto">{{ fila.saldo|pesos }}</strong>
-            </a>
-            {% endfor %}
-        </div>
-        {% endif %}
     </section>
     {% endif %}
     {% endwith %}
@@ -198,7 +134,7 @@
     {# ───────────── Tareas ───────────── #}
     {% with seccion=tablero.tareas %}
     {% if seccion %}
-    <section class="panel">
+    <section class="panel pp-sec-tareas">
         <div class="ph">
             <div>
                 <div class="ph-title"><i class="bi bi-kanban-fill"></i> Tareas</div>
@@ -216,7 +152,7 @@
             {% for fila in seccion.por_estado %}
             <div class="pp-barra">
                 <span class="pp-barra-etq">{{ fila.estado }}</span>
-                <span class="pp-barra-pista"><span class="pp-barra-relleno" style="width:{{ fila.ancho }}%"></span></span>
+                <span class="pp-barra-pista"><span class="pp-barra-relleno{% if fila.terminado %} pp-relleno-verde{% endif %}" style="width:{{ fila.ancho }}%"></span></span>
                 <span class="pp-barra-num">{{ fila.cantidad }}</span>
             </div>
             {% endfor %}
@@ -224,7 +160,7 @@
 
         <div class="sec-lbl mt-3">Avance del tablero</div>
         <div class="pp-medidor-fila">
-            <div class="pp-medidor" role="progressbar" aria-valuenow="{{ seccion.avance }}" aria-valuemin="0" aria-valuemax="100" aria-label="Avance del tablero">
+            <div class="pp-medidor pp-medidor-verde" role="progressbar" aria-valuenow="{{ seccion.avance }}" aria-valuemin="0" aria-valuemax="100" aria-label="Avance del tablero">
                 <span style="width:{{ seccion.avance }}%"></span>
             </div>
             <strong>{{ seccion.avance }} %</strong>
@@ -259,11 +195,109 @@
     </section>
     {% endif %}
     {% endwith %}
+</div>
+
+{# Fila de abajo: Finanzas, Hallazgos y Carga del equipo en una misma línea. #}
+<div class="pp-abajo">
+    {# ───────────── Finanzas ───────────── #}
+    {% with seccion=tablero.finanzas %}
+    {% if seccion %}
+    <section class="panel pp-sec-finanzas">
+        <div class="ph">
+            <div>
+                <div class="ph-title"><i class="bi bi-cash-coin"></i> Finanzas</div>
+                <div class="ph-meta mt-1">{% if seccion.consolidado %}Consolidado del despacho{% else %}Solo sus clientes asignados{% endif %}</div>
+            </div>
+            <a class="ph-link" href="{% url 'finanzas:cartera' %}"><i class="bi bi-wallet2"></i> Cartera</a>
+        </div>
+
+        <div class="pp-cifras">
+            <div class="pp-cifra">
+                <div class="pp-cifra-etq">Facturado este mes</div>
+                <div class="pp-cifra-num">{{ seccion.facturado_mes|pesos }}</div>
+            </div>
+            <div class="pp-cifra">
+                <div class="pp-cifra-etq">Cobrado este mes</div>
+                <div class="pp-cifra-num">{{ seccion.cobrado_mes|pesos }}</div>
+            </div>
+            <div class="pp-cifra{% if seccion.en_mora %} pp-cifra-alerta{% endif %}">
+                <div class="pp-cifra-etq">{% if seccion.en_mora %}<i class="bi bi-exclamation-triangle c-red"></i> {% endif %}En mora</div>
+                <div class="pp-cifra-num">{{ seccion.en_mora|pesos }}</div>
+            </div>
+        </div>
+
+        <div class="pp-duo">
+        <div class="pp-duo-a">
+        <div class="sec-lbl">Facturado y cobrado, últimos {{ seccion.meses|length }} meses</div>
+        {% if seccion.hay_meses %}
+        <div class="pp-lienzo">
+            <canvas id="graficoFinanzas" role="img" aria-label="Facturado y cobrado por mes"></canvas>
+        </div>
+        <details class="pp-tabla">
+            <summary>Ver los datos en tabla</summary>
+            <table class="tbl">
+                <thead><tr><th>Mes</th><th class="text-end">Facturado</th><th class="text-end">Cobrado</th></tr></thead>
+                <tbody>
+                    {% for mes in seccion.meses %}
+                    <tr>
+                        <td>{{ mes.etiqueta }}</td>
+                        <td class="text-end">{{ mes.facturado|pesos }}</td>
+                        <td class="text-end">{{ mes.cobrado|pesos }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </details>
+        {% else %}
+        <div class="pp-vacio"><i class="bi bi-receipt"></i> Sin cuentas de cobro ni abonos en este período.</div>
+        {% endif %}
+        </div>
+
+        {% if seccion.recaudo is not None or seccion.deudores %}
+        <div class="pp-duo-b">
+        {% if seccion.recaudo is not None %}
+        <div class="sec-lbl mt-3">Recaudo acumulado</div>
+        <div class="pp-medidor-fila">
+            <div class="pp-medidor" role="progressbar" aria-valuenow="{{ seccion.recaudo }}" aria-valuemin="0" aria-valuemax="100" aria-label="Recaudo acumulado">
+                <span style="width:{{ seccion.recaudo }}%"></span>
+            </div>
+            <strong>{{ seccion.recaudo }} %</strong>
+        </div>
+        <p class="pp-nota">De todo lo facturado, lo que ya se cobró. Por cobrar: {{ seccion.saldo|pesos }}</p>
+        {% endif %}
+
+        {% if seccion.deudores %}
+        <div class="sec-lbl mt-3">Clientes con saldo pendiente</div>
+        <div class="pp-lista">
+            {% for fila in seccion.deudores %}
+            <a class="pp-item pp-item-doble" href="{% url 'clientes:detalle' fila.cliente.pk %}#tab-honorarios">
+                <div class="pp-item-cuerpo">
+                    <div class="pp-item-titulo">{{ fila.cliente.nombre_razon_social }}</div>
+                    <div class="pp-item-sub">{{ fila.cuentas_pendientes }} cuenta{{ fila.cuentas_pendientes|pluralize }} pendiente{{ fila.cuentas_pendientes|pluralize }}</div>
+                </div>
+                {% if fila.mora_critica %}
+                <span class="badge-est be-r"><i class="bi bi-exclamation-triangle"></i> {{ fila.dias_mora }} días de mora</span>
+                {% elif fila.dias_mora %}
+                <span class="badge-est be-w">{{ fila.dias_mora }} día{{ fila.dias_mora|pluralize }} de mora</span>
+                {% else %}
+                <span class="badge-est be-g">Al día</span>
+                {% endif %}
+                <strong class="pp-monto">{{ fila.saldo|pesos }}</strong>
+            </a>
+            {% endfor %}
+        </div>
+        {% endif %}
+        </div>
+        {% endif %}
+        </div>
+    </section>
+    {% endif %}
+    {% endwith %}
 
     {# ───────────── Hallazgos ───────────── #}
     {% with seccion=tablero.hallazgos %}
     {% if seccion %}
-    <section class="panel">
+    <section class="panel pp-sec-hallazgos">
         <div class="ph">
             <div>
                 <div class="ph-title"><i class="bi bi-search-heart-fill"></i> Hallazgos</div>
@@ -313,7 +347,7 @@
     {# ───────────── Equipo ───────────── #}
     {% with seccion=tablero.equipo %}
     {% if seccion %}
-    <section class="panel">
+    <section class="panel pp-sec-equipo">
         <div class="ph">
             <div>
                 <div class="ph-title"><i class="bi bi-people-fill"></i> Carga del equipo</div>
@@ -339,6 +373,7 @@
     </section>
     {% endif %}
     {% endwith %}
+</div>
 </div>
 
 {% if tablero.vencimientos.hay_semanas %}{{ tablero.vencimientos.grafico|json_script:"datos-vencimientos" }}{% endif %}

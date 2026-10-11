@@ -178,8 +178,11 @@ models.py → servicios.py → selectores.py → formularios.py → vistas.py �
   - Subidas: validar con `comunes.formularios` (`validar_archivo_adjunto`,
     `validar_excel_subido`, `validar_imagen_subida`), que comprueban extensión,
     tamaño y que el contenido sea del formato que dice la extensión.
-  - Rutas públicas (sin sesión): solo inicio de sesión, `robots.txt` y el PDF
-    firmado. Una nueva debe heredar de `comunes.vistas.LimitePeticionesMixin` y
+  - Rutas públicas (sin sesión): solo la página web de inicio (`/`,
+    `seguridad:inicio`), el inicio de sesión, `robots.txt` y el PDF firmado.
+    La página de inicio presenta la plataforma y lleva al inicio de sesión;
+    no consulta la base de datos ni muestra datos del despacho (su calendario
+    es un dibujo de ejemplo). El panel quedó en `/panel/`. Estilos `.pw-*`. Una nueva debe heredar de `comunes.vistas.LimitePeticionesMixin` y
     agregarse a `RUTAS_PUBLICAS` del mapa de navegación.
   - Registros en `registros/` (no se versionan): `seguridad.log` y
     `consultas.log` (consultas lentas, `MonitorConsultasMiddleware`).
@@ -523,11 +526,48 @@ Ninguna funcionalidad se da por terminada sin:
     color verificados para daltonismo: naranja + verde y teal + naranja; **no
     poner teal junto a verde ni naranja junto a rojo** en un mismo gráfico (se
     confunden). Cada gráfico lleva su tabla («Ver los datos en tabla»).
-  - Responsive: las secciones van a dos columnas y pasan a una cuando no caben
-    (`flex: 1 1 420px`). El interior de cada sección se acomoda con
-    `@container` (ancho de la sección, no de la pantalla), porque una sección
-    es estrecha en un teléfono y también en un portátil junto al menú lateral.
-    Revisado en 360, 390, 768, 1024, 1280 y 1440 px.
+  - Distribución (11-oct-2026, pedida por el usuario): las seis cifras en una
+    fila arriba (`.pp-kpis`); en medio Vencimientos y Tareas (`.pp-medio`);
+    abajo Finanzas (doble ancho), Hallazgos y Carga del equipo en una misma
+    línea (`.pp-abajo`; si no caben las tres, Finanzas arriba y las otras dos
+    debajo). Dentro de Vencimientos y Finanzas el gráfico y la lista van
+    lado a lado (`.pp-duo`) cuando caben. Si por el rol falta una sección, la
+    vecina ocupa su lugar (`:has`/`:only-child`); no dejar huecos.
+  - Responsive: todo se decide con `@container`, nunca con el ancho de la
+    pantalla: el tablero (`.pp-tablero`, contenedor `tablero`) reparte filas y
+    columnas, y cada sección y cada mitad de `.pp-duo` acomoda su interior.
+    Así responde igual al plegar el menú lateral. Revisado en 390, 768, 1024,
+    1280 y 1440 px, con el menú plegado y desplegado.
+  - Colores (11-oct-2026, propuesta aprobada por el usuario sobre una
+    maqueta): cada color tiene un solo oficio. **Navy**: el resumen de arriba
+    (`.pp-resumen`), único bloque oscuro y único degradado (navy → teal
+    oscuro); las seis cifras llevan el mismo ícono y su estado va en un punto
+    junto al detalle (`--pp-tono`), con leyenda Vencido / Próximo / Al día.
+    **Crema** (`--crema-suave`): banda del encabezado de cada sección, con el
+    ícono en un recuadro teal. **Teal**: barras, medidores y enlaces.
+    **Rojo**: vencido, atrasado o en mora. **Naranja**: por vencer. **Verde**:
+    cumplido o al día (barra «Terminado» y avance del tablero). **Marrón**:
+    texto de las etiquetas rojas y naranjas (por contraste). En las listas el
+    estado va sin fondo: punto de color o ícono y texto oscuro. La prioridad
+    Baja va en gris solo dentro del panel (en el Kanban sigue verde: pendiente
+    de decidir si se unifica). Versiones descartadas por el usuario, no volver
+    a ellas: un tinte distinto por tarjeta con fondos degradados en los
+    recuadros («no es armonioso»), y encabezados de sección en teal suave
+    (se veían azulados).
+  - Gráfico de Finanzas: Facturado en `paleta.TEAL_CLARO` y Cobrado en
+    `paleta.TEAL` (se distinguen por claridad); el naranja no se usa ahí para
+    que no signifique dos cosas. En «Tareas por estado» la barra verde de
+    Terminado convive con las teal porque cada barra lleva su nombre al lado.
+- **Menú lateral plegable** (11-oct-2026): el botón de la barra superior
+  (`#btnMenu`) lo reduce en escritorio a una franja de íconos (clase
+  `menu-plegado` en `<html>`, que cambia `--ancho-menu`) y lo recuerda en
+  `localStorage` (`contanika.menu`); un script en el `<head>` lo aplica antes
+  de pintar. En teléfono y tableta sigue siendo un cajón, con velo y cierre
+  con Escape. El texto de cada entrada va en `.ni-txt` y lleva `title`.
+  Con poca altura el menú se compacta por tramos (`max-height` 800, 680 y
+  620 px) para caber sin barra de desplazamiento; si aun así no cabe, la
+  barra es delgada, del tono del menú y solo se ve al pasar el cursor. Al
+  agregar una entrada al menú, volver a comprobarlo a 1366×657 y 1280×600.
 - **Panel de equipo** (HU023, Administrador y Senior, solo consulta): tareas
   activas, % completado de las tareas que vencen en el mes, vencimientos no
   presentados de los próximos 7 días y alerta con más de 10 pendientes. Se

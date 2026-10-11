@@ -1,16 +1,17 @@
 # Mapa de navegación — Contanika
 
-Entregable 3.3. Generado el 07/10/2026 con `python gestionar.py generar_mapa_navegacion` a partir de las rutas del sistema. No editar a mano: volver a generarlo cuando cambien las rutas.
+Entregable 3.3. Generado el 11/10/2026 con `python gestionar.py generar_mapa_navegacion` a partir de las rutas del sistema. No editar a mano: volver a generarlo cuando cambien las rutas.
 
-El sistema tiene **109 rutas**: 78 pantallas o descargas (GET) y 31 acciones que solo reciben formularios (POST).
+El sistema tiene **110 rutas**: 79 pantallas o descargas (GET) y 31 acciones que solo reciben formularios (POST).
 
 ## 1. Navegación general
 
-Toda pantalla exige sesión, salvo el inicio de sesión, `robots.txt` y el enlace firmado del PDF de la cuenta de cobro que recibe el cliente. El menú lateral, la campana de vencimientos, la ayuda y el perfil están disponibles desde cualquier pantalla.
+Toda pantalla exige sesión, salvo la página web de inicio, el inicio de sesión, `robots.txt` y el enlace firmado del PDF de la cuenta de cobro que recibe el cliente. El menú lateral, la campana de vencimientos, la ayuda y el perfil están disponibles desde cualquier pantalla.
 
 ```mermaid
 flowchart LR
-    inicio(["Inicio de sesión"]) --> panel["Panel principal"]
+    web(["Página web de inicio"]) --> inicio(["Inicio de sesión"])
+    inicio --> panel["Panel principal"]
     subgraph Principal["Menú · Principal"]
         clientes_lista["Clientes (MOD01)"]
     end
@@ -62,7 +63,8 @@ Columnas de rol: «Sí» = el rol puede abrir la ruta; «—» = recibe 403. Ade
 |---|---|---|---|---|---|---|
 | `/robots.txt` | `robots` | GET | Sí | Sí | Sí | `robots.txt`: pide a los buscadores y rastreadores que no recorran el sistema. *(pública, sin sesión)* |
 | `/media/<path:ruta>` | `media` | GET | Sí | Sí | Sí | Sirve las imágenes subidas (foto de perfil, firma y membrete) solo a quien tiene sesión y le corresponden: la foto y la firma, a su dueño o al Administrador; el membrete, a cualquier usuario. Lo demás responde 404. |
-| `/` | `seguridad:panel` | GET | Sí | Sí | Sí | Panel principal del sistema. |
+| `/` | `seguridad:inicio` | GET | Sí | Sí | Sí | Página web pública de Contanika: presenta la plataforma y lleva al inicio de sesión. *(pública, sin sesión)* |
+| `/panel/` | `seguridad:panel` | GET | Sí | Sí | Sí | Panel principal del sistema. |
 | `/iniciar-sesion/` | `seguridad:iniciar_sesion` | GET · POST | Sí | Sí | Sí | Formulario de acceso al sistema (CU001). *(pública, sin sesión)* |
 | `/cerrar-sesion/` | `seguridad:cerrar_sesion` | GET · POST | Sí | Sí | Sí | Cierra la sesión activa y regresa al inicio de sesión. |
 | `/perfil/` | `seguridad:perfil` | GET · POST | Sí | Sí | Sí | Datos propios del usuario; el correo y el rol solo los cambia el Administrador. |
@@ -335,7 +337,7 @@ Número de rutas que cada rol puede abrir, sobre el total del módulo.
 
 | Módulo | Rutas | Administrador | Contador Senior | Contador Junior |
 |---|---|---|---|---|
-| Sin módulo | 10 | 10 | 10 | 10 |
+| Sin módulo | 11 | 11 | 11 | 11 |
 | MOD01 · Gestión de clientes | 12 | 12 | 12 | 6 |
 | MOD02 · Calendario | 16 | 16 | 13 | 6 |
 | MOD03 · Tablero de tareas Kanban | 8 | 8 | 8 | 5 |

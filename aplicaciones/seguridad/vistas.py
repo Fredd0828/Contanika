@@ -19,6 +19,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.views.generic import ListView, TemplateView, View
 
+from aplicaciones.comunes.vistas import LimitePeticionesMixin
+
 from . import guias, menu, panel, selectores, servicios
 from .formularios import (
     CambiarClaveForm,
@@ -34,6 +36,22 @@ from .permisos import ModuloHabilitadoMixin, RolRequeridoMixin
 Usuario = get_user_model()
 
 ROLES_PANEL_EQUIPO = (Rol.ADMINISTRADOR, Rol.CONTADOR_SENIOR)
+
+
+class PaginaInicioView(LimitePeticionesMixin, TemplateView):
+    """
+    Página web pública de Contanika: presenta la plataforma y lleva al inicio de sesión.
+
+    No muestra datos del despacho. Quien ya tiene sesión entra directo al sistema.
+    """
+
+    template_name = "seguridad/inicio.html"
+    limite_por_minuto = 60
+
+    def get(self, request, *args, **kwargs):
+        if request.user.is_authenticated:
+            return redirect("seguridad:panel")
+        return super().get(request, *args, **kwargs)
 
 
 class IniciarSesionView(LoginView):

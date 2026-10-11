@@ -7,7 +7,8 @@ from . import vistas
 app_name = "seguridad"
 
 urlpatterns = [
-    path("", vistas.PanelView.as_view(), name="panel"),
+    path("", vistas.PaginaInicioView.as_view(), name="inicio"),
+    path("panel/", vistas.PanelView.as_view(), name="panel"),
     path("iniciar-sesion/", vistas.IniciarSesionView.as_view(), name="iniciar_sesion"),
     path("cerrar-sesion/", vistas.CerrarSesionView.as_view(), name="cerrar_sesion"),
     path("perfil/", vistas.PerfilView.as_view(), name="perfil"),
