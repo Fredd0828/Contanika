@@ -9,6 +9,7 @@ que los documentos descargados se vean como la plataforma.
 
 NAVY = "#001524"
 TEAL = "#15616D"
+TEAL_CLARO = "#7FB5BD"
 NARANJA = "#FF7D00"
 VERDE = "#0A8A5C"
 ROJO = "#E05252"

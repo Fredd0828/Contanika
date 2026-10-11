@@ -22,6 +22,35 @@ class VistaDeTareas(ModuloHabilitadoMixin, View):
         return HttpResponse("contenido protegido")
 
 
+def test_pagina_de_inicio_abre_sin_sesion_y_ofrece_ingresar(client):
+    """La página web pública es la puerta de entrada y enlaza al inicio de sesión."""
+    assert reverse("seguridad:inicio") == "/"
+    respuesta = client.get(reverse("seguridad:inicio"))
+    assert respuesta.status_code == 200
+    assert f'href="{reverse("seguridad:iniciar_sesion")}"' in respuesta.content.decode()
+
+
+def test_pagina_de_inicio_con_sesion_lleva_al_panel(client, usuario_administrador):
+    """Quien ya inició sesión no ve la presentación: entra directo al sistema."""
+    client.force_login(usuario_administrador)
+    respuesta = client.get(reverse("seguridad:inicio"))
+    assert respuesta.status_code == 302
+    assert respuesta.url == reverse("seguridad:panel")
+
+
+def test_pagina_de_inicio_limita_las_peticiones_por_minuto(client):
+    """Ruta pública: una misma dirección no puede pedirla sin límite (pr01)."""
+    from django.core.cache import cache
+
+    from aplicaciones.seguridad.vistas import PaginaInicioView
+
+    cache.clear()
+    for _ in range(PaginaInicioView.limite_por_minuto):
+        client.get(reverse("seguridad:inicio"))
+    assert client.get(reverse("seguridad:inicio")).status_code == 429
+    cache.clear()
+
+
 def test_panel_exige_inicio_de_sesion(client):
     """Un usuario anónimo no accede al panel; es redirigido al login."""
     respuesta = client.get(reverse("seguridad:panel"))

@@ -1,0 +1,298 @@
+{% extends "base.html" %}
+
+{% block titulo %}Gestión del despacho contable{% endblock %}
+
+{% block contenido_publico %}
+{# Página web pública: no muestra datos del despacho. Las pantallas que aparecen son dibujos de ejemplo. #}
+<div class="pw">
+    <header class="pw-cabecera">
+        <nav class="pw-nav pw-ancho" aria-label="Principal">
+            <a class="pw-logo" href="{% url 'seguridad:inicio' %}" aria-label="Contanika, inicio">
+                <span class="pw-logo-icono"><i class="bi bi-grid-3x3-gap-fill"></i></span>
+                <span class="pw-logo-nombre">Conta<span>nika</span></span>
+            </a>
+            <div class="pw-nav-enlaces">
+                <a href="#modulos">Módulos</a>
+                <a href="#como-funciona">Cómo funciona</a>
+                <a href="#roles">Roles</a>
+                <a href="#seguridad">Seguridad</a>
+            </div>
+            <a class="pw-btn pw-btn-naranja pw-btn-chico" href="{% url 'seguridad:iniciar_sesion' %}">Ingresar</a>
+        </nav>
+
+        <div class="pw-hero pw-ancho">
+            <div class="pw-hero-texto">
+                <p class="pw-sello"><i class="bi bi-briefcase-fill"></i> Plataforma para despachos contables</p>
+                <h1>Todo el trabajo del despacho contable, en un solo lugar.</h1>
+                <p class="pw-hero-entrada">Clientes, calendario tributario, tareas, documentos y cartera en una misma
+                    plataforma, para que nada se venza y todo el equipo vea lo mismo.</p>
+                <div class="pw-hero-acciones">
+                    <a class="pw-btn pw-btn-naranja" href="{% url 'seguridad:iniciar_sesion' %}"><i class="bi bi-box-arrow-in-right"></i> Ingresar</a>
+                    <a class="pw-btn pw-btn-borde" href="#modulos">Ver los módulos</a>
+                </div>
+            </div>
+
+            <div class="pw-hero-imagen" role="img" aria-label="Ejemplo del panel de Contanika: cifras del despacho, un gráfico de vencimientos por semana y la lista de los próximos vencimientos.">
+                <div class="pw-app" aria-hidden="true">
+                    <div class="pw-app-barra"><i></i><i></i><i></i><span>Panel principal</span></div>
+                    <div class="pw-app-cuerpo">
+                        <div class="pw-app-menu">
+                            <b><i class="bi bi-grid-3x3-gap-fill"></i></b>
+                            <i class="bi bi-grid-fill activo"></i>
+                            <i class="bi bi-people-fill"></i>
+                            <i class="bi bi-calendar2-check-fill"></i>
+                            <i class="bi bi-kanban-fill"></i>
+                            <i class="bi bi-file-earmark-text-fill"></i>
+                            <i class="bi bi-cash-coin"></i>
+                            <i class="bi bi-bar-chart-line-fill"></i>
+                        </div>
+                        <div class="pw-app-contenido">
+                            <div class="pw-app-kpis">
+                                <div><strong>48</strong><span>Clientes activos</span></div>
+                                <div><strong>7</strong><span>Vencen esta semana</span></div>
+                                <div><strong>12</strong><span>Tareas en curso</span></div>
+                            </div>
+                            <div class="pw-app-fila">
+                                <div class="pw-app-tarjeta">
+                                    <em>Vencimientos por semana</em>
+                                    <div class="pw-app-barras">
+                                        <i style="height:42%"></i><i style="height:68%"></i><i style="height:35%"></i>
+                                        <i style="height:88%"></i><i style="height:56%"></i><i style="height:74%"></i>
+                                    </div>
+                                </div>
+                                <div class="pw-app-tarjeta">
+                                    <em>Próximos vencimientos</em>
+                                    <ul class="pw-app-lista">
+                                        <li class="vencido"><span>Retención en la fuente</span></li>
+                                        <li class="proximo"><span>IVA bimestral</span></li>
+                                        <li class="proximo"><span>ICA Bogotá</span></li>
+                                        <li class="cumplido"><span>Renta personas jurídicas</span></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="pw-flotante pw-flotante-a" aria-hidden="true">
+                    <i class="bi bi-bell-fill"></i>
+                    <div><strong>IVA bimestral</strong><span>Vence en 3 días</span></div>
+                </div>
+                <div class="pw-flotante pw-flotante-b" aria-hidden="true">
+                    <i class="bi bi-check-circle-fill"></i>
+                    <div><strong>Cuenta de cobro</strong><span>Enviada por correo</span></div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="pw-ancho">
+            <ul class="pw-cifras">
+                <li><strong>10</strong><span>módulos conectados entre sí</span></li>
+                <li><strong>3</strong><span>roles con permisos propios</span></li>
+                <li><strong>440</strong><span>fechas de la DIAN para 2026</span></li>
+                <li><strong>PDF y Excel</strong><span>en documentos y reportes</span></li>
+            </ul>
+        </div>
+
+        <section class="pw-seccion pw-ancho" id="modulos">
+            <div class="pw-titulo">
+                <h2>Diez módulos que comparten la misma información</h2>
+                <p>Lo que registra una persona lo ve el resto del equipo, sin hojas de cálculo sueltas ni mensajes
+                    perdidos.</p>
+            </div>
+
+            <ul class="pw-modulos">
+                <li class="pw-modulo pw-modulo-doble pw-modulo-oscuro">
+                    <div>
+                        <i class="bi bi-calendar2-check-fill"></i>
+                        <h3>Calendario tributario</h3>
+                        <p>Los vencimientos de cada cliente se calculan según su NIT o cédula, y la plataforma avisa
+                            antes de la fecha.</p>
+                    </div>
+                    <ul class="pw-mini-lista" aria-hidden="true">
+                        <li class="vencido"><span>Retención en la fuente</span><em>Vencido</em></li>
+                        <li class="proximo"><span>IVA bimestral</span><em>En 3 días</em></li>
+                        <li class="cumplido"><span>Renta</span><em>Presentada</em></li>
+                    </ul>
+                </li>
+                <li class="pw-modulo">
+                    <i class="bi bi-people-fill"></i>
+                    <h3>Clientes</h3>
+                    <p>Datos, obligaciones que presenta y credenciales de acceso guardadas cifradas.</p>
+                </li>
+                <li class="pw-modulo">
+                    <i class="bi bi-kanban-fill"></i>
+                    <h3>Tareas</h3>
+                    <p>Un tablero con el estado de cada tarea, su responsable y su historial.</p>
+                </li>
+                <li class="pw-modulo">
+                    <i class="bi bi-file-earmark-text-fill"></i>
+                    <h3>Documentos</h3>
+                    <p>Certificados en PDF a partir de plantillas, con la firma del contador.</p>
+                </li>
+                <li class="pw-modulo">
+                    <i class="bi bi-search-heart-fill"></i>
+                    <h3>Hallazgos</h3>
+                    <p>Revisiones por período, con su prioridad, su estado y sus soportes.</p>
+                </li>
+                <li class="pw-modulo pw-modulo-doble pw-modulo-claro">
+                    <div>
+                        <i class="bi bi-cash-coin"></i>
+                        <h3>Honorarios y cartera</h3>
+                        <p>Honorarios, cuentas de cobro, abonos y el saldo de cada cliente, con envío por correo o
+                            WhatsApp.</p>
+                    </div>
+                    <div class="pw-mini-barras" aria-hidden="true">
+                        <div><i style="height:62%"></i><i style="height:48%"></i></div>
+                        <div><i style="height:78%"></i><i style="height:60%"></i></div>
+                        <div><i style="height:70%"></i><i style="height:66%"></i></div>
+                        <div><i style="height:94%"></i><i style="height:72%"></i></div>
+                        <p><span></span>Facturado <span></span>Cobrado</p>
+                    </div>
+                </li>
+                <li class="pw-modulo">
+                    <i class="bi bi-journal-text"></i>
+                    <h3>Expediente</h3>
+                    <p>La bitácora de cada cliente, con sus anotaciones y archivos adjuntos.</p>
+                </li>
+                <li class="pw-modulo">
+                    <i class="bi bi-chat-dots-fill"></i>
+                    <h3>Comunicaciones</h3>
+                    <p>El registro de correos, mensajes de WhatsApp, llamadas y reuniones.</p>
+                </li>
+                <li class="pw-modulo">
+                    <i class="bi bi-bar-chart-line-fill"></i>
+                    <h3>Reportes</h3>
+                    <p>Clientes, vencimientos, tareas, cartera e ingresos, en pantalla, Excel y PDF.</p>
+                </li>
+                <li class="pw-modulo">
+                    <i class="bi bi-person-gear"></i>
+                    <h3>Equipo y roles</h3>
+                    <p>Los usuarios del despacho, sus roles y lo que ve cada uno.</p>
+                </li>
+            </ul>
+        </section>
+
+        <section class="pw-franja" id="como-funciona">
+            <div class="pw-seccion pw-ancho">
+                <div class="pw-dos">
+                    <div class="pw-dos-texto">
+                        <h2>Los vencimientos no se pasan</h2>
+                        <p>Al crear un cliente, Contanika calcula sus fechas con el calendario oficial de la DIAN y
+                            las deja en el calendario del despacho.</p>
+                        <ul class="pw-checks">
+                            <li><i class="bi bi-check2"></i>Vista por día, semana y mes.</li>
+                            <li><i class="bi bi-check2"></i>Alertas por correo, WhatsApp y dentro de la plataforma.</li>
+                            <li><i class="bi bi-check2"></i>Rojo para lo vencido, naranja para lo próximo y verde para lo presentado.</li>
+                        </ul>
+                    </div>
+                    <div class="pw-marco" role="img" aria-label="Ejemplo de un mes en el calendario tributario, con vencimientos marcados en rojo, naranja y verde.">
+                        <div class="pw-mes" aria-hidden="true">
+                            <div class="pw-mes-titulo"><span>Calendario tributario</span><span class="pw-mes-nota">Ejemplo</span></div>
+                            <div class="pw-mes-dias">
+                                <b>L</b><b>M</b><b>M</b><b>J</b><b>V</b><b>S</b><b>D</b>
+                                <i></i><i></i><i></i>
+                                <span>1</span><span>2</span><span>3</span><span>4</span>
+                                <span>5</span><span>6</span><span class="vencido">7</span><span>8</span><span>9</span><span>10</span><span>11</span>
+                                <span>12</span><span class="hoy">13</span><span>14</span><span>15</span><span class="proximo">16</span><span>17</span><span>18</span>
+                                <span>19</span><span class="proximo">20</span><span>21</span><span>22</span><span class="cumplido">23</span><span>24</span><span>25</span>
+                                <span>26</span><span>27</span><span class="cumplido">28</span><span>29</span><span>30</span><span>31</span><i></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pw-dos pw-dos-inversa">
+                    <div class="pw-dos-texto">
+                        <h2>El trabajo del equipo, a la vista</h2>
+                        <p>Cada tarea tiene responsable, fecha y estado. El tablero muestra en qué va cada una y quién
+                            la tiene.</p>
+                        <ul class="pw-checks">
+                            <li><i class="bi bi-check2"></i>Cuatro columnas: por hacer, en progreso, en revisión y terminado.</li>
+                            <li><i class="bi bi-check2"></i>Historial de cambios y observaciones de avance.</li>
+                            <li><i class="bi bi-check2"></i>Las tareas con fecha también aparecen en el calendario.</li>
+                        </ul>
+                    </div>
+                    <div class="pw-marco" role="img" aria-label="Ejemplo del tablero de tareas, con cuatro columnas y tarjetas de tareas repartidas entre ellas.">
+                        <div class="pw-kanban" aria-hidden="true">
+                            <div><em>Por hacer</em><p class="alta"><b></b><b></b><span>LM</span></p><p class="media"><b></b><b></b><span>PB</span></p><p class="baja"><b></b><b></b><span>JR</span></p></div>
+                            <div><em>En progreso</em><p class="alta"><b></b><b></b><span>PB</span></p><p class="media"><b></b><b></b><span>LM</span></p></div>
+                            <div><em>En revisión</em><p class="media"><b></b><b></b><span>JR</span></p></div>
+                            <div><em>Terminado</em><p class="hecha"><b></b><b></b><span>PB</span></p><p class="hecha"><b></b><b></b><span>LM</span></p></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="pw-seccion pw-ancho" id="roles">
+            <div class="pw-titulo">
+                <h2>Cada persona ve lo que le corresponde</h2>
+                <p>La plataforma tiene tres roles. El Administrador decide qué módulos y qué reportes ve cada uno.</p>
+            </div>
+            <ul class="pw-roles">
+                <li>
+                    <i class="bi bi-person-gear"></i>
+                    <h3>Administrador</h3>
+                    <p>Crea los usuarios, configura los honorarios y define lo que ve cada rol.</p>
+                </li>
+                <li>
+                    <i class="bi bi-person-check-fill"></i>
+                    <h3>Contador Senior</h3>
+                    <p>Gestiona clientes, tareas y hallazgos, y firma los documentos del despacho.</p>
+                </li>
+                <li>
+                    <i class="bi bi-person-fill"></i>
+                    <h3>Contador Junior</h3>
+                    <p>Registra el avance de sus tareas y de los clientes que tiene a su cargo.</p>
+                </li>
+            </ul>
+        </section>
+
+        <section class="pw-oscura" id="seguridad">
+            <div class="pw-seccion pw-ancho">
+                <div class="pw-titulo">
+                    <h2>La información de los clientes, protegida</h2>
+                    <p>Los datos del despacho solo los ve quien inicia sesión y tiene permiso para verlos.</p>
+                </div>
+                <ul class="pw-seguridad">
+                    <li><i class="bi bi-key-fill"></i><h3>Credenciales cifradas</h3><p>Las claves de acceso de los clientes se guardan cifradas.</p></li>
+                    <li><i class="bi bi-shield-lock-fill"></i><h3>Bloqueo por intentos</h3><p>La cuenta se bloquea tras varios intentos fallidos de ingreso.</p></li>
+                    <li><i class="bi bi-journal-check"></i><h3>Bitácora que no se borra</h3><p>Las anotaciones del expediente se archivan, nunca se eliminan.</p></li>
+                    <li><i class="bi bi-file-earmark-lock-fill"></i><h3>Archivos con permiso</h3><p>Cada documento lo descarga solo quien puede verlo.</p></li>
+                </ul>
+            </div>
+        </section>
+
+        <section class="pw-seccion pw-ancho" id="ingreso">
+            <div class="pw-titulo">
+                <h2>Cómo ingresar</h2>
+            </div>
+            <ol class="pw-pasos">
+                <li><h3>Pulse «Ingresar»</h3><p>Se abre la pantalla de inicio de sesión.</p></li>
+                <li><h3>Escriba su correo y su contraseña</h3><p>Son los que le entregó el Administrador del despacho.</p></li>
+                <li><h3>Llega a su panel</h3><p>Desde ahí abre los módulos que tiene habilitados.</p></li>
+            </ol>
+
+            <div class="pw-llamado">
+                <div>
+                    <h2>¿Ya tiene su usuario?</h2>
+                    <p>Si no lo tiene o no recuerda su contraseña, pídala al Administrador del despacho.</p>
+                </div>
+                <a class="pw-btn pw-btn-naranja" href="{% url 'seguridad:iniciar_sesion' %}"><i class="bi bi-box-arrow-in-right"></i> Ingresar</a>
+            </div>
+        </section>
+    </main>
+
+    <footer class="pw-pie">
+        <div class="pw-ancho">
+            <a class="pw-logo" href="{% url 'seguridad:inicio' %}" aria-label="Contanika, inicio">
+                <span class="pw-logo-icono"><i class="bi bi-grid-3x3-gap-fill"></i></span>
+                <span class="pw-logo-nombre">Conta<span>nika</span></span>
+            </a>
+            <p>Gestión integral del despacho contable.</p>
+        </div>
+    </footer>
+</div>
+{% endblock %}

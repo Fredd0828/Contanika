@@ -105,6 +105,7 @@ def test_las_contrasenas_no_se_guardan_en_texto_plano(usuario_junior):
 
 def test_las_rutas_publicas_son_solo_las_previstas():
     assert {ruta["nombre"] for ruta in RUTAS if ruta["publica"]} == {
+        "seguridad:inicio",
         "seguridad:iniciar_sesion",
         "finanzas:pdf_publico",
         "robots",

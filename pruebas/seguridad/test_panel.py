@@ -8,6 +8,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from aplicaciones.calendario.models import Vencimiento
+from aplicaciones.comunes import paleta
 from aplicaciones.finanzas.models import Abono, CuentaCobro
 from aplicaciones.hallazgos.models import Hallazgo
 from aplicaciones.seguridad import panel
@@ -114,6 +115,8 @@ def test_tareas_por_estado_atrasadas_y_lista_propia(usuario_administrador, usuar
         Tarea.EN_REVISION: 0,
         Tarea.TERMINADO: 1,
     }
+    # Solo la barra de lo terminado va en verde.
+    assert [fila["estado"] for fila in seccion["por_estado"] if fila["terminado"]] == [Tarea.TERMINADO]
     assert (seccion["total"], seccion["activas"], seccion["atrasadas"]) == (3, 2, 1)
     assert seccion["avance"] == 33
     assert seccion["lista_propia"]
@@ -170,6 +173,9 @@ def test_finanzas_saldo_mora_y_mes_en_curso(usuario_administrador, cliente):
     assert len(seccion["meses"]) == panel.MESES_GRAFICO
     facturado, cobrado = (serie["valores"] for serie in seccion["grafico"]["series"])
     assert (facturado[-1], cobrado[-1]) == (1500000.0, 400000.0)
+    # El naranja queda para lo que está por vencer: el gráfico va en dos tonos de teal.
+    colores = [serie["color"] for serie in seccion["grafico"]["series"]]
+    assert colores == [paleta.TEAL_CLARO, paleta.TEAL]
     assert [fila["cliente"] for fila in seccion["deudores"]] == [cliente]
 
 
@@ -282,6 +288,31 @@ def test_panel_muestra_el_tablero_y_ya_no_los_modulos(client, usuario_administra
     assert 'id="graficoVencimientos"' in contenido
     assert 'id="graficoFinanzas"' in contenido
     assert "$ 800.000" in contenido
+
+
+def test_panel_ordena_las_secciones_y_trae_el_menu_plegable(client, usuario_administrador, cliente):
+    """Cifras arriba, Vencimientos y Tareas en medio y el resto abajo; el menú lateral se pliega."""
+    client.force_login(usuario_administrador)
+
+    contenido = client.get(reverse("seguridad:panel")).content.decode()
+
+    orden = [
+        contenido.index(marca)
+        for marca in (
+            'class="pp-resumen"',
+            'class="pp-kpis"',
+            'class="pp-medio"',
+            "pp-sec-vencimientos",
+            "pp-sec-tareas",
+            'class="pp-abajo"',
+            "pp-sec-finanzas",
+            "pp-sec-hallazgos",
+            "pp-sec-equipo",
+        )
+    ]
+    assert orden == sorted(orden)
+    assert 'id="btnMenu"' in contenido and "menu-plegado" in contenido
+    assert '<span class="ni-txt">Clientes</span>' in contenido
 
 
 def test_panel_sin_datos_muestra_estados_vacios(client, usuario_senior):

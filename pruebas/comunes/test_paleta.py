@@ -27,6 +27,7 @@ def _variable(estilos, nombre):
     [
         (paleta.NAVY, "navy"),
         (paleta.TEAL, "teal"),
+        (paleta.TEAL_CLARO, "teal-claro"),
         (paleta.NARANJA, "orange"),
         (paleta.VERDE, "green"),
         (paleta.ROJO, "red"),

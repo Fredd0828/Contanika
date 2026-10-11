@@ -115,7 +115,8 @@ Parcial = hay una parte que depende de una decisión.
 
 ### 12. Añadir protección contra bots
 - **Se agregó:** campo señuelo en el inicio de sesión (los robots que rellenan todos los campos quedan
-  rechazados); `robots.txt` y la cabecera `X-Robots-Tag` para que el sistema no aparezca en buscadores;
+  rechazados); `robots.txt` y la cabecera `X-Robots-Tag` para que el sistema no aparezca en buscadores
+  (desde el 11-oct-2026 la única excepción es la página web de inicio, `/`, que es pública);
   la dirección del panel de administración de Django se puede cambiar con `RUTA_ADMIN`; tope de
   peticiones en el enlace público del PDF.
 - **Decisión pendiente:** un CAPTCHA (por ejemplo Cloudflare Turnstile o reCAPTCHA) exige crear una
