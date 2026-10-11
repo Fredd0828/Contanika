@@ -1,0 +1,32 @@
+# Revisión de seguridad en cada cambio (pr01, control 20).
+# Corre el análisis estático del código (bandit) y busca vulnerabilidades
+# conocidas en las dependencias (pip-audit). También corre cada lunes, por si
+# aparece una vulnerabilidad nueva en una librería que no ha cambiado.
+name: Seguridad
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "0 11 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  analisis:
+    name: bandit y pip-audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Instalar dependencias
+        run: pip install -r requirements-dev.txt
+      - name: Bandit (seguridad del código)
+        run: bandit -q -c pyproject.toml -r aplicaciones config
+      - name: pip-audit (vulnerabilidades en dependencias)
+        run: pip-audit --skip-editable

@@ -36,7 +36,7 @@ FIXTURE_POR_ROL = {
 def _url(ruta):
     """Ruta con sus parámetros reemplazados por valores de relleno."""
     url = re.sub(r"<int:[^>]+>", "1", ruta["ruta"])
-    return re.sub(r"<(?:str|slug):[^>]+>", "x", url)
+    return re.sub(r"<(?:str|slug|path):[^>]+>", "x", url)
 
 
 def _pedir(cliente, ruta):
@@ -107,4 +107,5 @@ def test_las_rutas_publicas_son_solo_las_previstas():
     assert {ruta["nombre"] for ruta in RUTAS if ruta["publica"]} == {
         "seguridad:iniciar_sesion",
         "finanzas:pdf_publico",
+        "robots",
     }

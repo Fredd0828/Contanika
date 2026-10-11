@@ -24,7 +24,7 @@ SALIDA_PREDETERMINADA = Path("documentacion") / "MAPA_NAVEGACION.md"
 ROLES = (Rol.ADMINISTRADOR, Rol.CONTADOR_SENIOR, Rol.CONTADOR_JUNIOR)
 NOMBRES_MODULO = dict(Modulo.OPCIONES_CODIGO)
 # Rutas que se abren sin iniciar sesión.
-RUTAS_PUBLICAS = ("seguridad:iniciar_sesion", "finanzas:pdf_publico")
+RUTAS_PUBLICAS = ("seguridad:iniciar_sesion", "finanzas:pdf_publico", "robots")
 SI, NO = "Sí", "—"
 
 
@@ -106,9 +106,9 @@ class Command(BaseCommand):
             "",
             "## 1. Navegación general",
             "",
-            "Toda pantalla exige sesión, salvo el inicio de sesión y el enlace firmado del PDF de la "
-            "cuenta de cobro que recibe el cliente. El menú lateral, la campana de vencimientos, la "
-            "ayuda y el perfil están disponibles desde cualquier pantalla.",
+            "Toda pantalla exige sesión, salvo el inicio de sesión, `robots.txt` y el enlace firmado del "
+            "PDF de la cuenta de cobro que recibe el cliente. El menú lateral, la campana de "
+            "vencimientos, la ayuda y el perfil están disponibles desde cualquier pantalla.",
             "",
             "```mermaid",
             "flowchart LR",

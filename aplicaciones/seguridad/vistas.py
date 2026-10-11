@@ -23,6 +23,7 @@ from . import guias, menu, panel, selectores, servicios
 from .formularios import (
     CambiarClaveForm,
     FiltroUsuariosForm,
+    InicioSesionForm,
     PerfilForm,
     UsuarioCrearForm,
     UsuarioEditarForm,
@@ -39,6 +40,7 @@ class IniciarSesionView(LoginView):
     """Formulario de acceso al sistema (CU001)."""
 
     template_name = "seguridad/iniciar_sesion.html"
+    authentication_form = InicioSesionForm
     redirect_authenticated_user = True
 
 

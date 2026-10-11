@@ -31,8 +31,8 @@ class HallazgoForm(ModeloFormularioBase):
             "descripcion",
         ]
         widgets = {
-            "fecha_inicio_periodo": forms.DateInput(attrs={"type": "date"}),
-            "fecha_fin_periodo": forms.DateInput(attrs={"type": "date"}),
+            "fecha_inicio_periodo": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
+            "fecha_fin_periodo": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
             "descripcion": forms.Textarea(attrs={"rows": 3}),
             "tipo_hallazgo": forms.TextInput(attrs={"list": "lista-tipos-hallazgo"}),
         }

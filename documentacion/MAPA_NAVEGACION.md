@@ -2,11 +2,11 @@
 
 Entregable 3.3. Generado el 07/10/2026 con `python gestionar.py generar_mapa_navegacion` a partir de las rutas del sistema. No editar a mano: volver a generarlo cuando cambien las rutas.
 
-El sistema tiene **107 rutas**: 76 pantallas o descargas (GET) y 31 acciones que solo reciben formularios (POST).
+El sistema tiene **109 rutas**: 78 pantallas o descargas (GET) y 31 acciones que solo reciben formularios (POST).
 
 ## 1. Navegación general
 
-Toda pantalla exige sesión, salvo el inicio de sesión y el enlace firmado del PDF de la cuenta de cobro que recibe el cliente. El menú lateral, la campana de vencimientos, la ayuda y el perfil están disponibles desde cualquier pantalla.
+Toda pantalla exige sesión, salvo el inicio de sesión, `robots.txt` y el enlace firmado del PDF de la cuenta de cobro que recibe el cliente. El menú lateral, la campana de vencimientos, la ayuda y el perfil están disponibles desde cualquier pantalla.
 
 ```mermaid
 flowchart LR
@@ -60,6 +60,8 @@ Columnas de rol: «Sí» = el rol puede abrir la ruta; «—» = recibe 403. Ade
 
 | Ruta | Nombre | Métodos | Admin. | Senior | Junior | Qué hace |
 |---|---|---|---|---|---|---|
+| `/robots.txt` | `robots` | GET | Sí | Sí | Sí | `robots.txt`: pide a los buscadores y rastreadores que no recorran el sistema. *(pública, sin sesión)* |
+| `/media/<path:ruta>` | `media` | GET | Sí | Sí | Sí | Sirve las imágenes subidas (foto de perfil, firma y membrete) solo a quien tiene sesión y le corresponden: la foto y la firma, a su dueño o al Administrador; el membrete, a cualquier usuario. Lo demás responde 404. |
 | `/` | `seguridad:panel` | GET | Sí | Sí | Sí | Panel principal del sistema. |
 | `/iniciar-sesion/` | `seguridad:iniciar_sesion` | GET · POST | Sí | Sí | Sí | Formulario de acceso al sistema (CU001). *(pública, sin sesión)* |
 | `/cerrar-sesion/` | `seguridad:cerrar_sesion` | GET · POST | Sí | Sí | Sí | Cierra la sesión activa y regresa al inicio de sesión. |
@@ -67,7 +69,7 @@ Columnas de rol: «Sí» = el rol puede abrir la ruta; «—» = recibe 403. Ade
 | `/ayuda/` | `seguridad:ayuda` | GET | Sí | Sí | Sí | Guías paso a paso de los procesos, guía rápida de los módulos, preguntas frecuentes y contacto de soporte del despacho. |
 | `/ayuda/guias/<slug:slug>/` | `seguridad:guia` | GET | Sí | Sí | Sí | Una guía paso a paso. Solo abre las guías de procesos que el usuario puede hacer (su rol y sus módulos habilitados); las demás responden 403. |
 | `/perfil/contrasena/` | `seguridad:cambiar_clave` | POST | Sí | Sí | Sí | Cambio de contraseña propia: exige la actual y conserva la sesión abierta. |
-| `/cuenta-cobro/<str:token>/` | `finanzas:pdf_publico` | GET | Sí | Sí | Sí | PDF de la cuenta de cobro para el cliente, sin sesión, por el enlace firmado que recibe en WhatsApp o en el recordatorio. Un token alterado o vencido responde 404. *(pública, sin sesión)* |
+| `/cuenta-cobro/<str:token>/` | `finanzas:pdf_publico` | GET | Sí | Sí | Sí | PDF de la cuenta de cobro para el cliente, sin sesión, por el enlace firmado que recibe en WhatsApp o en el recordatorio. Un token alterado o vencido responde 404. Como es pública, cada dirección IP tiene un tope de peticiones por minuto (429 al pasarse), para que nadie pruebe enlaces en masa. *(pública, sin sesión)* |
 
 ### MOD01 · Gestión de clientes
 
@@ -333,7 +335,7 @@ Número de rutas que cada rol puede abrir, sobre el total del módulo.
 
 | Módulo | Rutas | Administrador | Contador Senior | Contador Junior |
 |---|---|---|---|---|
-| Sin módulo | 8 | 8 | 8 | 8 |
+| Sin módulo | 10 | 10 | 10 | 10 |
 | MOD01 · Gestión de clientes | 12 | 12 | 12 | 6 |
 | MOD02 · Calendario | 16 | 16 | 13 | 6 |
 | MOD03 · Tablero de tareas Kanban | 8 | 8 | 8 | 5 |

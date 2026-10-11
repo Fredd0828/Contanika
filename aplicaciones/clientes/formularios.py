@@ -4,7 +4,7 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.forms import inlineformset_factory
 
-from aplicaciones.comunes.formularios import FormularioBase, ModeloFormularioBase
+from aplicaciones.comunes.formularios import FormularioBase, ModeloFormularioBase, validar_excel_subido
 
 from .models import Cliente, ClienteMunicipio, Credencial, ObligacionTributaria, TipoServicio
 
@@ -156,12 +156,7 @@ class ImportarClientesForm(FormularioBase):
 
     def clean_archivo(self):
         """Valida la extensión y el tamaño del archivo antes de procesarlo."""
-        archivo = self.cleaned_data["archivo"]
-        if not archivo.name.lower().endswith(".xlsx"):
-            raise forms.ValidationError("El archivo debe estar en formato Excel (.xlsx).")
-        if archivo.size > 5 * 1024 * 1024:
-            raise forms.ValidationError("El archivo no debe superar los 5 MB.")
-        return archivo
+        return validar_excel_subido(self.cleaned_data["archivo"])
 
 
 class CredencialForm(ModeloFormularioBase):

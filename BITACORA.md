@@ -1882,3 +1882,69 @@ Rama `feature/fase-4-calidad`, creada desde `main`.
 - Pruebas de aceptación con Paula (diciembre) y **pr01**.
 - Siguen abiertos: instalar el cron, capturas y vencimientos pasados en
   «Pendiente».
+
+---
+
+## Miércoles 7 de octubre de 2026 — pr01: endurecimiento de seguridad (20 controles)
+
+### Qué se hizo
+Rama `feature/pr01-seguridad`, creada desde `main`, por aviso del usuario.
+Primero se auditó qué cubría ya el proyecto; el estado de cada control está en
+`documentacion/PR01_SEGURIDAD.md`.
+- **Huecos encontrados y cerrados:**
+  - En desarrollo, cualquier archivo de `media/` (cuentas de cobro,
+    certificados, adjuntos) se abría por dirección sin iniciar sesión. Ahora
+    los archivos subidos pasan por una vista con sesión que solo entrega fotos,
+    firmas y membrete a quien corresponde.
+  - La contraseña de desarrollo de la administradora estaba escrita en
+    `AGENTS.md`; se retiró y una prueba impide que vuelva a pasar.
+  - Un archivo con la extensión cambiada (un programa renombrado como `.pdf`)
+    se aceptaba; ahora se comprueba el contenido.
+  - El bloqueo por fuerza bruta no dejaba registro.
+- **Agregado:** política de seguridad de contenido y demás cabeceras en todos
+  los entornos; huella de integridad en lo que viene del CDN; cookies de sesión
+  `HttpOnly`/`SameSite`, con vencimiento a las 8 horas y al cerrar el
+  navegador; campo señuelo contra robots, `robots.txt` y `X-Robots-Tag`; tope
+  de peticiones en la API y en el enlace público del PDF; registro de consultas
+  lentas y de eventos de seguridad; producción que no arranca con secretos de
+  desarrollo ni con el superusuario de la base de datos; scripts de roles
+  mínimos y de RLS para Supabase; Dependabot y flujo de GitHub Actions.
+- Mientras tanto se instaló el cron (`scripts/instalar_cron.sh`) por aviso del
+  usuario.
+
+### Cómo verificarlo (entorno local)
+Sin iniciar sesión, abrir `http://127.0.0.1:8000/media/` seguido de la ruta de
+cualquier archivo: lleva al inicio de sesión. En las herramientas del
+navegador, cualquier respuesta trae `Content-Security-Policy`. Cerrar y abrir el
+navegador: pide iniciar sesión de nuevo.
+
+### Resultado de las pruebas
+`pruebas/seguridad/test_pr01.py` (55 pruebas). El script de RLS se probó en una
+base temporal con las 42 tablas. El inicio de sesión se abrió en un navegador
+real: carga completo con la CSP y las huellas, sin bloqueos.
+
+**Revisión en navegador con sesión (11 de octubre de 2026).** Se abrieron en
+Chrome, con la sesión de la administradora, el panel, las entradas del menú,
+varios detalles y los seis reportes (36 pantallas): ninguna carga bloqueada por
+la CSP, y los cuatro gráficos (dos del panel, cartera e ingresos) se pintan.
+De paso se corrigió un error del Módulo 5 que no tenía que ver con la CSP: al
+editar un hallazgo, las dos fechas del período salían vacías, porque el campo
+no las entregaba en el formato año-mes-día que exige el navegador.
+
+**Ensayo del despliegue (11 de octubre de 2026).** Como aún no hay proyecto de
+Supabase, se ensayó la secuencia completa en un PostgreSQL temporal que lo
+imita (`postgres` sin superusuario, roles `anon` y `authenticated`). Los
+scripts 03 y 04 fallaban ahí: `postgres` no podía dar privilegios ni activar
+RLS sobre las tablas de `contanika_dueno`. Corregido en el script 03; con eso
+quedan las 53 tablas con RLS, el sistema funciona con `contanika_app` y
+`check --deploy` no deja avisos. Producción ahora rechaza también el usuario
+`postgres.<proyecto>` del pooler de Supabase.
+
+### Pendientes
+- **Del usuario:** cambiar la contraseña local de la administradora (quedó en
+  el historial de Git, repositorio privado) y decidir si quiere CAPTCHA.
+- **Al desplegar:** los seis pasos del final de `PR01_SEGURIDAD.md` (secretos
+  nuevos, script de roles, script de RLS, `check --deploy`), ya ensayados.
+  Falta el proyecto de Supabase y el servidor donde correrá el sistema.
+- Mejora futura: pasar los scripts en línea a archivos para quitar
+  `'unsafe-inline'` de la CSP.
