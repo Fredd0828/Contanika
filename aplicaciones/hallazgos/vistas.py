@@ -16,6 +16,7 @@ from django.urls import reverse
 from django.views.generic import ListView, View
 
 from aplicaciones.comunes.models import Adjunto
+from aplicaciones.comunes.paginacion import PaginacionMixin
 from aplicaciones.seguridad.models import Modulo, Rol
 from aplicaciones.seguridad.permisos import ModuloHabilitadoMixin, RolRequeridoMixin
 
@@ -57,13 +58,12 @@ def _adjunto_gestionable_o_404(usuario, pk):
     return adjunto
 
 
-class ListaHallazgosView(ModuloHabilitadoMixin, ListView):
+class ListaHallazgosView(ModuloHabilitadoMixin, PaginacionMixin, ListView):
     """Listado filtrable de hallazgos y revisiones."""
 
     codigo_modulo = Modulo.MOD05_HALLAZGOS
     template_name = "hallazgos/lista.html"
     context_object_name = "hallazgos"
-    paginate_by = 20
 
     def get_queryset(self):
         opciones = selectores.opciones_filtro_hallazgos(self.request.user)

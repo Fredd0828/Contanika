@@ -7,18 +7,26 @@ plantilla (con sus campos) o el documento (con sus valores, detalles y
 archivo) queden consistentes.
 """
 
-import io
-
 from django.core.files.base import ContentFile
 from django.db import transaction
 from django.db.models import ProtectedError
+from django.utils import timezone
+from django.utils.formats import date_format
 from django.utils.html import escape
 from reportlab.lib.pagesizes import letter
-from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import cm
-from reportlab.platypus import KeepTogether, Paragraph, SimpleDocTemplate, Spacer
+from reportlab.platypus import HRFlowable, KeepTogether, Paragraph, Spacer
 
-from aplicaciones.comunes.pdf import encabezado_despacho, imagen_proporcional
+from aplicaciones.comunes import paleta
+from aplicaciones.comunes.pdf import (
+    ancho_util,
+    color,
+    construir_pdf,
+    encabezado_documento,
+    estilos_documento,
+    imagen_proporcional,
+)
 from aplicaciones.seguridad.models import ConfiguracionDespacho
 
 from . import selectores
@@ -27,6 +35,8 @@ from .models import Documento, DocumentoDetalle, DocumentoValor
 # Espacio reservado para la firma del contador en el PDF.
 ANCHO_FIRMA = 5 * cm
 ALTO_FIRMA = 2.5 * cm
+# Un certificado se lee como carta: márgenes laterales más amplios.
+MARGEN_DOCUMENTO = 2.6 * cm
 
 
 @transaction.atomic
@@ -108,28 +118,57 @@ def construir_pdf_documento(documento, usuario_firmante):
     convertir los saltos de línea en `<br/>`, para que ningún valor ingresado
     por un usuario pueda inyectar marcado interpretado por ReportLab.
     """
-    buffer = io.BytesIO()
-    documento_pdf = SimpleDocTemplate(
-        buffer,
-        pagesize=letter,
-        topMargin=2 * cm,
-        bottomMargin=2 * cm,
-        leftMargin=2.5 * cm,
-        rightMargin=2.5 * cm,
-    )
-    estilos = getSampleStyleSheet()
+    ancho = ancho_util(letter, MARGEN_DOCUMENTO)
+    textos = estilos_documento()
     despacho = ConfiguracionDespacho.objects.first()
+    fecha = date_format(timezone.localtime(documento.fecha_generacion).date())
 
-    elementos = encabezado_despacho(despacho, estilos, ancho_maximo=documento_pdf.width)
-    elementos.append(Spacer(1, 1 * cm))
-    elementos.append(Paragraph(documento.plantilla.nombre_plantilla, estilos["Heading2"]))
-    elementos.append(Spacer(1, 0.5 * cm))
-    elementos.append(Paragraph(selectores.texto_certificado_renderizado(documento), estilos["Normal"]))
-    elementos.append(Spacer(1, 2 * cm))
-    elementos.append(bloque_firma(usuario_firmante, estilos))
+    elementos = encabezado_documento(
+        despacho,
+        ancho,
+        f"Documento No. {documento.pk}",
+        [f"Expedido el {fecha}"],
+        textos,
+    )
+    elementos.append(Spacer(1, 0.9 * cm))
+    elementos.append(
+        Paragraph(escape(documento.plantilla.nombre_plantilla).upper(), textos["titulo_centrado"])
+    )
+    # Una línea corta bajo el título lo separa del cuerpo, como en un certificado impreso.
+    elementos.append(
+        HRFlowable(
+            width=2.6 * cm,
+            thickness=1.4,
+            color=color(paleta.TEAL),
+            spaceBefore=7,
+            spaceAfter=22,
+            hAlign="CENTER",
+        )
+    )
+    elementos.append(Paragraph(selectores.texto_certificado_renderizado(documento), textos["cuerpo"]))
+    elementos.append(Spacer(1, 1.6 * cm))
+    elementos.append(bloque_firma(usuario_firmante, None))
 
-    documento_pdf.build(elementos)
-    return buffer.getvalue()
+    return construir_pdf(
+        elementos,
+        tamano=letter,
+        titulo=documento.plantilla.nombre_plantilla,
+        despacho=despacho,
+        margen_lateral=MARGEN_DOCUMENTO,
+    )
+
+
+class _NombreConLinea(Paragraph):
+    """Nombre del firmante con la línea de firma dibujada encima."""
+
+    def draw(self):
+        lienzo = self.canv
+        lienzo.saveState()
+        lienzo.setStrokeColor(color(paleta.NAVY))
+        lienzo.setLineWidth(0.7)
+        lienzo.line(0, self.height + 3, ANCHO_FIRMA + 1.5 * cm, self.height + 3)
+        lienzo.restoreState()
+        super().draw()
 
 
 def bloque_firma(usuario_firmante, estilos):
@@ -137,20 +176,25 @@ def bloque_firma(usuario_firmante, estilos):
     Firma y datos del contador que firma el documento.
 
     Todo el bloque va al costado izquierdo, en la misma línea del cuerpo del
-    documento: la imagen de la firma (sin deformarla) y debajo el nombre, la
-    identificación y la tarjeta profesional. Se mantiene junto para que un
-    salto de página no separe la firma de los datos.
+    documento: la imagen de la firma (sin deformarla), la línea de firma y
+    debajo el nombre, la identificación y la tarjeta profesional. Se mantiene
+    junto para que un salto de página no separe la firma de los datos.
+
+    `estilos` se conserva por compatibilidad; el bloque usa los estilos
+    comunes de los PDF.
     """
+    textos = estilos_documento()
     if usuario_firmante.firma:
         firma = imagen_proporcional(usuario_firmante.firma.path, ANCHO_FIRMA, ALTO_FIRMA, alineacion="LEFT")
     else:
         firma = Spacer(1, ALTO_FIRMA)
-    elementos = [firma, Paragraph(escape(usuario_firmante.nombre), estilos["Normal"])]
+    nombre = ParagraphStyle("firmante", parent=textos["valor"], spaceBefore=6)
+    elementos = [firma, _NombreConLinea(escape(usuario_firmante.nombre), nombre)]
     if usuario_firmante.identificacion:
-        elementos.append(Paragraph(f"C.C. {escape(usuario_firmante.identificacion)}", estilos["Normal"]))
+        elementos.append(Paragraph(f"C.C. {escape(usuario_firmante.identificacion)}", textos["normal"]))
     if usuario_firmante.numero_tarjeta_profesional:
         elementos.append(
-            Paragraph(f"T.P. No. {escape(usuario_firmante.numero_tarjeta_profesional)}", estilos["Normal"])
+            Paragraph(f"T.P. No. {escape(usuario_firmante.numero_tarjeta_profesional)}", textos["normal"])
         )
     return KeepTogether(elementos)
 

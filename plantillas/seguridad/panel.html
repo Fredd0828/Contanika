@@ -303,7 +303,7 @@
                 <div class="ph-title"><i class="bi bi-search-heart-fill"></i> Hallazgos</div>
                 <div class="ph-meta mt-1">{{ seccion.abiertos }} sin cerrar</div>
             </div>
-            <a class="ph-link" href="{% url 'hallazgos:lista' %}"><i class="bi bi-list-ul"></i> Ver todos</a>
+            <a class="ph-link" href="{% url 'hallazgos:lista' %}" title="Ver todos los hallazgos"><i class="bi bi-list-ul"></i> <span class="ph-link-txt">Ver todos</span></a>
         </div>
 
         {% if seccion.abiertos %}
@@ -351,9 +351,9 @@
         <div class="ph">
             <div>
                 <div class="ph-title"><i class="bi bi-people-fill"></i> Carga del equipo</div>
-                <div class="ph-meta mt-1">Tareas activas por miembro y vencimientos de los próximos 7 días</div>
+                <div class="ph-meta mt-1">Tareas activas por miembro</div>
             </div>
-            <a class="ph-link" href="{% url 'seguridad:equipo' %}"><i class="bi bi-speedometer2"></i> Panel de equipo</a>
+            <a class="ph-link" href="{% url 'seguridad:equipo' %}" title="Panel de equipo"><i class="bi bi-speedometer2"></i> <span class="ph-link-txt">Panel de equipo</span></a>
         </div>
         <div class="pp-barras pp-barras-equipo">
             {% for fila in seccion.miembros %}
@@ -361,10 +361,12 @@
                 <span class="pp-barra-etq" title="{{ fila.usuario.nombre }}">{{ fila.usuario.nombre }}</span>
                 <span class="pp-barra-pista"><span class="pp-barra-relleno{% if fila.alerta %} pp-relleno-rojo{% endif %}" style="width:{{ fila.ancho }}%"></span></span>
                 <span class="pp-barra-num">{{ fila.tareas_activas }}</span>
+                {% if fila.alerta or fila.vencimientos %}
                 <span class="pp-barra-extra">
                     {% if fila.alerta %}<span class="badge-est be-r" title="Más de {{ seccion.limite_pendientes }} tareas pendientes"><i class="bi bi-exclamation-triangle"></i> Sobrecarga</span>{% endif %}
-                    {% if fila.vencimientos %}<span class="badge-est be-w" title="Vencimientos por presentar en los próximos 7 días"><i class="bi bi-calendar2-week"></i> {{ fila.vencimientos|length }}</span>{% endif %}
+                    {% if fila.vencimientos %}<span class="badge-est be-w" title="Vencimientos por presentar en los próximos 7 días"><i class="bi bi-calendar2-week"></i> {{ fila.vencimientos|length }} vencimiento{{ fila.vencimientos|length|pluralize }} en 7 días</span>{% endif %}
                 </span>
+                {% endif %}
             </div>
             {% empty %}
             <div class="pp-vacio">No hay miembros activos en el equipo.</div>

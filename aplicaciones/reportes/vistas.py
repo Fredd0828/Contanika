@@ -20,6 +20,7 @@ from django.utils.text import slugify
 from django.views.generic import ListView, TemplateView, View
 
 from aplicaciones.comunes.formularios import FormularioBase
+from aplicaciones.comunes.paginacion import PaginacionMixin
 from aplicaciones.seguridad.models import Modulo, Rol
 from aplicaciones.seguridad.permisos import ModuloHabilitadoMixin, RolRequeridoMixin
 
@@ -191,12 +192,11 @@ class FiltroDescargasForm(FormularioBase):
     hasta = forms.DateField(required=False, label="Hasta", widget=forms.DateInput(attrs={"type": "date"}))
 
 
-class DescargasReportesView(MixinAdministrarReportes, ListView):
+class DescargasReportesView(MixinAdministrarReportes, PaginacionMixin, ListView):
     """Historial de descargas: reporte, usuario, fecha, formato y filtros usados (HU028-5)."""
 
     template_name = "reportes/descargas.html"
     context_object_name = "descargas"
-    paginate_by = 30
 
     def get_queryset(self):
         self.formulario_filtro = FiltroDescargasForm(self.request.GET or None)

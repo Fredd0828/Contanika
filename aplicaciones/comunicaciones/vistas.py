@@ -15,6 +15,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.generic import ListView, View
 
+from aplicaciones.comunes.paginacion import PaginacionMixin
 from aplicaciones.seguridad.models import Modulo, Rol
 from aplicaciones.seguridad.permisos import ModuloHabilitadoMixin, RolRequeridoMixin
 
@@ -35,13 +36,12 @@ def _redirigir_o_recargar(request, url):
     return redirect(url)
 
 
-class ListaComunicacionesView(ModuloHabilitadoMixin, ListView):
+class ListaComunicacionesView(ModuloHabilitadoMixin, PaginacionMixin, ListView):
     """Historial general de comunicaciones de los clientes visibles (acceso desde el menú)."""
 
     codigo_modulo = Modulo.MOD07_COMUNICACIONES
     template_name = "comunicaciones/lista.html"
     context_object_name = "comunicaciones"
-    paginate_by = 20
     cliente = None
 
     def obtener_cliente(self):
