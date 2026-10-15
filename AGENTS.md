@@ -91,7 +91,27 @@ models.py → servicios.py → selectores.py → formularios.py → vistas.py �
 - **Estilo:** `ruff` debe pasar sin hallazgos.
 - **Selects abiertos:** los campos desplegables permiten escribir valores nuevos cuando aplique.
 - **Fechas editables:** ninguna fecha queda bloqueada, aunque el sistema la calcule automáticamente.
+- **PDF con la misma hoja (13-oct-2026, pedido por el usuario):** todo PDF
+  (reportes, cuentas de cobro, documentos y certificados) se arma con las
+  piezas de `aplicaciones/comunes/pdf.py`: `encabezado_documento` (despacho a
+  la izquierda, título y datos a la derecha), `estilos_documento`,
+  `estilo_tabla`, `cuadro_datos` y `construir_pdf`, que pone la franja
+  superior, los márgenes y el pie con los datos del despacho y «Página X de
+  Y». Un PDF nuevo no define estilos ni encabezados propios. Los PDF ya
+  guardados (documentos y cuentas de cobro) conservan su aspecto anterior
+  hasta que se vuelvan a generar.
+- **Historial de la tarea:** el detalle muestra solo los últimos 5 movimientos.
 - **Filtros desplegables:** todos los listados usan filtros desplegables.
+- **Tablas de a 10 (regla del usuario, 13-oct-2026):** ninguna tabla muestra
+  más de 10 registros a la vez; lo demás pasa a la página siguiente, como en
+  Clientes. Un listado nuevo hereda de `comunes.paginacion.PaginacionMixin`
+  (antes de `ListView`) e incluye `comunes/_paginacion.html` (selector de
+  10/25/50, números de página y total; `with dentro_de_panel=True` si va
+  dentro del panel de la tabla). Las tablas `.tbl` que no salen de un
+  `ListView` (reportes, cartera, fichas) las reparte de a 10 el guion de
+  `base.html`, sin hacer nada; se saltan las que tienen campos de formulario
+  en sus filas y las marcadas con `data-sin-paginar`. Al imprimir sale la
+  tabla completa.
 - **Responsive:** toda pantalla debe acomodarse a teléfono, tableta y
   escritorio; comprobarlo (360, 768, 1024 y 1440 px) antes de darla por
   terminada.
@@ -542,13 +562,17 @@ Ninguna funcionalidad se da por terminada sin:
     columnas, y cada sección y cada mitad de `.pp-duo` acomoda su interior.
     Así responde igual al plegar el menú lateral. Revisado en 390, 768, 1024,
     1280 y 1440 px, con el menú plegado y desplegado.
-  - Colores (11-oct-2026, propuesta aprobada por el usuario sobre una
-    maqueta): cada color tiene un solo oficio. **Navy**: el resumen de arriba
-    (`.pp-resumen`), único bloque oscuro y único degradado (navy → teal
-    oscuro); las seis cifras llevan el mismo ícono y su estado va en un punto
-    junto al detalle (`--pp-tono`), con leyenda Vencido / Próximo / Al día.
-    **Crema** (`--crema-suave`): banda del encabezado de cada sección, con el
-    ícono en un recuadro teal. **Teal**: barras, medidores y enlaces.
+  - Colores (11-oct-2026; resumen y encabezados cambiados el 13-oct-2026 a
+    pedido del usuario): cada color tiene un solo oficio. **Navy**: banda del
+    encabezado de cada sección (`.pp-tablero .ph`), en degradado de navy a
+    teal (`--pp-oscuro`, el mismo en todas), con título blanco, ícono en un
+    recuadro teal, botones de contorno claro y el principal en blanco. El
+    otro degradado es `--pp-teal` (íconos, barras y medidores); los colores
+    de estado van siempre planos. **Blanco**: el resumen de arriba
+    (`.pp-resumen`) son seis tarjetas blancas sobre el lienzo, sin bloque
+    que las envuelva; el estado de cada cifra (`--pp-tono`) va en la franja
+    superior de la tarjeta y en el punto junto al detalle, con leyenda
+    Vencido / Próximo / Al día. **Teal**: barras, medidores y enlaces.
     **Rojo**: vencido, atrasado o en mora. **Naranja**: por vencer. **Verde**:
     cumplido o al día (barra «Terminado» y avance del tablero). **Marrón**:
     texto de las etiquetas rojas y naranjas (por contraste). En las listas el
@@ -556,12 +580,29 @@ Ninguna funcionalidad se da por terminada sin:
     Baja va en gris solo dentro del panel (en el Kanban sigue verde: pendiente
     de decidir si se unifica). Versiones descartadas por el usuario, no volver
     a ellas: un tinte distinto por tarjeta con fondos degradados en los
-    recuadros («no es armonioso»), y encabezados de sección en teal suave
-    (se veían azulados).
+    recuadros («no es armonioso»), encabezados de sección en teal suave
+    (se veían azulados), y el resumen sobre un bloque oscuro
+    (13-oct-2026: no le agradó).
   - Gráfico de Finanzas: Facturado en `paleta.TEAL_CLARO` y Cobrado en
     `paleta.TEAL` (se distinguen por claridad); el naranja no se usa ahí para
     que no signifique dos cosas. En «Tareas por estado» la barra verde de
     Terminado convive con las teal porque cada barra lleva su nombre al lado.
+- **Misma estructura en todos los módulos** (13-oct-2026, pedido por el
+  usuario): el `.ph` que abre un `.panel` (`.panel > .ph:first-child`) es en
+  toda la plataforma una banda en el degradado oscuro (`--grad-oscuro`), con
+  título blanco e ícono en recuadro teal; no hace falta ninguna clase extra.
+  Un `.ph` que no es el primer hijo del panel queda como rótulo sencillo.
+  Botones: el principal es `.ph-btn` (o `.btn-primary`), en `--grad-teal`, y
+  el secundario `.ph-link` (o `.btn-outline-secondary`), de contorno; mismas
+  medidas para todos, también los `.btn` de Bootstrap. Sobre la banda se
+  invierten solos (principal blanco, secundario de contorno claro). Una
+  pantalla nueva usa esta estructura y no define encabezados ni botones
+  propios. Los dos degradados están en `:root` (`--grad-oscuro`,
+  `--grad-teal`); los colores de estado van siempre planos.
+- **Menú lateral en degradado** (13-oct-2026, pedido por el usuario): fondo
+  de navy (arriba) a teal (abajo), el mismo de las bandas del panel. Por eso
+  el texto de las entradas va en blanco al 78 % y la entrada activa se marca
+  con blanco translúcido y borde teal claro (el teal ya no se distingue abajo).
 - **Menú lateral plegable** (11-oct-2026): el botón de la barra superior
   (`#btnMenu`) lo reduce en escritorio a una franja de íconos (clase
   `menu-plegado` en `<html>`, que cambia `--ancho-menu`) y lo recuerda en

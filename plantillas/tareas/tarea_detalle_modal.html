@@ -90,9 +90,10 @@
     </form>
     {% endif %}
 
-    <div class="sec-lbl">Historial</div>
+    {# Solo los últimos 5 movimientos (vienen del más reciente al más antiguo). #}
+    <div class="sec-lbl">Historial · últimos 5 movimientos</div>
     <div class="tl">
-        {% for cambio in tarea.historial.all %}
+        {% for cambio in tarea.historial.all|slice:":5" %}
         <div class="tl-item">
             <div class="tl-dot"></div>
             <div class="tl-date">{{ cambio.fecha_cambio|date:"d M, H:i" }} · {{ cambio.usuario.nombre }}</div>

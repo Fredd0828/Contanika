@@ -64,6 +64,13 @@ a {
     --teal-claro: #7fb5bd;
     --crema-suave: #fff6e8;
 
+    /* Los dos degradados de la plataforma, siempre entre colores de la marca:
+       el oscuro para las bandas de encabezado (y, de arriba abajo, el menú) y
+       el teal para íconos, barras y botones principales. Los colores de estado
+       (rojo, naranja, verde) van siempre planos. */
+    --grad-oscuro: linear-gradient(100deg, var(--navy) 0%, var(--teal-oscuro) 58%, var(--teal) 100%);
+    --grad-teal: linear-gradient(135deg, var(--teal) 0%, var(--teal-oscuro) 100%);
+
     --bs-primary: var(--teal);
     --bs-primary-rgb: var(--teal-rgb);
     --bs-primary-text-emphasis: var(--teal-oscuro);
@@ -1512,7 +1519,8 @@ a {
     left: 0;
     width: var(--ancho-menu);
     height: 100vh;
-    background: var(--navy);
+    /* El mismo degradado de las bandas del panel (navy a teal), de arriba abajo. */
+    background: linear-gradient(180deg, var(--navy) 0%, var(--teal-oscuro) 58%, var(--teal) 100%);
     display: flex;
     flex-direction: column;
     z-index: 1000;
@@ -1593,7 +1601,7 @@ a {
     font-size: 8px;
     font-weight: 700;
     letter-spacing: 1.5px;
-    color: rgba(255, 255, 255, 0.28);
+    color: rgba(255, 255, 255, 0.5);
     text-transform: uppercase;
     padding: 14px 16px 3px;
 }
@@ -1605,7 +1613,8 @@ a {
     padding: 9px 16px;
     margin: 1px 6px;
     border-radius: 7px;
-    color: rgba(255, 255, 255, 0.55);
+    /* Más claro que antes: abajo el fondo es teal y el texto debe seguir leyéndose. */
+    color: rgba(255, 255, 255, 0.78);
     font-size: 13px;
     font-weight: 500;
     transition: all 0.15s;
@@ -1617,15 +1626,17 @@ a {
 }
 
 .ni:hover {
-    background: rgba(255, 255, 255, 0.07);
+    background: rgba(255, 255, 255, 0.09);
     color: #fff;
 }
 
+/* La entrada activa se marca en blanco translúcido y teal claro, que se
+   distinguen en cualquier punto del degradado. */
 .ni.active {
-    background: rgba(21, 97, 109, 0.5);
+    background: rgba(255, 255, 255, 0.16);
     color: #fff;
     font-weight: 700;
-    border-left: 3px solid var(--teal);
+    border-left: 3px solid var(--teal-claro);
     padding-left: 13px;
 }
 
@@ -1637,7 +1648,7 @@ a {
 }
 
 .ni.deshabilitado {
-    color: rgba(255, 255, 255, 0.22);
+    color: rgba(255, 255, 255, 0.4);
     cursor: not-allowed;
 }
 
@@ -1664,7 +1675,7 @@ a {
     width: 32px;
     height: 32px;
     border-radius: 8px;
-    background: rgba(21, 97, 109, 0.6);
+    background: rgba(255, 255, 255, 0.18);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1684,13 +1695,13 @@ a {
 .av-role {
     font-size: 9.5px;
     margin-top: 1px;
-    color: #5bc4d0;
+    color: var(--cream);
 }
 
 .btn-salir {
     background: none;
     border: none;
-    color: rgba(255, 255, 255, 0.35);
+    color: rgba(255, 255, 255, 0.7);
     font-size: 15px;
     cursor: pointer;
 }
@@ -1767,7 +1778,7 @@ a {
 
     .menu-plegado .ni.active {
         border-left: none;
-        box-shadow: inset 3px 0 0 var(--teal);
+        box-shadow: inset 3px 0 0 var(--teal-claro);
     }
 
     .menu-plegado .ni i {
@@ -2053,10 +2064,13 @@ a {
 }
 
 .panel {
+    /* Relleno de la sección: el encabezado lo usa para llegar hasta los bordes. */
+    --pp-rx: 20px;
+    --pp-ry: 20px;
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: 10px;
-    padding: 20px;
+    padding: var(--pp-ry) var(--pp-rx);
     box-shadow: 0 1px 3px rgba(0, 21, 36, 0.05);
 }
 
@@ -2067,6 +2081,93 @@ a {
     margin-bottom: 16px;
     flex-wrap: wrap;
     gap: 8px;
+}
+
+/* ── Encabezado de sección ──
+   El encabezado que abre un panel es igual en todos los módulos: una banda en
+   el degradado oscuro, de borde a borde, con el título en blanco, el ícono en
+   un recuadro teal y los botones encima. Un `.ph` que no abre el panel (un
+   subtítulo más abajo, o dentro de un formulario) queda como rótulo sencillo. */
+.panel > .ph:first-child {
+    margin: calc(-1 * var(--pp-ry)) calc(-1 * var(--pp-rx)) 18px;
+    padding: 13px var(--pp-rx);
+    min-height: 62px;
+    background: var(--grad-oscuro);
+    border-radius: 9px 9px 0 0;
+}
+
+.panel > .ph:first-child .ph-title {
+    font-size: 15.5px;
+    color: #fff;
+}
+
+.panel > .ph:first-child .ph-meta {
+    color: rgba(255, 255, 255, 0.76);
+}
+
+/* El ícono va en un recuadro teal a la izquierda del título y su subtítulo. */
+.panel > .ph:first-child > .ph-title:first-child:has(> i),
+.panel > .ph:first-child > div:first-child:has(> .ph-title > i) {
+    position: relative;
+    min-height: 36px;
+    padding-left: 47px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.panel > .ph:first-child > .ph-title:first-child:has(> i) {
+    align-items: flex-start;
+}
+
+.panel > .ph:first-child .ph-title > i {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: var(--grad-teal);
+    color: #fff;
+    font-size: 17px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Un panel que solo tiene encabezado (el título de una ficha o de un
+   formulario) es la banda sola, sin franja blanca debajo. */
+.panel:has(> .ph:only-child) {
+    padding-bottom: 0;
+}
+
+.panel > .ph:only-child {
+    margin-bottom: 0;
+    border-radius: 9px;
+}
+
+/* Un panel dentro de otro lleva la misma banda, más delgada. */
+.panel .panel > .ph:first-child {
+    padding-block: 9px;
+    min-height: 0;
+    margin-bottom: 14px;
+}
+
+.panel .panel > .ph:first-child .ph-title {
+    font-size: 13px;
+}
+
+.panel .panel > .ph:first-child > .ph-title:first-child:has(> i),
+.panel .panel > .ph:first-child > div:first-child:has(> .ph-title > i) {
+    min-height: 28px;
+    padding-left: 38px;
+}
+
+.panel .panel > .ph:first-child .ph-title > i {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    font-size: 14px;
 }
 
 .ph-title {
@@ -2094,20 +2195,27 @@ a {
     flex-wrap: wrap;
 }
 
+/* ── Botones ──
+   Dos botones para toda la plataforma, del mismo tamaño y la misma letra:
+   el principal (`.ph-btn`, y `.btn-primary` de Bootstrap), en el degradado
+   teal, y el secundario (`.ph-link`, y `.btn-outline-secondary`), de contorno.
+   Sobre una banda oscura se invierten: el principal en blanco y el secundario
+   con contorno claro. */
 .ph-btn {
-    background: var(--teal);
+    background: var(--grad-teal);
     color: #fff;
-    border: none;
+    border: 1px solid transparent;
     font-family: "Montserrat", sans-serif;
     font-weight: 600;
     font-size: 12px;
-    padding: 7px 14px;
+    line-height: 1.5;
+    padding: 6px 13px;
     border-radius: 7px;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    transition: background 0.15s;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 
 .ph-btn:hover {
@@ -2116,23 +2224,63 @@ a {
 }
 
 .ph-link {
+    font-family: "Montserrat", sans-serif;
     font-size: 12px;
+    line-height: 1.5;
     color: var(--teal);
     font-weight: 600;
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 5px;
     border: 1px solid var(--border2);
     border-radius: 7px;
-    padding: 5px 11px;
+    padding: 6px 13px;
     background: none;
     cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 
 .ph-link:hover {
     background: var(--teal);
     color: #fff;
     border-color: var(--teal);
+}
+
+.ph-btn:focus-visible,
+.ph-link:focus-visible {
+    outline: 2px solid var(--teal);
+    outline-offset: 2px;
+}
+
+/* Sobre la banda oscura del encabezado. */
+.panel > .ph:first-child .ph-link {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.28);
+    color: #fff;
+}
+
+.panel > .ph:first-child .ph-link:hover {
+    background: rgba(255, 255, 255, 0.22);
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+.panel > .ph:first-child .ph-btn,
+.panel > .ph:first-child .ph-link-pri {
+    background: #fff;
+    border-color: #fff;
+    color: var(--navy);
+}
+
+.panel > .ph:first-child .ph-btn:hover,
+.panel > .ph:first-child .ph-link-pri:hover {
+    background: var(--teal-suave);
+    border-color: var(--teal-suave);
+    color: var(--navy);
+}
+
+.panel > .ph:first-child .ph-btn:focus-visible,
+.panel > .ph:first-child .ph-link:focus-visible {
+    outline-color: var(--cream);
 }
 
 .grid-tarjetas {
@@ -2327,6 +2475,39 @@ a {
 /* ══════════ BOTONES ══════════ */
 /* Se definen con las variables de Bootstrap para cubrir todos los estados
    (normal, encima, pulsado, deshabilitado y foco), no solo el normal. */
+/* Mismo tamaño y letra que `.ph-btn` y `.ph-link`. */
+.btn {
+    --bs-btn-font-family: "Montserrat", sans-serif;
+    --bs-btn-font-weight: 600;
+    --bs-btn-font-size: 12px;
+    --bs-btn-padding-y: 6px;
+    --bs-btn-padding-x: 13px;
+    --bs-btn-border-radius: 7px;
+}
+
+.btn-sm {
+    --bs-btn-font-size: 11.5px;
+    --bs-btn-padding-y: 4px;
+    --bs-btn-padding-x: 10px;
+    --bs-btn-border-radius: 7px;
+}
+
+.btn-primary:not(:hover):not(:active):not(:focus):not(:disabled) {
+    background-image: var(--grad-teal);
+}
+
+.btn-outline-secondary {
+    --bs-btn-color: var(--teal);
+    --bs-btn-border-color: var(--border2);
+    --bs-btn-hover-bg: var(--teal);
+    --bs-btn-hover-border-color: var(--teal);
+    --bs-btn-active-bg: var(--teal);
+    --bs-btn-active-border-color: var(--teal);
+    --bs-btn-disabled-color: var(--muted);
+    --bs-btn-disabled-border-color: var(--border2);
+    --bs-btn-focus-shadow-rgb: var(--teal-rgb);
+}
+
 .btn-primary {
     --bs-btn-bg: var(--teal);
     --bs-btn-border-color: var(--teal);
@@ -2429,6 +2610,46 @@ a {
 
     .tb-search {
         display: none;
+    }
+}
+
+/* ══════════ PAGINACIÓN ══════════
+   Ninguna tabla muestra más de 10 registros a la vez. El pie es el mismo en
+   los listados que pagina el servidor (`comunes/_paginacion.html`) y en las
+   tablas que reparte el navegador (guion de `base.html`). */
+.pg-pie {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px 16px;
+}
+
+/* Al pie de la misma tarjeta de la tabla, separado por una línea. */
+.pg-pie:not(.panel) {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+}
+
+.pg-tamano {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pg-pie button.page-link {
+    cursor: pointer;
+}
+
+/* Al imprimir sale la tabla completa, sin el pie. */
+@media print {
+    .pg-pie {
+        display: none;
+    }
+
+    tr[hidden][data-pg] {
+        display: table-row !important;
     }
 }
 
@@ -2939,6 +3160,8 @@ a.cal-ev:hover {
 /* El tablero es un contenedor: su ancho, y no el de la pantalla, decide la
    distribución. Así se acomoda igual al plegar o desplegar el menú lateral. */
 .pp-tablero {
+    --pp-oscuro: var(--grad-oscuro);
+    --pp-teal: var(--grad-teal);
     display: flex;
     flex-direction: column;
     gap: 18px;
@@ -2954,21 +3177,20 @@ a.cal-ev:hover {
 }
 
 /* Colores del tablero: cada uno tiene un solo oficio.
-   - Navy: el resumen de arriba, único bloque oscuro y único degradado (del
-     navy al teal oscuro).
-   - Crema: la banda del encabezado de cada sección.
-   - Teal: íconos de sección, barras, medidores y enlaces.
+   - Navy: la banda del encabezado de cada sección, en degradado hacia el
+     teal oscuro (`--pp-oscuro`), el mismo en todas.
+   - Blanco: el resumen de arriba y el cuerpo de las secciones.
+   - Teal: íconos de sección, barras, medidores y enlaces; en degradado
+     (`--pp-teal`) en los íconos, las barras y el botón principal.
    - Rojo: lo vencido, atrasado o en mora. Naranja: lo que está por vencer.
-     Verde: lo cumplido o al día.
+     Verde: lo cumplido o al día. En el resumen, el estado de cada cifra va en
+     la franja superior de su tarjeta y en el punto de su detalle.
    - Marrón: el texto de las etiquetas rojas y naranjas (el rojo y el naranja
      sobre su tinte no alcanzan el contraste mínimo). */
 .pp-resumen {
     display: flex;
     flex-direction: column;
-    gap: 14px;
-    background: linear-gradient(100deg, var(--navy) 0%, #062a37 60%, var(--teal-oscuro) 100%);
-    border-radius: 16px;
-    padding: 18px 20px 20px;
+    gap: 12px;
 }
 
 .pp-resumen-cabeza {
@@ -2983,12 +3205,12 @@ a.cal-ev:hover {
     font-family: "Montserrat", sans-serif;
     font-weight: 700;
     font-size: 15.5px;
-    color: #fff;
+    color: var(--text);
 }
 
 .pp-resumen-sub {
     font-size: 12px;
-    color: var(--cream);
+    color: var(--muted);
     margin-top: 2px;
 }
 
@@ -3025,29 +3247,42 @@ a.cal-ev:hover {
     flex-shrink: 0;
 }
 
-/* Las seis cifras comparten el mismo fondo y el mismo ícono; el estado de cada
-   una va en el punto que acompaña al detalle (`--pp-tono`). */
+/* Las seis cifras son tarjetas blancas iguales; el estado de cada una
+   (`--pp-tono`) va en la franja superior y en el punto que acompaña al detalle. */
 .pp-kpi {
-    --pp-tono: rgba(255, 255, 255, 0.45);
+    --pp-tono: var(--teal-claro);
+    position: relative;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--card);
+    border: 1px solid var(--border);
     border-radius: 12px;
-    padding: 14px 14px 13px;
-    color: #fff;
-    transition: transform 0.18s, background 0.18s, border-color 0.18s;
+    padding: 17px 14px 13px;
+    color: var(--text);
+    box-shadow: 0 1px 3px rgba(0, 21, 36, 0.05);
+    transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s;
+}
+
+.pp-kpi::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--pp-tono);
 }
 
 .pp-kpi:hover {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.3);
+    border-color: var(--teal);
+    box-shadow: 0 4px 14px rgba(0, 21, 36, 0.1);
     transform: translateY(-2px);
-    color: #fff;
+    color: var(--text);
 }
 
 .pp-kpi:focus-visible {
-    outline: 2px solid var(--cream);
+    outline: 2px solid var(--teal);
     outline-offset: 2px;
 }
 
@@ -3063,8 +3298,8 @@ a.cal-ev:hover {
     width: 38px;
     height: 38px;
     border-radius: 11px;
-    background: rgba(255, 255, 255, 0.14);
-    color: var(--cream);
+    background: var(--pp-teal);
+    color: #fff;
     font-size: 18px;
     display: flex;
     align-items: center;
@@ -3091,7 +3326,7 @@ a.cal-ev:hover {
     font-size: 11.5px;
     font-weight: 600;
     line-height: 1.3;
-    color: var(--cream);
+    color: var(--dim);
     padding-top: 2px;
 }
 
@@ -3112,7 +3347,7 @@ a.cal-ev:hover {
     gap: 7px;
     font-size: 11.5px;
     line-height: 1.35;
-    color: rgba(255, 255, 255, 0.86);
+    color: var(--dim);
     margin-top: auto;
     padding-top: 6px;
 }
@@ -3137,10 +3372,6 @@ a.cal-ev:hover {
 
 .pp-abajo > .pp-sec-finanzas {
     grid-column: span 2;
-}
-
-.pp-abajo > .panel {
-    padding: 20px 20px 22px;
 }
 
 /* Dentro de una sección ancha, el gráfico y su lista van lado a lado; en una
@@ -3204,61 +3435,57 @@ a.cal-ev:hover {
     container-type: inline-size;
 }
 
-/* Encabezado de sección: banda crema de borde a borde. */
-.pp-tablero .ph {
-    margin: calc(-1 * var(--pp-ry)) calc(-1 * var(--pp-rx)) 16px;
-    padding: 14px var(--pp-rx);
-    background: var(--crema-suave);
-    border-bottom: 1px solid var(--border);
+/* El encabezado es la banda común a todos los paneles (ver «Encabezado de
+   sección»); aquí solo se ajusta a las esquinas y al relleno del tablero. */
+.pp-tablero .panel > .ph:first-child {
+    padding-block: 14px;
     border-radius: 13px 13px 0 0;
 }
 
-/* El ícono va en un recuadro teal a la izquierda del título y su subtítulo. */
-.pp-tablero .ph > div:first-child {
-    position: relative;
-    min-height: 36px;
-    padding-left: 47px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
+/* Lectura: dentro del tablero los rótulos y las etiquetas no bajan de 10.5 px,
+   y las cifras usan números de ancho fijo para que las columnas queden parejas. */
+.pp-tablero .sec-lbl {
+    font-size: 10.5px;
+    letter-spacing: 0.8px;
 }
 
-.pp-tablero .ph-title {
-    font-size: 15.5px;
+.pp-tablero .badge-est,
+.pp-tablero .kb-prio {
+    font-size: 11px;
 }
 
-.pp-tablero .ph-title i {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-    background: var(--teal);
-    color: #fff;
-    font-size: 17px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+.pp-kpi-num,
+.pp-cifra-num,
+.pp-barra-num,
+.pp-monto,
+.pp-fecha b,
+.pp-medidor-fila strong {
+    font-variant-numeric: tabular-nums;
 }
 
-.pp-tablero .ph-link {
-    background: var(--card);
+/* Foco con teclado: el mismo anillo teal en enlaces, listas y desplegables. */
+.pp-tablero .pp-item:focus-visible,
+.pp-tabla summary:focus-visible {
+    outline: 2px solid var(--teal);
+    outline-offset: 2px;
 }
 
-.pp-tablero .ph-link:hover {
-    background: var(--teal);
+.pp-tablero .pp-item:focus-visible,
+.pp-tabla summary:focus-visible {
+    border-radius: 6px;
 }
 
-.pp-tablero .ph-link-pri {
-    background: var(--teal);
-    border-color: var(--teal);
-    color: #fff;
-}
+/* En pantallas táctiles los botones del encabezado y el desplegable de la
+   tabla ganan altura para acertarles con el dedo. */
+@media (pointer: coarse) {
+    .pp-tablero .ph-link {
+        min-height: 40px;
+        padding-inline: 14px;
+    }
 
-.pp-tablero .ph-link-pri:hover {
-    background: var(--navy);
-    border-color: var(--navy);
+    .pp-tabla summary {
+        padding: 10px 0;
+    }
 }
 
 /* Etiquetas de estado dentro del tablero: texto oscuro sobre el tinte y el
@@ -3402,7 +3629,7 @@ a.cal-ev:hover {
     display: block;
     height: 100%;
     border-radius: 20px;
-    background: var(--teal);
+    background: var(--pp-teal);
 }
 
 /* Avance de lo terminado: en verde, como todo lo cumplido. */
@@ -3460,7 +3687,7 @@ a.cal-ev:hover {
 .pp-barra-relleno {
     display: block;
     height: 100%;
-    background: var(--teal);
+    background: var(--pp-teal);
     border-radius: 20px;
 }
 
@@ -3511,7 +3738,7 @@ a.cal-ev:hover {
 }
 
 .pp-cifra-etq {
-    font-size: 10.5px;
+    font-size: 11px;
     color: var(--muted);
 }
 
@@ -3647,7 +3874,7 @@ a.cal-ev:hover {
 }
 
 .pp-fecha span {
-    font-size: 9.5px;
+    font-size: 10.5px;
     font-weight: 600;
     text-transform: uppercase;
     color: var(--muted);
@@ -3731,17 +3958,13 @@ a.cal-ev:hover {
         margin-top: 6px;
     }
 
-    .pp-resumen {
-        padding: 14px;
-    }
-
     .pp-tablero .panel {
         --pp-rx: 16px;
         --pp-ry: 16px;
         padding: 16px;
     }
 
-    .pp-tablero .ph {
+    .pp-tablero .panel > .ph:first-child {
         padding-block: 12px;
         margin-bottom: 14px;
     }
@@ -3805,6 +4028,76 @@ a.cal-ev:hover {
         -webkit-line-clamp: 2;
         line-clamp: 2;
         line-height: 1.3;
+    }
+}
+
+/* En una sección muy estrecha (Hallazgos y Carga del equipo junto a Finanzas)
+   el nombre y la cantidad van arriba y la barra debajo, a todo el ancho: así
+   el nombre no se corta. */
+@container (max-width: 300px) {
+    .pp-barras {
+        gap: 12px;
+    }
+
+    .pp-barra,
+    .pp-barra-equipo {
+        grid-template-columns: minmax(0, 1fr) auto;
+        row-gap: 5px;
+    }
+
+    .pp-barra-pista,
+    .pp-barra-extra {
+        grid-column: 1 / -1;
+    }
+
+    .pp-barra-etq {
+        order: -2;
+    }
+
+    .pp-barra-num {
+        order: -1;
+    }
+}
+
+/* Con las tres secciones de abajo en línea, las dos estrechas dejan el botón
+   del encabezado en solo ícono (su nombre sigue en el título emergente y para
+   lectores de pantalla) y las tres bandas quedan de la misma altura. */
+@container tablero (min-width: 1041px) {
+    .pp-abajo > .panel:not(.pp-sec-finanzas):not(:only-child) {
+        --pp-rx: 18px;
+    }
+
+    .pp-abajo > .panel > .ph:first-child {
+        min-height: 88px;
+    }
+
+    @container (max-width: 360px) {
+        .pp-abajo .ph {
+            flex-wrap: nowrap;
+        }
+
+        .pp-abajo .ph > div:first-child {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .pp-abajo .ph-link {
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 15px;
+        }
+
+        .pp-abajo .ph-link-txt {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            overflow: hidden;
+            clip-path: inset(50%);
+            white-space: nowrap;
+        }
     }
 }
 

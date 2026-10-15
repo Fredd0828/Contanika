@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block titulo %}Contanika{% endblock %} | Contanika</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Open+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" integrity="sha384-tViUnnbYAV00FLIhhi3v/dWt3Jxw4gZQcNoSCxCIFNJVCx7/D55/wXsrNIRANwdD" crossorigin="anonymous">
     <link href="{% static 'css/contanika.css' %}" rel="stylesheet">
@@ -171,6 +171,88 @@
         });
         marcarEstado();
     }
+
+    // Tablas: ninguna muestra más de 10 registros a la vez. Los listados los
+    // pagina el servidor (comunes/_paginacion.html); las demás tablas (reportes,
+    // cartera, fichas) se reparten aquí de a 10, con el mismo pie. No se tocan
+    // las tablas con campos de formulario ni las marcadas con data-sin-paginar.
+    (function () {
+        var POR_PAGINA = 10;
+        var VENTANA = 2;
+        if (document.querySelector("[data-paginacion-servidor]")) { return; }
+        document.querySelectorAll("table.tbl").forEach(function (tabla) {
+            var cuerpo = tabla.tBodies[0];
+            if (!cuerpo || tabla.hasAttribute("data-sin-paginar")) { return; }
+            if (cuerpo.querySelector("input:not([type=hidden]), select, textarea")) { return; }
+            // Una fila desplegable (detalle) acompaña a la fila que la abre.
+            var registros = [];
+            Array.prototype.forEach.call(cuerpo.rows, function (fila) {
+                if (fila.classList.contains("collapse") && registros.length) {
+                    registros[registros.length - 1].push(fila);
+                } else {
+                    registros.push([fila]);
+                }
+            });
+            if (registros.length <= POR_PAGINA) { return; }
+
+            var totalPaginas = Math.ceil(registros.length / POR_PAGINA);
+            var pie = document.createElement("div");
+            pie.className = "pg-pie";
+            var navegacion = document.createElement("nav");
+            navegacion.setAttribute("aria-label", "Páginas de la tabla");
+            var lista = document.createElement("ul");
+            lista.className = "pagination pagination-sm mb-0";
+            navegacion.appendChild(lista);
+            var resumen = document.createElement("span");
+            resumen.className = "text-muted small";
+            resumen.setAttribute("aria-live", "polite");
+            resumen.tabIndex = -1;
+            pie.appendChild(navegacion);
+            pie.appendChild(resumen);
+            var ancla = tabla.closest(".table-responsive") || tabla;
+            ancla.insertAdjacentElement("afterend", pie);
+
+            var boton = function (texto, destino, activa) {
+                var elemento = document.createElement("li");
+                elemento.className = "page-item" + (activa ? " active" : "");
+                var control = document.createElement(activa ? "span" : "button");
+                control.className = "page-link";
+                control.textContent = texto;
+                if (activa) {
+                    elemento.setAttribute("aria-current", "page");
+                } else {
+                    control.type = "button";
+                    control.addEventListener("click", function () { mostrar(destino, true); });
+                }
+                elemento.appendChild(control);
+                lista.appendChild(elemento);
+            };
+
+            function mostrar(pagina, porUsuario) {
+                registros.forEach(function (grupo, indice) {
+                    var visible = Math.floor(indice / POR_PAGINA) === pagina - 1;
+                    grupo.forEach(function (fila) {
+                        fila.hidden = !visible;
+                        fila.setAttribute("data-pg", "");
+                    });
+                });
+                lista.textContent = "";
+                if (pagina > 1) { boton("Anterior", pagina - 1, false); }
+                for (var numero = Math.max(1, pagina - VENTANA); numero <= Math.min(totalPaginas, pagina + VENTANA); numero++) {
+                    boton(String(numero), numero, numero === pagina);
+                }
+                if (pagina < totalPaginas) { boton("Siguiente", pagina + 1, false); }
+                resumen.textContent = "Página " + pagina + " de " + totalPaginas + " · " + registros.length + " registro(s)";
+                // Los botones se rehacen en cada cambio: el foco pasa al resumen
+                // para que el teclado y el lector de pantalla no lo pierdan.
+                if (porUsuario) {
+                    tabla.scrollIntoView({ block: "nearest" });
+                    resumen.focus();
+                }
+            }
+            mostrar(1, false);
+        });
+    })();
 </script>
 </body>
 </html>
