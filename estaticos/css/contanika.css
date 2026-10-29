@@ -3034,9 +3034,11 @@ a.cal-ev:hover {
     color: var(--orange);
 }
 
+/* La prioridad baja va en gris en toda la plataforma: el verde queda para lo
+   cumplido o al día (14-oct-2026, decisión del usuario). */
 .kb-prio-baja {
-    background: #eaf7f3;
-    color: var(--green);
+    background: #eef1f3;
+    color: var(--dim);
 }
 
 .kb-resp {
@@ -3489,8 +3491,8 @@ a.cal-ev:hover {
 }
 
 /* Etiquetas de estado dentro del tablero: texto oscuro sobre el tinte y el
-   color en el ícono. La prioridad baja va en gris: el verde queda para lo
-   cumplido o al día. */
+   color en el ícono. La prioridad baja ya va en gris en la regla común
+   `.kb-prio-baja`. */
 .pp-tablero .be-r,
 .pp-tablero .be-w,
 .pp-tablero .kb-prio-alta,
@@ -3512,11 +3514,6 @@ a.cal-ev:hover {
 
 .pp-tablero .be-w i {
     color: var(--orange);
-}
-
-.pp-tablero .kb-prio-baja {
-    background: #eef1f3;
-    color: var(--dim);
 }
 
 /* Según el rol puede faltar alguna sección: la que queda sola ocupa todo el

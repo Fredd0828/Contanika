@@ -577,8 +577,9 @@ Ninguna funcionalidad se da por terminada sin:
     cumplido o al día (barra «Terminado» y avance del tablero). **Marrón**:
     texto de las etiquetas rojas y naranjas (por contraste). En las listas el
     estado va sin fondo: punto de color o ícono y texto oscuro. La prioridad
-    Baja va en gris solo dentro del panel (en el Kanban sigue verde: pendiente
-    de decidir si se unifica). Versiones descartadas por el usuario, no volver
+    Baja va en gris en toda la plataforma (panel, Kanban, Hallazgos y ficha
+    del cliente; regla común `.kb-prio-baja`, decisión del usuario del
+    14-oct-2026). Versiones descartadas por el usuario, no volver
     a ellas: un tinte distinto por tarjeta con fondos degradados en los
     recuadros («no es armonioso»), encabezados de sección en teal suave
     (se veían azulados), y el resumen sobre un bloque oscuro

@@ -2114,6 +2114,9 @@ nuevos pasa por `escape` (las pruebas existentes con `<b>`, `<font>` y
 tamaño de página solo acepta 10, 25 o 50; el guion de tablas arma el pie con
 `textContent` (sin `innerHTML`) y no exige cambios en la CSP.
 
-### Pendientes
-- Decidir si la prioridad Baja pasa a gris también en el Kanban y en
-  Hallazgos (sigue de la entrada del 11-oct).
+### Ajuste del 14 de octubre
+- **Prioridad Baja en gris en toda la plataforma** (decisión del usuario):
+  la regla común `.kb-prio-baja` pasó de verde a gris, así que el Kanban, el
+  detalle de la tarea, Hallazgos y la ficha del cliente quedan como el panel.
+  Se quitó la regla propia del panel, que ya sobraba. El verde queda solo
+  para lo cumplido o al día. Resuelve el pendiente del 11 de octubre.
