@@ -25,6 +25,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.generic import ListView, View
 
 from aplicaciones.clientes.models import Cliente
+from aplicaciones.comunes.paginacion import PaginacionMixin
 from aplicaciones.comunes.vistas import LimitePeticionesMixin
 from aplicaciones.seguridad.models import Modulo, Rol
 from aplicaciones.seguridad.permisos import ModuloHabilitadoMixin, RolRequeridoMixin
@@ -94,13 +95,12 @@ def _catalogo_o_404(clave):
 # ---------------------------------------------------------------------------
 
 
-class HistoricoCuentasCobroView(ModuloHabilitadoMixin, ListView):
+class HistoricoCuentasCobroView(ModuloHabilitadoMixin, PaginacionMixin, ListView):
     """Histórico de cuentas de cobro, filtrable por cliente, estado, período y fechas."""
 
     codigo_modulo = Modulo.MOD06_FINANZAS
     template_name = "finanzas/historico.html"
     context_object_name = "cuentas"
-    paginate_by = 20
 
     def get_queryset(self):
         self.formulario_filtro = FiltroCuentasCobroForm(self.request.GET or None, usuario=self.request.user)
@@ -643,14 +643,13 @@ class BandejaWhatsappView(ModuloHabilitadoMixin, RolRequeridoMixin, View):
         return render(request, "finanzas/bandeja_whatsapp.html", {"pendientes": pendientes})
 
 
-class EnviosProgramadosView(ModuloHabilitadoMixin, RolRequeridoMixin, ListView):
+class EnviosProgramadosView(ModuloHabilitadoMixin, RolRequeridoMixin, PaginacionMixin, ListView):
     """Control de los envíos programados: próximos, procesados y cancelados."""
 
     codigo_modulo = Modulo.MOD06_FINANZAS
     roles_permitidos = ROLES_ADMIN
     template_name = "finanzas/programados.html"
     context_object_name = "envios"
-    paginate_by = 20
 
     def get_queryset(self):
         estado = self.request.GET.get("estado")

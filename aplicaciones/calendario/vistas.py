@@ -19,6 +19,7 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.generic import DetailView, ListView, View
 
+from aplicaciones.comunes.paginacion import PaginacionMixin
 from aplicaciones.seguridad.models import Modulo, Rol
 from aplicaciones.seguridad.permisos import ModuloHabilitadoMixin, RolRequeridoMixin
 
@@ -167,14 +168,13 @@ class CalendarioView(ModuloHabilitadoMixin, View):
         return render(request, self.template_name, contexto)
 
 
-class ListaVencimientosView(ModuloHabilitadoMixin, ListView):
+class ListaVencimientosView(ModuloHabilitadoMixin, PaginacionMixin, ListView):
     """Listado tabular de vencimientos con filtros desplegables."""
 
     codigo_modulo = Modulo.MOD02_CALENDARIO
     model = Vencimiento
     template_name = "calendario/lista.html"
     context_object_name = "vencimientos"
-    paginate_by = 25
     PARAMETROS_LISTADO_COMPLETO = (
         "desde",
         "hasta",

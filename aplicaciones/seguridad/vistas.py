@@ -19,6 +19,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.views.generic import ListView, TemplateView, View
 
+from aplicaciones.comunes.paginacion import PaginacionMixin
 from aplicaciones.comunes.vistas import LimitePeticionesMixin
 
 from . import guias, menu, panel, selectores, servicios
@@ -134,12 +135,11 @@ def _avisar_correo(request, correo_enviado, usuario):
         )
 
 
-class ListaUsuariosView(MixinAdministrarEquipo, ListView):
+class ListaUsuariosView(MixinAdministrarEquipo, PaginacionMixin, ListView):
     """Listado del equipo con filtros por nombre, rol y estado."""
 
     template_name = "seguridad/equipo/usuarios.html"
     context_object_name = "usuarios"
-    paginate_by = 20
 
     def get_queryset(self):
         self.formulario_filtro = FiltroUsuariosForm(self.request.GET or None)

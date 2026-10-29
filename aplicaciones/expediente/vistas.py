@@ -16,6 +16,7 @@ from django.urls import reverse
 from django.views.generic import ListView, View
 
 from aplicaciones.comunes.models import Adjunto
+from aplicaciones.comunes.paginacion import PaginacionMixin
 from aplicaciones.seguridad.models import Modulo, Rol
 from aplicaciones.seguridad.permisos import ModuloHabilitadoMixin, RolRequeridoMixin
 
@@ -41,7 +42,7 @@ def _adjunto_visible_o_404(usuario, pk):
     return adjunto
 
 
-class ListaAnotacionesView(ModuloHabilitadoMixin, ListView):
+class ListaAnotacionesView(ModuloHabilitadoMixin, PaginacionMixin, ListView):
     """
     Bitácora general: anotaciones de todos los clientes visibles, con filtro
     por cliente, tipo y rango de fechas (acceso desde el menú y el panel).
@@ -50,7 +51,6 @@ class ListaAnotacionesView(ModuloHabilitadoMixin, ListView):
     codigo_modulo = Modulo.MOD09_EXPEDIENTE
     template_name = "expediente/lista.html"
     context_object_name = "anotaciones"
-    paginate_by = 20
     cliente = None
 
     def obtener_cliente(self):

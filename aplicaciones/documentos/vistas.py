@@ -24,6 +24,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.generic import ListView, View
 
+from aplicaciones.comunes.paginacion import PaginacionMixin
 from aplicaciones.seguridad.models import ConfiguracionDespacho, Modulo, Rol
 from aplicaciones.seguridad.permisos import ModuloHabilitadoMixin, RolRequeridoMixin
 
@@ -61,13 +62,12 @@ def _redirigir_o_recargar(request, nombre_ruta, **kwargs):
     return redirect(url)
 
 
-class HistoricoDocumentosView(ModuloHabilitadoMixin, ListView):
+class HistoricoDocumentosView(ModuloHabilitadoMixin, PaginacionMixin, ListView):
     """Histórico de documentos generados, filtrable por tipo y rango de fechas."""
 
     codigo_modulo = Modulo.MOD04_DOCUMENTOS
     template_name = "documentos/historico.html"
     context_object_name = "documentos"
-    paginate_by = 20
 
     def get_queryset(self):
         self.formulario_filtro = FiltroHistoricoForm(self.request.GET or None)

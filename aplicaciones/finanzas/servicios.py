@@ -7,7 +7,6 @@ cuenta de cobro (con sus líneas y su archivo) o el honorario (con sus montos
 por servicio) queden consistentes.
 """
 
-import io
 from datetime import timedelta
 from decimal import Decimal
 
@@ -18,15 +17,22 @@ from django.db.models import ProtectedError
 from django.utils import timezone
 from django.utils.formats import date_format
 from django.utils.html import escape
-from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
-from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import cm
-from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+from reportlab.platypus import KeepTogether, Paragraph, Spacer, Table, TableStyle
 
 from aplicaciones.clientes.models import Cliente
 from aplicaciones.comunes import paleta
-from aplicaciones.comunes.pdf import encabezado_despacho
+from aplicaciones.comunes.pdf import (
+    ancho_util,
+    color,
+    construir_pdf,
+    cuadro_datos,
+    encabezado_documento,
+    estilo_tabla,
+    estilos_documento,
+)
 from aplicaciones.seguridad.models import ConfiguracionDespacho
 
 from . import envios, selectores
@@ -188,6 +194,7 @@ def _seccion_abonos_pdf(cuenta, estilos, ancho):
     abonos = list(cuenta.abonos.select_related("metodo_pago").order_by("fecha", "id_abono"))
     if not abonos:
         return []
+    textos = estilos_documento()
     total_abonado = sum((abono.monto for abono in abonos), Decimal("0"))
     saldo = cuenta.valor_total - total_abonado
     filas = [["Fecha", "Medio de pago", "Valor"]]
@@ -196,7 +203,7 @@ def _seccion_abonos_pdf(cuenta, estilos, ancho):
         filas.append(
             [
                 date_format(abono.fecha, "SHORT_DATE_FORMAT"),
-                Paragraph(medio, estilos["Normal"]),
+                Paragraph(medio, textos["normal"]),
                 formato_pesos(abono.monto),
             ]
         )
@@ -204,35 +211,27 @@ def _seccion_abonos_pdf(cuenta, estilos, ancho):
     filas.append(["", "Total abonado", formato_pesos(total_abonado)])
     filas.append(["", "SALDO PENDIENTE POR PAGAR", formato_pesos(saldo)])
     tabla = Table(filas, colWidths=[3.5 * cm, ancho - 7.5 * cm, 4 * cm])
-    tabla.setStyle(
-        TableStyle(
-            [
-                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor(paleta.TEAL)),
-                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("FONTNAME", (1, -3), (-1, -1), "Helvetica-Bold"),
-                ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor(paleta.CREMA)),
-                ("ALIGN", (2, 0), (2, -1), "RIGHT"),
-                ("ALIGN", (1, -3), (1, -1), "RIGHT"),
-                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor(paleta.BORDE)),
-                ("TOPPADDING", (0, 0), (-1, -1), 4),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-            ]
-        )
-    )
+    estilo = estilo_tabla(filas_total=3, total_filas=len(filas) - 1)
+    estilo.add("ALIGN", (2, 0), (2, -1), "RIGHT")
+    estilo.add("ALIGN", (1, -3), (1, -1), "RIGHT")
+    # El saldo pendiente es el dato que el cliente busca: va destacado en crema.
+    estilo.add("BACKGROUND", (0, -1), (-1, -1), color(paleta.CREMA))
+    tabla.setStyle(estilo)
     corte = date_format(timezone.localdate())
     elementos = [
-        Paragraph(f"<b>Pagos y abonos recibidos</b> (estado de cuenta al {corte})", estilos["Normal"]),
-        Spacer(1, 0.2 * cm),
+        Paragraph(
+            "Pagos y abonos recibidos "
+            f'<font size="8" color="{paleta.TEXTO_APAGADO}">· estado de cuenta al {corte}</font>',
+            textos["subtitulo"],
+        ),
         tabla,
     ]
     if saldo <= 0:
         elementos.append(Spacer(1, 0.2 * cm))
         elementos.append(
-            Paragraph("<b>Esta cuenta de cobro se encuentra pagada en su totalidad.</b>", estilos["Normal"])
+            Paragraph("<b>Esta cuenta de cobro se encuentra pagada en su totalidad.</b>", textos["normal"])
         )
-    elementos.append(Spacer(1, 0.6 * cm))
+    elementos.append(Spacer(1, 0.5 * cm))
     return elementos
 
 
@@ -244,103 +243,125 @@ def actualizar_pdf_cuenta_cobro(cuenta):
     cuenta.archivo.save(nombre, ContentFile(construir_pdf_cuenta_cobro(cuenta)), save=True)
 
 
+def _cuadro_deuda(cuenta, despacho, ancho, textos):
+    """Quién le debe a quién y cuánto: el dato central de la cuenta, en un recuadro."""
+    nombre_despacho = escape(despacho.nombre_despacho) if despacho else ""
+    nit_despacho = f"NIT {escape(despacho.nit_despacho)}" if despacho and despacho.nit_despacho else ""
+    monto = ParagraphStyle(
+        "monto",
+        parent=textos["derecha"],
+        fontName="Helvetica-Bold",
+        fontSize=17,
+        leading=21,
+        textColor=color(paleta.TEAL_OSCURO),
+    )
+    etiqueta_derecha = ParagraphStyle("etiqueta_derecha", parent=textos["etiqueta"], alignment=2)
+    izquierda = [Paragraph("DEBE A", textos["etiqueta"]), Paragraph(nombre_despacho, textos["valor"])]
+    if nit_despacho:
+        izquierda.append(Paragraph(nit_despacho, textos["nota"]))
+    derecha = [Paragraph("LA SUMA DE", etiqueta_derecha), Paragraph(formato_pesos(cuenta.valor_total), monto)]
+    tabla = Table([[izquierda, derecha]], colWidths=[ancho * 0.58, ancho * 0.42])
+    tabla.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, -1), color(paleta.CREMA_SUAVE)),
+                ("BOX", (0, 0), (-1, -1), 0.6, color(paleta.BORDE)),
+                ("LINEABOVE", (0, 0), (-1, 0), 1.6, color(paleta.TEAL)),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("TOPPADDING", (0, 0), (-1, -1), 11),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 11),
+                ("LEFTPADDING", (0, 0), (-1, -1), 14),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 14),
+            ]
+        )
+    )
+    return tabla
+
+
 def construir_pdf_cuenta_cobro(cuenta):
     """
-    Arma el PDF de la cuenta de cobro con ReportLab (Platypus): membrete del
-    despacho, cliente y NIT, valor, descripción del servicio por líneas,
-    abonos recibidos y saldo pendiente (si los hay), período, fecha de
-    vencimiento, datos bancarios y método de pago.
+    Arma el PDF de la cuenta de cobro con la hoja común de la plataforma:
+    encabezado del despacho con el número y la fecha, cuadro con el cliente,
+    el período y el vencimiento, recuadro con el valor, descripción del
+    servicio por líneas, abonos recibidos y saldo pendiente (si los hay) y
+    datos para el pago.
 
     Todo texto capturado por un usuario (nombres, líneas de servicio) se
     escapa antes de pasarlo a `Paragraph`, que interpreta marcado propio.
     """
-    buffer = io.BytesIO()
-    documento_pdf = SimpleDocTemplate(
-        buffer,
-        pagesize=letter,
-        topMargin=2 * cm,
-        bottomMargin=2 * cm,
-        leftMargin=2.5 * cm,
-        rightMargin=2.5 * cm,
-    )
-    estilos = getSampleStyleSheet()
+    ancho = ancho_util(letter)
+    textos = estilos_documento()
     despacho = ConfiguracionDespacho.objects.first()
     cliente = cuenta.cliente
 
-    elementos = encabezado_despacho(despacho, estilos, ancho_maximo=documento_pdf.width)
-    elementos.append(Spacer(1, 0.8 * cm))
-    elementos.append(Paragraph(f"CUENTA DE COBRO No. {cuenta.pk}", estilos["Heading2"]))
     ciudad = escape(despacho.ciudad) if despacho and despacho.ciudad else ""
     fecha = date_format(timezone.localtime(cuenta.fecha_generacion).date())
-    elementos.append(Paragraph(f"{ciudad}{', ' if ciudad else ''}{fecha}", estilos["Normal"]))
-    elementos.append(Spacer(1, 0.6 * cm))
-
+    elementos = encabezado_documento(
+        despacho,
+        ancho,
+        f"CUENTA DE COBRO No. {cuenta.pk}",
+        [f"{ciudad}{', ' if ciudad else ''}{fecha}"],
+        textos,
+    )
+    identificacion = f"{escape(cliente.get_tipo_documento_display())} {escape(cliente.nit_cedula)}"
     elementos.append(
-        Paragraph(
-            f"<b>{escape(cliente.nombre_razon_social)}</b><br/>"
-            f"{escape(cliente.get_tipo_documento_display())} {escape(cliente.nit_cedula)}",
-            estilos["Normal"],
+        cuadro_datos(
+            [
+                (
+                    "Cliente",
+                    f"{escape(cliente.nombre_razon_social)}<br/>"
+                    f'<font name="Helvetica" size="8.5" color="{paleta.TEXTO_TENUE}">{identificacion}</font>',
+                ),
+                ("Período facturado", escape(_texto_periodo(cuenta))),
+                ("Fecha de vencimiento del pago", date_format(cuenta.fecha_vencimiento_pago)),
+            ],
+            ancho,
+            3,
+            textos,
         )
     )
-    elementos.append(Spacer(1, 0.4 * cm))
-    nombre_despacho = escape(despacho.nombre_despacho) if despacho else ""
-    nit_despacho = f" NIT {escape(despacho.nit_despacho)}" if despacho and despacho.nit_despacho else ""
-    elementos.append(Paragraph(f"DEBE A: <b>{nombre_despacho}</b>{nit_despacho}", estilos["Normal"]))
-    elementos.append(Paragraph(f"LA SUMA DE: <b>{formato_pesos(cuenta.valor_total)}</b>", estilos["Normal"]))
-    elementos.append(Spacer(1, 0.6 * cm))
+    elementos.append(Spacer(1, 0.45 * cm))
+    elementos.append(_cuadro_deuda(cuenta, despacho, ancho, textos))
+    elementos.append(Spacer(1, 0.55 * cm))
 
-    elementos.append(Paragraph("<b>Descripción del servicio</b>", estilos["Normal"]))
-    elementos.append(Spacer(1, 0.2 * cm))
+    elementos.append(Paragraph("Descripción del servicio", textos["subtitulo"]))
     filas = [["Concepto", "Valor"]]
     for linea in cuenta.detalles.all():
         valor = formato_pesos(linea.valor_linea) if linea.valor_linea else ""
-        filas.append([Paragraph(escape(linea.descripcion_linea), estilos["Normal"]), valor])
+        filas.append([Paragraph(escape(linea.descripcion_linea), textos["normal"]), valor])
     filas.append(["Total", formato_pesos(cuenta.valor_total)])
-    tabla = Table(filas, colWidths=[documento_pdf.width - 4 * cm, 4 * cm])
-    tabla.setStyle(
-        TableStyle(
-            [
-                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor(paleta.TEAL)),
-                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
-                ("ALIGN", (1, 0), (1, -1), "RIGHT"),
-                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor(paleta.BORDE)),
-                ("TOPPADDING", (0, 0), (-1, -1), 4),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-            ]
-        )
-    )
+    tabla = Table(filas, colWidths=[ancho - 4 * cm, 4 * cm], repeatRows=1)
+    estilo = estilo_tabla(filas_total=1, total_filas=len(filas) - 1)
+    estilo.add("ALIGN", (1, 0), (1, -1), "RIGHT")
+    tabla.setStyle(estilo)
     elementos.append(tabla)
-    elementos.append(Spacer(1, 0.6 * cm))
-    elementos.extend(_seccion_abonos_pdf(cuenta, estilos, documento_pdf.width))
+    elementos.append(Spacer(1, 0.5 * cm))
+    elementos.extend(_seccion_abonos_pdf(cuenta, None, ancho))
 
-    elementos.append(Paragraph(f"<b>Período facturado:</b> {_texto_periodo(cuenta)}", estilos["Normal"]))
-    elementos.append(
-        Paragraph(
-            f"<b>Fecha de vencimiento del pago:</b> {date_format(cuenta.fecha_vencimiento_pago)}",
-            estilos["Normal"],
-        )
-    )
+    pago = []
     if cuenta.metodo_pago:
-        elementos.append(
-            Paragraph(f"<b>Método de pago:</b> {escape(cuenta.metodo_pago.nombre_metodo)}", estilos["Normal"])
-        )
+        pago.append(("Método de pago", escape(cuenta.metodo_pago.nombre_metodo)))
     if cuenta.cuenta_bancaria:
         banco = cuenta.cuenta_bancaria
-        elementos.append(Spacer(1, 0.4 * cm))
+        pago += [
+            ("Banco", escape(banco.banco)),
+            ("Cuenta", f"{escape(banco.tipo_cuenta)} No. {escape(banco.numero_cuenta)}"),
+            ("Titular", escape(banco.titular)),
+        ]
+    if pago:
+        # El título y el cuadro van juntos: no se separan en un salto de página.
         elementos.append(
-            Paragraph(
-                "<b>Datos para el pago</b><br/>"
-                f"{escape(banco.banco)} — Cuenta {escape(banco.tipo_cuenta)} "
-                f"No. {escape(banco.numero_cuenta)}<br/>Titular: {escape(banco.titular)}",
-                estilos["Normal"],
+            KeepTogether(
+                [
+                    Paragraph("Datos para el pago", textos["subtitulo"]),
+                    cuadro_datos(pago, ancho, min(len(pago), 4), textos),
+                ]
             )
         )
 
-    documento_pdf.build(elementos)
-    return buffer.getvalue()
+    return construir_pdf(
+        elementos, tamano=letter, titulo=f"Cuenta de cobro No. {cuenta.pk}", despacho=despacho
+    )
 
 
 @transaction.atomic

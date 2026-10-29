@@ -2057,3 +2057,66 @@ Revisada a 360, 768, 1024 y 1440 px.
   y esa página envía `X-Robots-Tag: index, follow`; el resto sigue con
   «noindex».
 - `registros/` agregado al `.gitignore`.
+
+## Martes 13 de octubre de 2026 — Misma estructura en todos los módulos, tablas de a 10 y PDF con una sola hoja
+
+Pedido por el usuario: que todas las pantallas y todos los PDF se vean como
+una sola plataforma, y que ninguna tabla muestre más de 10 registros a la vez.
+
+- **Encabezados y botones comunes:** el `.ph` que abre un `.panel` es en
+  todos los módulos una banda en el degradado oscuro (navy → teal,
+  `--grad-oscuro`), con título blanco e ícono en recuadro teal, sin clases
+  extra. Botón principal (`.ph-btn`/`.btn-primary`) en `--grad-teal` y
+  secundario (`.ph-link`/`.btn-outline-secondary`) de contorno, con las
+  mismas medidas en toda la plataforma; sobre la banda se invierten solos.
+- **Menú lateral en degradado** de navy a teal; entradas en blanco al 78 % y
+  la activa en blanco translúcido con borde teal claro.
+- **Panel:** el resumen de arriba pasó a seis tarjetas blancas sobre el
+  lienzo (el bloque oscuro no le agradó al usuario); el estado de cada cifra
+  va en la franja superior de la tarjeta.
+- **Tablas de a 10:** `comunes/paginacion.py` (`PaginacionMixin`: 10, 25 o 50
+  por página, filtros que viajan en cada enlace) y el pie común
+  `comunes/_paginacion.html`. Lo usan los listados de clientes, vencimientos,
+  documentos, hallazgos, expediente, comunicaciones, cuentas de cobro, envíos
+  programados, usuarios y descargas de reportes (antes algunos iban de a 20).
+  Las tablas `.tbl` que no salen de un `ListView` (reportes, cartera, fichas)
+  las reparte de a 10 un guion de `base.html`; se saltan las que tienen campos
+  de formulario y las marcadas con `data-sin-paginar`. Al imprimir sale la
+  tabla completa.
+- **PDF con la misma hoja:** `comunes/pdf.py` ganó `estilos_documento`,
+  `encabezado_documento` (despacho a la izquierda, título y datos a la
+  derecha), `estilo_tabla`, `cuadro_datos` y `construir_pdf` (franja superior
+  en degradado, márgenes y pie con los datos del despacho y «Página X de Y»).
+  Los usan los reportes, las cuentas de cobro, los documentos y los
+  certificados. Los PDF ya guardados conservan su aspecto hasta que se
+  vuelvan a generar. Colores nuevos en `paleta.py` para la hoja.
+- **Detalle de la tarea:** el historial muestra solo los últimos 5
+  movimientos.
+- Sin cambios en la base de datos ni en las rutas. Reglas nuevas en
+  `AGENTS.md` (sección 4 y Módulo 8).
+
+### Cómo verificarlo (entorno local)
+Recorrer los módulos: cada panel abre con la banda oscura y los botones se
+ven iguales. En un listado con más de 10 registros aparece el pie con el
+selector 10/25/50 y los números de página, y los filtros se conservan al
+cambiar de página. Descargar un reporte en PDF y generar una cuenta de cobro:
+misma franja, encabezado y pie paginado.
+
+### Resultado de las pruebas
+Suite completa en verde (1233 pruebas) y, aparte, 24 pruebas nuevas en
+`pruebas/comunes/` (`test_paginacion.py` y `test_pdf.py`): `pruebas/comunes`
+en verde (40). En total, 1257. `ruff` y `check` sin hallazgos.
+
+Seguridad: `bandit` sin hallazgos medios ni altos y `pip-audit` sin
+vulnerabilidades. Revisado a mano: todo texto de usuario que entra a los PDF
+nuevos pasa por `escape` (las pruebas existentes con `<b>`, `<font>` y
+`<script>` en cuentas de cobro, reportes y documentos siguen en verde); el
+tamaño de página solo acepta 10, 25 o 50; el guion de tablas arma el pie con
+`textContent` (sin `innerHTML`) y no exige cambios en la CSP.
+
+### Ajuste del 14 de octubre
+- **Prioridad Baja en gris en toda la plataforma** (decisión del usuario):
+  la regla común `.kb-prio-baja` pasó de verde a gris, así que el Kanban, el
+  detalle de la tarea, Hallazgos y la ficha del cliente quedan como el panel.
+  Se quitó la regla propia del panel, que ya sobraba. El verde queda solo
+  para lo cumplido o al día. Resuelve el pendiente del 11 de octubre.

@@ -12,6 +12,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.views.generic import CreateView, DetailView, ListView, UpdateView, View
 
+from aplicaciones.comunes.paginacion import PaginacionMixin
 from aplicaciones.seguridad.models import Modulo, Rol
 from aplicaciones.seguridad.permisos import ModuloHabilitadoMixin, RolRequeridoMixin
 
@@ -28,23 +29,13 @@ ROLES_GESTIONAN = ROLES_EDITAN + (Rol.CONTADOR_JUNIOR,)
 PREFIJO_MUNICIPIOS = "municipios"
 
 
-class ListaClientesView(ModuloHabilitadoMixin, ListView):
+class ListaClientesView(ModuloHabilitadoMixin, PaginacionMixin, ListView):
     """Listado de clientes con filtros desplegables y paginación configurable."""
 
     codigo_modulo = Modulo.MOD01_CLIENTES
     model = Cliente
     template_name = "clientes/lista.html"
     context_object_name = "clientes"
-    OPCIONES_POR_PAGINA = (10, 25, 50)
-    POR_PAGINA_DEFAULT = 10
-
-    def get_paginate_by(self, queryset):
-        """Permite al usuario elegir cuántos registros ver por página."""
-        try:
-            valor = int(self.request.GET.get("por_pagina", self.POR_PAGINA_DEFAULT))
-            return valor if valor in self.OPCIONES_POR_PAGINA else self.POR_PAGINA_DEFAULT
-        except ValueError:
-            return self.POR_PAGINA_DEFAULT
 
     def get_queryset(self):
         parametros = self.request.GET
@@ -63,11 +54,6 @@ class ListaClientesView(ModuloHabilitadoMixin, ListView):
         contexto["filtros"] = self.request.GET
         contexto["puede_editar"] = self.request.user.rol.nombre_rol in ROLES_EDITAN
         contexto["puede_gestionar"] = self.request.user.rol.nombre_rol in ROLES_GESTIONAN
-        contexto["por_pagina"] = self.get_paginate_by(self.get_queryset())
-        contexto["opciones_por_pagina"] = self.OPCIONES_POR_PAGINA
-        parametros = self.request.GET.copy()
-        parametros.pop("page", None)
-        contexto["querystring"] = parametros.urlencode()
         return contexto
 
 
