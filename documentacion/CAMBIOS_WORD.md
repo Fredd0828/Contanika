@@ -1,7 +1,7 @@
 # Cambios por llevar al documento Word — Contanika
 
 Lista de lo que el sistema construido ya no coincide con `Contanika_Fases1y2_v11.docx`.
-Corte: 6 de octubre de 2026. Marque cada punto al pasarlo al Word.
+Corte: 2 de noviembre de 2026. Marque cada punto al pasarlo al Word.
 
 ## 1. Stack y requisitos no funcionales
 
@@ -93,6 +93,8 @@ El Word documenta 36 tablas; el sistema tiene **42**.
 
 ### 2.2 Columnas nuevas o que cambiaron
 
+- [ ] **`cliente`:** restricción `unico_cliente_nit`: el NIT o cédula es único también en la base de
+  datos (migración `clientes 0007`).
 - [ ] **`usuario`:** tres columnas estándar de Django (`is_staff`, `is_superuser`, `last_login`), por
   usar un modelo de usuario propio sobre `AbstractBaseUser` (decisión T1). `foto_url` pasa a `foto`
   (archivo de imagen); `firma` también es un archivo de imagen.
@@ -160,6 +162,14 @@ Los tipos exactos de todas las columnas están en `scripts/bd/01_esquema_contani
   paso a paso de cada proceso, visibles según el rol.
 - [ ] **Módulo 4:** la séptima plantilla sigue sin definir; el Administrador la crea desde «Gestión de
   plantillas».
+- [ ] **HU052 (tareas en calendario), fuera de alcance (2-nov-2026):** no hay vista de calendario en el
+  módulo de tareas. Una tarea con «Mostrar en calendario» aparece en el calendario tributario.
+- [ ] **HU007, criterio 4 (adjuntos en tareas), fuera de alcance (2-nov-2026):** las tareas no llevan
+  archivos; los soportes del cliente van en el expediente o en los hallazgos.
+- [ ] **HU033 (credenciales en Excel):** no hay descarga; el reporte por cliente y el consolidado son
+  solo en pantalla, igual que en HU028.
+- [ ] **HU004, criterio 4 (fecha anterior a hoy):** no se valida, porque ninguna fecha queda bloqueada
+  (regla del usuario): se admiten vencimientos con fecha pasada.
 
 ## 5. Entregables de la Fase 3
 

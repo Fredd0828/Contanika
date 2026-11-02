@@ -2146,3 +2146,35 @@ que fallaban igual sin las actualizaciones.
 
 ### Pendientes
 - Repetir la suite con las versiones nuevas después del merge de #14 a #18.
+  **Hecho el mismo día:** 1257 en verde con las versiones nuevas.
+
+---
+
+## Lunes 2 de noviembre de 2026 — Despliegue verificable
+
+### Qué se hizo
+- **Ensayo de despliegue aislado:** instalación desde cero con la configuración
+  de producción, PostgreSQL temporal y Gunicorn. El primer intento de reversión
+  falló porque `pg_restore --clean` no elimina lo que no está en el respaldo;
+  el procedimiento correcto restaura sobre una base vacía.
+- **`/salud/` y `/version/`:** rutas públicas de monitoreo, con límite de
+  peticiones. `/salud/` responde 503 sin detalle si la base no contesta.
+- **`ENTORNO` ya decide la configuración:** la variable existía en `.env`, pero
+  nada la leía, y `gestionar.py` siempre usaba la local. En producción el cron
+  habría corrido con la configuración equivocada.
+- **NIT único en la base de datos:** restricción `unico_cliente_nit` (migración
+  `clientes 0007`, aplicada en la BD local). Antes solo lo validaban el
+  formulario y la importación.
+- **CI:** `.github/workflows/pruebas.yml` corre ruff, migraciones y la suite con
+  cobertura mínima de 80 % sobre PostgreSQL 16.
+- Script SQL, mapa de navegación (112 rutas), `AGENTS.md` y `CAMBIOS_WORD.md`
+  actualizados.
+
+### Cómo verificarlo (entorno local)
+Abrir `http://127.0.0.1:8000/salud/` y `/version/`. Crear por SQL un cliente con
+un NIT existente: la base lo rechaza.
+
+### Pendientes
+- Etiquetar `v1.0.0` después del merge.
+- Repetir el ensayo en Supabase: allá la base no se elimina como en el local.
+- Reforzar las ramas de Documentos (65 %) y Tareas (72,5 %).

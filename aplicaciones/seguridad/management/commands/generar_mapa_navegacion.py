@@ -24,7 +24,14 @@ SALIDA_PREDETERMINADA = Path("documentacion") / "MAPA_NAVEGACION.md"
 ROLES = (Rol.ADMINISTRADOR, Rol.CONTADOR_SENIOR, Rol.CONTADOR_JUNIOR)
 NOMBRES_MODULO = dict(Modulo.OPCIONES_CODIGO)
 # Rutas que se abren sin iniciar sesión.
-RUTAS_PUBLICAS = ("seguridad:inicio", "seguridad:iniciar_sesion", "finanzas:pdf_publico", "robots")
+RUTAS_PUBLICAS = (
+    "seguridad:inicio",
+    "seguridad:iniciar_sesion",
+    "finanzas:pdf_publico",
+    "robots",
+    "salud",
+    "version",
+)
 SI, NO = "Sí", "—"
 
 

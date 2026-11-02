@@ -199,7 +199,10 @@ models.py → servicios.py → selectores.py → formularios.py → vistas.py �
     `validar_excel_subido`, `validar_imagen_subida`), que comprueban extensión,
     tamaño y que el contenido sea del formato que dice la extensión.
   - Rutas públicas (sin sesión): solo la página web de inicio (`/`,
-    `seguridad:inicio`), el inicio de sesión, `robots.txt` y el PDF firmado.
+    `seguridad:inicio`), el inicio de sesión, `robots.txt`, el PDF firmado y
+    las rutas de monitoreo `/salud/` y `/version/` (`comunes.vistas`), que no
+    revelan el detalle de un error. `VERSION_APLICACION` (`settings/base.py`)
+    se actualiza junto con la etiqueta de Git.
     La página de inicio presenta la plataforma y lleva al inicio de sesión;
     no consulta la base de datos ni muestra datos del despacho (su calendario
     es un dibujo de ejemplo). El panel quedó en `/panel/`. Estilos `.pw-*`.
@@ -683,6 +686,10 @@ Ninguna funcionalidad se da por terminada sin:
 - Cron: `bash scripts/instalar_cron.sh` (`--ver`, `--quitar`) programa
   `procesar_cobros` y `procesar_alertas`. No instalarlo sin avisar al usuario:
   con el cobro automático activo genera cuentas de cobro reales.
+- Configuración activa: `gestionar.py` la elige con `ENTORNO` del `.env`
+  (`produccion` usa `config.settings.produccion`; cualquier otro valor, la
+  local), así el cron no necesita variables propias. `wsgi` y `asgi` usan
+  siempre la de producción.
 - El reporte de credenciales sigue en el M1 sin descarga (spec), aunque la
   HU028 lo liste.
 

@@ -79,6 +79,11 @@ class Cliente(models.Model):
         verbose_name = "cliente"
         verbose_name_plural = "clientes"
         ordering = ["nombre_razon_social"]
+        constraints = [
+            # El formulario y la importación avisan del duplicado; esto lo garantiza
+            # aunque el dato llegue por otra vía o dos personas guarden a la vez.
+            models.UniqueConstraint(fields=["nit_cedula"], name="unico_cliente_nit"),
+        ]
         indexes = [
             models.Index(fields=["nit_cedula"], name="idx_cliente_nit"),
             models.Index(fields=["estado"], name="idx_cliente_estado"),

@@ -1,8 +1,8 @@
 # Mapa de navegación — Contanika
 
-Entregable 3.3. Generado el 11/10/2026 con `python gestionar.py generar_mapa_navegacion` a partir de las rutas del sistema. No editar a mano: volver a generarlo cuando cambien las rutas.
+Entregable 3.3. Generado el 02/11/2026 con `python gestionar.py generar_mapa_navegacion` a partir de las rutas del sistema. No editar a mano: volver a generarlo cuando cambien las rutas.
 
-El sistema tiene **110 rutas**: 79 pantallas o descargas (GET) y 31 acciones que solo reciben formularios (POST).
+El sistema tiene **112 rutas**: 81 pantallas o descargas (GET) y 31 acciones que solo reciben formularios (POST).
 
 ## 1. Navegación general
 
@@ -62,6 +62,8 @@ Columnas de rol: «Sí» = el rol puede abrir la ruta; «—» = recibe 403. Ade
 | Ruta | Nombre | Métodos | Admin. | Senior | Junior | Qué hace |
 |---|---|---|---|---|---|---|
 | `/robots.txt` | `robots` | GET | Sí | Sí | Sí | `robots.txt`: pide a los buscadores y rastreadores que no recorran el sistema. *(pública, sin sesión)* |
+| `/salud/` | `salud` | GET | Sí | Sí | Sí | Estado de la aplicación y de la base de datos, para monitoreo y smoke tests. *(pública, sin sesión)* |
+| `/version/` | `version` | GET | Sí | Sí | Sí | Versión desplegada, para comprobar que coincide con la etiqueta liberada. *(pública, sin sesión)* |
 | `/media/<path:ruta>` | `media` | GET | Sí | Sí | Sí | Sirve las imágenes subidas (foto de perfil, firma y membrete) solo a quien tiene sesión y le corresponden: la foto y la firma, a su dueño o al Administrador; el membrete, a cualquier usuario. Lo demás responde 404. |
 | `/` | `seguridad:inicio` | GET | Sí | Sí | Sí | Página web pública de Contanika: presenta la plataforma y lleva al inicio de sesión. *(pública, sin sesión)* |
 | `/panel/` | `seguridad:panel` | GET | Sí | Sí | Sí | Panel principal del sistema. |
@@ -337,7 +339,7 @@ Número de rutas que cada rol puede abrir, sobre el total del módulo.
 
 | Módulo | Rutas | Administrador | Contador Senior | Contador Junior |
 |---|---|---|---|---|
-| Sin módulo | 11 | 11 | 11 | 11 |
+| Sin módulo | 13 | 13 | 13 | 13 |
 | MOD01 · Gestión de clientes | 12 | 12 | 12 | 6 |
 | MOD02 · Calendario | 16 | 16 | 13 | 6 |
 | MOD03 · Tablero de tareas Kanban | 8 | 8 | 8 | 5 |
