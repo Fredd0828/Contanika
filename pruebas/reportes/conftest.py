@@ -1,12 +1,14 @@
 """Fixtures del módulo 10: reportes y análisis (reutiliza las de finanzas)."""
 
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 
 import pytest
+from django.utils import timezone
 
 from aplicaciones.calendario.models import Vencimiento
 from aplicaciones.finanzas import servicios as servicios_finanzas
+from aplicaciones.finanzas.models import CuentaCobro
 from aplicaciones.tareas.models import Tarea
 from pruebas.finanzas import conftest as fixtures_finanzas
 
@@ -31,6 +33,10 @@ def datos_reportes(
         usuario=usuario_administrador,
     )
     cuenta_junior = generar_cuenta(cliente_junior, valor_total=Decimal("500000"))
+    # `fecha_generacion` es `auto_now_add`: se fija para no depender del día en que corre la prueba.
+    CuentaCobro.objects.filter(pk__in=[cuenta.pk, cuenta_junior.pk]).update(
+        fecha_generacion=timezone.make_aware(datetime(2026, 9, 15, 12))
+    )
     Vencimiento.objects.create(
         cliente=cliente,
         tipo_obligacion="IVA bimestral",

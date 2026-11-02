@@ -2120,3 +2120,29 @@ tamaño de página solo acepta 10, 25 o 50; el guion de tablas arma el pie con
   detalle de la tarea, Hallazgos y la ficha del cliente quedan como el panel.
   Se quitó la regla propia del panel, que ya sobraba. El verde queda solo
   para lo cumplido o al día. Resuelve el pendiente del 11 de octubre.
+
+---
+
+## Lunes 2 de noviembre de 2026 — Pruebas del reporte de ingresos sin depender del mes
+
+### Qué se hizo
+- Dos pruebas del reporte de ingresos empezaron a fallar al llegar noviembre:
+  `fecha_generacion` es `auto_now_add`, así que las cuentas de prueba quedaban
+  con la fecha del día, fuera del rango agosto-octubre de 2026 que consultan.
+- El dato de prueba `datos_reportes` (`pruebas/reportes/conftest.py`) ahora fija
+  esa fecha en el 15 de septiembre de 2026. El reporte no tenía error: no se
+  tocó código de la aplicación.
+
+### Cómo verificarlo (entorno local)
+`python -m pytest pruebas/reportes`
+
+### Resultado de las pruebas
+Suite completa en verde (1257). `ruff` sin hallazgos.
+
+Actualizaciones de Dependabot #14 a #18 (DRF 3.18.3, pytest 9.2.0, openpyxl
+3.1.5, Pillow 13.0.0 y ruff 0.17.3): probadas juntas en un entorno aparte, con
+`check`, `ruff` y `pip-audit` limpios; la suite solo falló en estas dos pruebas,
+que fallaban igual sin las actualizaciones.
+
+### Pendientes
+- Repetir la suite con las versiones nuevas después del merge de #14 a #18.
