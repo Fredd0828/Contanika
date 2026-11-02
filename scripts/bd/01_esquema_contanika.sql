@@ -1629,6 +1629,14 @@ ALTER TABLE ONLY public.campo_plantilla
 
 
 --
+-- Name: cliente unico_cliente_nit; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cliente
+    ADD CONSTRAINT unico_cliente_nit UNIQUE (nit_cedula);
+
+
+--
 -- Name: cliente_servicio unico_cliente_servicio; Type: CONSTRAINT; Schema: public; Owner: -
 --
 

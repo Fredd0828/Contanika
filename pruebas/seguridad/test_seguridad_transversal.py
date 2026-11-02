@@ -109,4 +109,6 @@ def test_las_rutas_publicas_son_solo_las_previstas():
         "seguridad:iniciar_sesion",
         "finanzas:pdf_publico",
         "robots",
+        "salud",
+        "version",
     }

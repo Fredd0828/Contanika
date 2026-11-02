@@ -1,0 +1,51 @@
+# Calidad y pruebas en cada cambio.
+# Corre la suite completa sobre PostgreSQL real, porque los saldos de cartera
+# dependen de disparadores de la base de datos. Falla si baja la cobertura.
+name: Pruebas
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  pruebas:
+    name: ruff, migraciones y pytest
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: contanika_bd
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      BD_NOMBRE: contanika_bd
+      BD_USUARIO: postgres
+      BD_HOST: 127.0.0.1
+      BD_PUERTO: 5432
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Instalar dependencias
+        run: pip install -r requirements-dev.txt
+      - name: Ruff (estilo y formato)
+        run: |
+          ruff check .
+          ruff format --check .
+      - name: Migraciones al día
+        run: python gestionar.py makemigrations --check --dry-run
+      - name: Pruebas con cobertura
+        run: pytest --cov=aplicaciones --cov-branch --cov-fail-under=80

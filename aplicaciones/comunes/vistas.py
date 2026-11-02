@@ -10,7 +10,9 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.cache import cache
 from django.core.exceptions import SuspiciousFileOperation
 from django.core.files.storage import default_storage
-from django.http import FileResponse, Http404, HttpResponse
+from django.db import Error as ErrorBaseDatos
+from django.db import connection
+from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.views.generic import View
 
 from aplicaciones.seguridad.models import ConfiguracionDespacho
@@ -104,3 +106,31 @@ class RobotsView(View):
 
     def get(self, request):
         return HttpResponse("User-agent: *\nAllow: /$\nDisallow: /\n", content_type="text/plain")
+
+
+class SaludView(LimitePeticionesMixin, View):
+    """
+    Estado de la aplicación y de la base de datos, para monitoreo y smoke tests.
+
+    Si la base no responde devuelve 503 sin dar el detalle del error: la ruta
+    es pública y ese texto podría revelar datos del servidor.
+    """
+
+    limite_por_minuto = 60
+
+    def get(self, request):
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT 1")
+        except ErrorBaseDatos:
+            return JsonResponse({"estado": "error", "base_datos": "error"}, status=503)
+        return JsonResponse({"estado": "ok", "base_datos": "ok"})
+
+
+class VersionView(LimitePeticionesMixin, View):
+    """Versión desplegada, para comprobar que coincide con la etiqueta liberada."""
+
+    limite_por_minuto = 60
+
+    def get(self, request):
+        return JsonResponse({"version": settings.VERSION_APLICACION})

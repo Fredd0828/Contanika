@@ -3,6 +3,7 @@
 from datetime import timedelta
 
 import pytest
+from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from aplicaciones.clientes.models import (
@@ -22,6 +23,20 @@ def test_inactivar_cliente_conserva_el_registro(cliente):
     cliente.refresh_from_db()
     assert cliente.estado == Cliente.INACTIVO
     assert Cliente.objects.filter(pk=cliente.pk).exists()
+
+
+def test_la_base_de_datos_rechaza_un_nit_duplicado(cliente):
+    """El NIT es único aunque el dato no pase por el formulario ni la importación."""
+    with pytest.raises(IntegrityError), transaction.atomic():
+        Cliente.objects.create(
+            nombre_razon_social="Otra empresa SAS",
+            nit_cedula=cliente.nit_cedula,
+            tipo_documento=Cliente.NIT,
+            tipo_persona=Cliente.JURIDICA,
+            regimen_tributario="Régimen ordinario",
+            responsable=cliente.responsable,
+        )
+    assert Cliente.objects.filter(nit_cedula=cliente.nit_cedula).count() == 1
 
 
 def test_municipios_adicionales_multi_ica(cliente):
