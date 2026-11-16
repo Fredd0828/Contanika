@@ -99,3 +99,23 @@ def test_mi_firma_form_acepta_imagen_valida():
         files={"firma": _imagen_prueba()},
     )
     assert formulario.is_valid(), formulario.errors
+
+
+@pytest.mark.parametrize(
+    "tipo_campo, es_repetible",
+    [(CampoPlantilla.SIMPLE, False), (CampoPlantilla.REPETIBLE, True)],
+)
+def test_campo_plantilla_form_sin_guardar_calcula_si_es_repetible(
+    plantilla_sin_campos, tipo_campo, es_repetible
+):
+    from aplicaciones.documentos.formularios import CampoPlantillaForm
+
+    formulario = CampoPlantillaForm(
+        {"nombre_campo": "Accionista", "tipo_campo": tipo_campo},
+        instance=CampoPlantilla(plantilla=plantilla_sin_campos),
+    )
+    assert formulario.is_valid(), formulario.errors
+    campo = formulario.save(commit=False)
+    assert campo.es_repetible is es_repetible
+    assert campo.pk is None
+    assert not CampoPlantilla.objects.exists()

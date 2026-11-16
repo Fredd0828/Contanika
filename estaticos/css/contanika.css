@@ -265,6 +265,52 @@ a {
     background: var(--navy);
 }
 
+/* El botón también se usa como enlace en las pantallas de recuperar y crear contraseña. */
+a.login-btn {
+    display: block;
+    text-align: center;
+    text-decoration: none;
+}
+
+a.login-btn:hover {
+    color: #fff;
+}
+
+.login-texto {
+    font-size: 12.5px;
+    line-height: 1.55;
+    color: var(--dim);
+    margin-bottom: 16px;
+}
+
+.login-aviso {
+    text-align: center;
+    font-size: 40px;
+    line-height: 1;
+    color: var(--teal);
+    margin-bottom: 14px;
+}
+
+.login-aviso-ok {
+    color: var(--green);
+}
+
+.login-olvido {
+    text-align: center;
+    margin-top: 14px;
+    font-size: 12px;
+}
+
+.login-olvido a {
+    color: var(--teal);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.login-olvido a:hover {
+    text-decoration: underline;
+}
+
 .login-foot {
     text-align: center;
     font-size: 10.5px;

@@ -7,3 +7,6 @@ class ComunesConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "aplicaciones.comunes"
     verbose_name = "Comunes"
+
+    def ready(self):
+        from . import checks  # noqa: F401  (registra las revisiones de `check --deploy`)

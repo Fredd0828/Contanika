@@ -1,8 +1,14 @@
 """Formularios del módulo 8: equipo de trabajo, roles, permisos y perfil propio."""
 
+import logging
+
 from django import forms
-from django.contrib.auth import password_validation
-from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
+from django.contrib.auth.forms import (
+    AuthenticationForm,
+    PasswordChangeForm,
+    PasswordResetForm,
+    SetPasswordForm,
+)
 
 from aplicaciones.comunes.formularios import (
     FormularioBase,
@@ -14,6 +20,8 @@ from aplicaciones.comunes.formularios import (
 from .models import Rol, Usuario
 
 TAMANO_MAXIMO_IMAGEN = 2 * 1024 * 1024
+
+registro = logging.getLogger(__name__)
 
 
 def _validar_imagen(archivo, descripcion):
@@ -46,19 +54,18 @@ def campo_confirmar_administrador():
 
 
 class UsuarioCrearForm(ModeloFormularioBase):
-    """Alta de un miembro del equipo con su rol y una contraseña temporal (HU022-1)."""
+    """
+    Alta de un miembro del equipo con su rol (HU022-1). El Administrador no
+    escribe contraseña: el usuario recibe un enlace para crearla él mismo.
+    """
 
-    clave_temporal = forms.CharField(
-        label="Contraseña temporal",
-        widget=forms.PasswordInput(render_value=True, attrs={"autocomplete": "new-password"}),
-        help_text="Se envía al correo del usuario; podrá cambiarla en «Mi perfil».",
-    )
     confirmar_otro_administrador = campo_confirmar_administrador()
 
     class Meta:
         model = Usuario
         fields = ["nombre", "correo", "telefono", "rol"]
         labels = {"correo": "Correo electrónico", "telefono": "Teléfono"}
+        help_texts = {"correo": "A este correo le llega el enlace para crear su contraseña."}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -67,31 +74,14 @@ class UsuarioCrearForm(ModeloFormularioBase):
     def clean_correo(self):
         return self.cleaned_data["correo"].strip().lower()
 
-    def clean(self):
-        datos = super().clean()
-        clave = datos.get("clave_temporal")
-        if clave:
-            usuario = Usuario(nombre=datos.get("nombre", ""), correo=datos.get("correo", ""))
-            try:
-                password_validation.validate_password(clave, usuario)
-            except forms.ValidationError as error:
-                self.add_error("clave_temporal", error)
-        return datos
-
 
 class UsuarioEditarForm(ModeloFormularioBase):
     """
     Datos que el Administrador edita de un usuario, incluidos el correo y el
-    rol (que el usuario no puede cambiar en su perfil, HU024-3). La contraseña
-    temporal es opcional: si se escribe, reemplaza la actual.
+    rol (que el usuario no puede cambiar en su perfil, HU024-3). La
+    contraseña no se edita aquí: se le reenvía el enlace de acceso.
     """
 
-    clave_temporal = forms.CharField(
-        label="Nueva contraseña temporal",
-        required=False,
-        widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
-        help_text="Déjela vacía para conservar la actual. Si la cambia, se envía al correo del usuario.",
-    )
     confirmar_otro_administrador = campo_confirmar_administrador()
 
     class Meta:
@@ -111,15 +101,41 @@ class UsuarioEditarForm(ModeloFormularioBase):
     def clean_correo(self):
         return self.cleaned_data["correo"].strip().lower()
 
-    def clean(self):
-        datos = super().clean()
-        clave = datos.get("clave_temporal")
-        if clave:
-            try:
-                password_validation.validate_password(clave, self.instance)
-            except forms.ValidationError as error:
-                self.add_error("clave_temporal", error)
-        return datos
+
+class RecuperarContrasenaForm(MixinEstilosBootstrap, PasswordResetForm):
+    """
+    «Olvidé mi contraseña»: recibe el correo y, si pertenece a un usuario
+    activo, le envía el enlace para crear una nueva.
+
+    La respuesta es la misma exista o no la cuenta, para no revelar qué
+    correos están registrados; por eso un fallo del servidor de correo
+    tampoco se muestra (queda en el registro).
+    """
+
+    email = forms.EmailField(
+        label="Correo electrónico",
+        max_length=254,
+        widget=forms.EmailInput(attrs={"autocomplete": "email", "autofocus": True}),
+    )
+
+    def get_users(self, email):
+        """
+        Usuarios activos con ese correo. A diferencia de Django, incluye a
+        quien aún no ha creado su contraseña: así, si perdió el correo de
+        bienvenida, puede pedir otro enlace sin esperar al Administrador.
+        (`is_active` es una propiedad del modelo, no un campo consultable.)
+        """
+        return Usuario.objects.filter(correo__iexact=email.strip(), estado=Usuario.ACTIVO)
+
+    def send_mail(self, *args, **kwargs):
+        try:
+            super().send_mail(*args, **kwargs)
+        except OSError:  # smtplib.SMTPException y los errores de conexión heredan de OSError
+            registro.exception("No se pudo enviar el correo para recuperar la contraseña.")
+
+
+class CrearContrasenaForm(MixinEstilosBootstrap, SetPasswordForm):
+    """Contraseña nueva, escrita dos veces; la validan las reglas de `AUTH_PASSWORD_VALIDATORS`."""
 
 
 class FiltroUsuariosForm(FormularioBase):

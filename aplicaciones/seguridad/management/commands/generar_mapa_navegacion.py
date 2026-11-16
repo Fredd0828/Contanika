@@ -27,6 +27,10 @@ NOMBRES_MODULO = dict(Modulo.OPCIONES_CODIGO)
 RUTAS_PUBLICAS = (
     "seguridad:inicio",
     "seguridad:iniciar_sesion",
+    "seguridad:recuperar_contrasena",
+    "seguridad:recuperar_enviado",
+    "seguridad:crear_contrasena",
+    "seguridad:contrasena_creada",
     "finanzas:pdf_publico",
     "robots",
     "salud",

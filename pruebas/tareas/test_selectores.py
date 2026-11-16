@@ -120,3 +120,13 @@ def test_notificaciones_usuario_ignora_cambios_antiguos(tarea_junior, usuario_ju
     historial = tarea_junior.cambiar_estado(Tarea.EN_PROGRESO, usuario_administrador)
     HistorialTarea.objects.filter(pk=historial.pk).update(fecha_cambio=timezone.now() - timedelta(days=30))
     assert list(notificaciones_usuario(usuario_junior)) == []
+
+
+def test_filtrar_tareas_por_cliente(usuario_administrador, cliente_junior, tarea_admin, tarea_junior):
+    resultado = list(filtrar_tareas(usuario_administrador, cliente=cliente_junior.pk))
+    assert resultado == [tarea_junior]
+
+
+def test_filtrar_tareas_por_responsable(usuario_administrador, tarea_admin, tarea_junior):
+    resultado = list(filtrar_tareas(usuario_administrador, responsable=usuario_administrador.pk))
+    assert resultado == [tarea_admin]

@@ -77,8 +77,10 @@ Parcial = hay una parte que depende de una decisión.
 - **Había:** contraseñas de usuarios con hash; credenciales de portales de clientes cifradas (Fernet);
   conexión a la base de datos de producción con `sslmode=require`.
 - **Se agregó:** producción exige la clave de cifrado; HTTPS obligatorio cifra todo el tráfico.
-- **Queda como está, por decisión del 1-oct-2026:** el correo de bienvenida lleva la contraseña
-  temporal. Recomendación: que el usuario la cambie al entrar.
+- **Cambió el 16-nov-2026:** el correo de bienvenida ya no lleva la contraseña temporal. Lleva un
+  enlace de un solo uso, que vence a los 3 días, para que el usuario cree su propia contraseña. El
+  Administrador nunca la conoce. También se agregó «¿Olvidó su contraseña?» con el mismo enlace.
+  (Antes, por decisión del 1-oct-2026, la clave temporal viajaba en el correo.)
 
 ### 6. Forzar autenticación del servidor
 - **Había:** toda vista exige sesión (probado en todas las rutas).

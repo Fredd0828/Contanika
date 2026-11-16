@@ -107,6 +107,10 @@ def test_las_rutas_publicas_son_solo_las_previstas():
     assert {ruta["nombre"] for ruta in RUTAS if ruta["publica"]} == {
         "seguridad:inicio",
         "seguridad:iniciar_sesion",
+        "seguridad:recuperar_contrasena",
+        "seguridad:recuperar_enviado",
+        "seguridad:crear_contrasena",
+        "seguridad:contrasena_creada",
         "finanzas:pdf_publico",
         "robots",
         "salud",
