@@ -8,6 +8,8 @@ Convención de `grupo_nit`:
 - Empresas (NIT) y grandes contribuyentes: último dígito del NIT ("0" a "9").
 - Personas naturales (renta): últimos dos dígitos de la cédula ("00" a "99").
 - Extranjeros: no se calculan automáticamente; se registran como vencimiento manual.
+- Obligaciones con una sola fecha para todos («independientemente del NIT»):
+  grupo "TODOS"; le aplican a cualquier cliente que tenga la obligación.
 """
 
 # ---------------------------------------------------------------------------
@@ -371,21 +373,107 @@ RST_ANTICIPO_BIMESTRAL_2026 = [
 # ---------------------------------------------------------------------------
 # RST — Consolidada anual 2026 (último dígito del NIT; el PDF agrupa de a dos)
 # ---------------------------------------------------------------------------
-# Febrero 2026: consolidada año gravable 2025; Abril 2026: consolidada de IVA.
+# Abril 2026: consolidada del año gravable 2025; Febrero 2026: consolidada de
+# IVA. (Corregido el 16-nov-2026: antes estaban cruzadas con respecto al PDF.)
 RST_CONSOLIDADA_2026 = [
     (
         "2025",
         2026,
-        2,
-        {"1": 16, "2": 16, "3": 17, "4": 17, "5": 18, "6": 18, "7": 19, "8": 19, "9": 20, "0": 20},
+        4,
+        {"1": 20, "2": 20, "3": 21, "4": 21, "5": 22, "6": 22, "7": 23, "8": 23, "9": 24, "0": 24},
     ),
     (
         "2026-IVA",
         2026,
-        4,
-        {"1": 20, "2": 20, "3": 21, "4": 21, "5": 22, "6": 22, "7": 23, "8": 23, "9": 24, "0": 24},
+        2,
+        {"1": 16, "2": 16, "3": 17, "4": 17, "5": 18, "6": 18, "7": 19, "8": 19, "9": 20, "0": 20},
     ),
 ]
+
+# ---------------------------------------------------------------------------
+# Obligaciones con una sola fecha para todos los NIT («Independientemente del
+# Número de Identificación Tributaria»). El grupo es TODOS.
+# ---------------------------------------------------------------------------
+TODOS = "TODOS"
+
+# Gasolina y ACPM: declaración mensual y pago.
+GASOLINA_ACPM_2026 = [
+    ("2026-01", 2026, 2, {TODOS: 13}),
+    ("2026-02", 2026, 3, {TODOS: 13}),
+    ("2026-03", 2026, 4, {TODOS: 16}),
+    ("2026-04", 2026, 5, {TODOS: 15}),
+    ("2026-05", 2026, 6, {TODOS: 16}),
+    ("2026-06", 2026, 7, {TODOS: 15}),
+    ("2026-07", 2026, 8, {TODOS: 18}),
+    ("2026-08", 2026, 9, {TODOS: 14}),
+    ("2026-09", 2026, 10, {TODOS: 15}),
+    ("2026-10", 2026, 11, {TODOS: 17}),
+    ("2026-11", 2026, 12, {TODOS: 15}),
+    ("2026-12", 2027, 1, {TODOS: 18}),
+]
+
+# Bimestral con fecha única: carbono, IVA de prestadores de servicios desde el
+# exterior, bebidas ultraprocesadas y anticipos de la PES (mismas fechas).
+BIMESTRAL_FECHA_UNICA_2026 = [
+    ("2026-01", 2026, 3, {TODOS: 13}),
+    ("2026-02", 2026, 5, {TODOS: 15}),
+    ("2026-03", 2026, 7, {TODOS: 15}),
+    ("2026-04", 2026, 9, {TODOS: 14}),
+    ("2026-05", 2026, 11, {TODOS: 17}),
+    ("2026-06", 2027, 1, {TODOS: 18}),
+]
+
+# Presencia económica significativa: anticipos bimestrales + declaración anual.
+PES_2026 = [*BIMESTRAL_FECHA_UNICA_2026, ("2025", 2026, 4, {TODOS: 23})]
+
+# Impuesto al patrimonio: 1a. cuota por último dígito; 2a. cuota fecha única.
+PATRIMONIO_2026 = [
+    (
+        "2026-1C",
+        2026,
+        5,
+        {"1": 12, "2": 13, "3": 14, "4": 15, "5": 19, "6": 20, "7": 21, "8": 22, "9": 25, "0": 26},
+    ),
+    ("2026-2C", 2026, 9, {TODOS: 14}),
+]
+
+# Precios de transferencia: declaración informativa y documentación
+# comprobatoria (informe local e informe maestro), mismas fechas.
+PRECIOS_TRANSFERENCIA_2026 = [
+    (
+        "2025",
+        2026,
+        9,
+        {"1": 9, "2": 10, "3": 11, "4": 14, "5": 15, "6": 16, "7": 17, "8": 18, "9": 21, "0": 22},
+    ),
+]
+INFORME_PAIS_POR_PAIS_2026 = [("2025", 2026, 12, {TODOS: 15})]
+PLASTICOS_UN_SOLO_USO_2026 = [("2025", 2026, 2, {TODOS: 13})]
+
+# Registro Único de Beneficiarios Finales: actualización trimestral.
+RUB_2026 = [
+    ("2026-T1", 2026, 2, {TODOS: 2}),
+    ("2026-T2", 2026, 5, {TODOS: 4}),
+    ("2026-T3", 2026, 8, {TODOS: 3}),
+    ("2026-T4", 2026, 11, {TODOS: 3}),
+]
+
+
+def _como_declaracion_anual(bloque, periodo="2025"):
+    """
+    Activos en el exterior: «las mismas fechas de renta». Toma las fechas de
+    la declaración de renta del grupo y las rotula con el año gravable.
+    """
+    return [(periodo, anio, mes, dias) for _, anio, mes, dias in bloque]
+
+
+# Grandes contribuyentes declaran con la 2a. cuota (abril); personas
+# jurídicas con la 1a. (mayo); personas naturales de agosto a octubre; RST
+# con la consolidada anual (abril).
+ACTIVOS_EXTERIOR_GRANDES_2026 = _como_declaracion_anual(RENTA_GRANDES_CONTRIBUYENTES_2026[1:2])
+ACTIVOS_EXTERIOR_JURIDICAS_2026 = _como_declaracion_anual(RENTA_PERSONAS_JURIDICAS_2026[:1])
+ACTIVOS_EXTERIOR_NATURALES_2026 = _como_declaracion_anual(RENTA_PERSONAS_NATURALES_2026)
+ACTIVOS_EXTERIOR_RST_2026 = _como_declaracion_anual(RST_CONSOLIDADA_2026[:1])
 
 
 def generar_registros_dian_2026():
@@ -411,6 +499,23 @@ def generar_registros_dian_2026():
         ("Renta personas naturales", RENTA_PERSONAS_NATURALES_2026),
         ("RST anticipo bimestral", RST_ANTICIPO_BIMESTRAL_2026),
         ("RST consolidada anual", RST_CONSOLIDADA_2026),
+        # Página 2 del calendario (agregadas el 16-nov-2026).
+        ("Impuesto al consumo", IVA_BIMESTRAL_2026),
+        ("Gasolina y ACPM", GASOLINA_ACPM_2026),
+        ("Impuesto al carbono", BIMESTRAL_FECHA_UNICA_2026),
+        ("IVA servicios desde el exterior", BIMESTRAL_FECHA_UNICA_2026),
+        ("Bebidas ultraprocesadas", BIMESTRAL_FECHA_UNICA_2026),
+        ("Presencia económica significativa", PES_2026),
+        ("Impuesto al patrimonio", PATRIMONIO_2026),
+        ("Precios transferencia - informativa", PRECIOS_TRANSFERENCIA_2026),
+        ("Precios transferencia - documentación", PRECIOS_TRANSFERENCIA_2026),
+        ("Informe país por país", INFORME_PAIS_POR_PAIS_2026),
+        ("Plásticos de un solo uso", PLASTICOS_UN_SOLO_USO_2026),
+        ("Beneficiarios finales (RUB)", RUB_2026),
+        ("Activos exterior grandes contribuyentes", ACTIVOS_EXTERIOR_GRANDES_2026),
+        ("Activos exterior personas jurídicas", ACTIVOS_EXTERIOR_JURIDICAS_2026),
+        ("Activos exterior personas naturales", ACTIVOS_EXTERIOR_NATURALES_2026),
+        ("Activos exterior RST", ACTIVOS_EXTERIOR_RST_2026),
     ]
 
     for tipo_obligacion, bloque in bloques:

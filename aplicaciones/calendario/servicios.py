@@ -123,7 +123,15 @@ def generar_vencimientos_cliente(cliente, usuario):
         "sin_referencia": [],
         "sin_coincidencia": [],
     }
-    if not grupos:
+    # Las obligaciones con fecha única («TODOS») aplican a cualquier cliente que
+    # las tenga marcadas, aunque su documento no permita calcular el grupo.
+    grupos_busqueda = [*grupos, TablaReferenciaDian.TODOS]
+    if (
+        not grupos
+        and not TablaReferenciaDian.objects.filter(
+            tipo_obligacion__in=obligaciones, grupo_nit=TablaReferenciaDian.TODOS
+        ).exists()
+    ):
         return resumen
 
     tipos_con_referencia = set(
@@ -138,7 +146,7 @@ def generar_vencimientos_cliente(cliente, usuario):
     responsable = cliente.responsable or usuario
     referencias = TablaReferenciaDian.objects.filter(
         tipo_obligacion__in=obligaciones,
-        grupo_nit__in=grupos,
+        grupo_nit__in=grupos_busqueda,
     )
     # Obligaciones con fechas cargadas pero ninguna para el documento del
     # cliente (p. ej. renta de personas jurídicas marcada a una persona natural).

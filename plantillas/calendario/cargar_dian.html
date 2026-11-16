@@ -52,15 +52,25 @@
         </div>
 
         <div class="col-md-6">
-            <div class="ph-title mb-2"><i class="bi bi-file-earmark-excel"></i> Carga masiva</div>
+            <div class="ph-title mb-2"><i class="bi bi-file-earmark-excel"></i> Calendario del año (plantilla)</div>
             <p class="text-muted" style="font-size:12px">
-                Descargue la plantilla, diligénciela con las columnas
-                <code>tipo_obligacion</code>, <code>grupo_nit</code>,
-                <code>fecha_vencimiento</code> y <code>periodo_gravable</code>, y súbala aquí.
+                La plantilla tiene la misma forma del PDF de la DIAN: una fila por obligación y
+                período, con el mes y el día debajo de cada último dígito del NIT, y una hoja aparte
+                para renta de personas naturales. Cada año descargue la del año nuevo, copie las
+                fechas del PDF y súbala. Después pulse «Calcular vencimientos DIAN» en la lista.
             </p>
-            <a class="ph-link mb-3 d-inline-block" href="{% url 'calendario:plantilla_dian' %}">
-                <i class="bi bi-download"></i> Descargar plantilla Excel
-            </a>
+            <form method="get" action="{% url 'calendario:plantilla_dian' %}" class="d-flex flex-wrap gap-2 align-items-end mb-3">
+                <div>
+                    <label class="form-label" for="anio-plantilla">Año del calendario</label>
+                    <select id="anio-plantilla" name="anio" class="form-select">
+                        {% for anio in anios_cargados %}
+                        <option value="{{ anio }}"{% if forloop.last %} selected{% endif %}>{{ anio }} · con las fechas cargadas</option>
+                        {% endfor %}
+                        <option value="{{ anio_siguiente }}"{% if not anios_cargados %} selected{% endif %}>{{ anio_siguiente }} · nuevo, días en blanco</option>
+                    </select>
+                </div>
+                <button type="submit" class="ph-btn"><i class="bi bi-download"></i> Descargar plantilla</button>
+            </form>
             <form method="post" action="{% url 'calendario:importar_dian' %}" enctype="multipart/form-data">
                 {% csrf_token %}
                 <label class="form-label">{{ formulario_importar.archivo.label }}</label>

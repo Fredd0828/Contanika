@@ -256,6 +256,7 @@ python gestionar.py runserver 127.0.0.1:8000
 python gestionar.py makemigrations
 python gestionar.py migrate
 python gestionar.py cargar_datos_iniciales --correo-admin=correo@dominio.co --clave-admin=...
+python gestionar.py cargar_calendario_dian_2026   # sin esto no se calculan vencimientos
 bash scripts/calidad.sh
 ```
 
@@ -331,8 +332,22 @@ Ninguna funcionalidad se da por terminada sin:
 - Obligaciones por régimen: simple/simplificado → RST; jurídica ordinaria →
   renta PJ + retención (+ IVA si responsable); natural → renta PN (+ IVA y
   retención si responsable).
-- Datos oficiales 2026 en `datos_dian_2026.py` (440 registros); comando
-  `cargar_calendario_dian_2026` idempotente.
+- Datos oficiales 2026 en `datos_dian_2026.py` (704 registros: las dos
+  páginas del PDF de la DIAN); comando `cargar_calendario_dian_2026`
+  idempotente. Grupo `TablaReferenciaDian.TODOS` = fecha única
+  («independientemente del NIT»): le aplica a cualquier cliente que tenga la
+  obligación, aunque su documento no permita calcular el grupo.
+- **Calendario de cada año (decisión del usuario, 16-nov-2026):** el
+  Administrador lo sube con la plantilla de `calendario/importacion.py`, que
+  tiene la forma del PDF (hoja «Por último dígito»: mes, año y día por dígito
+  + «Todos los NIT»; hoja «Por dos dígitos»: pares «01-02»). La plantilla de
+  un año cargado sale llena; la de un año nuevo copia la estructura del
+  anterior con los períodos corridos y los días en blanco. Al importar, el
+  archivo manda en cada obligación y período (quita los grupos que ya no
+  estén); no se mezclan un dígito, dos dígitos y «Todos» en un mismo período;
+  la obligación debe existir en el catálogo. Sigue aceptando la lista larga
+  anterior. Una obligación nueva del PDF: agregarla al catálogo con una
+  migración de datos (como `clientes 0008`) y a `ORDEN_OBLIGACIONES`.
 - Calendario día/semana/mes con grilla renderizada en el servidor (sin JS pesado).
 - Vencimientos distritales/municipales manuales; alertas por vencimiento;
   anotaciones con visibilidad configurable.

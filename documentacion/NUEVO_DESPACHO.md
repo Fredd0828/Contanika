@@ -68,6 +68,12 @@ Administrador puede pedir otro en «¿Olvidó su contraseña?».
 El comando se puede correr de nuevo sin duplicar nada, y no cambia los datos
 del despacho que ya existan.
 
+Después cargue el calendario de la DIAN (fechas por último dígito del NIT).
+**Sin este paso no se calcula ningún vencimiento** al crear los clientes:
+```bash
+python gestionar.py cargar_calendario_dian_2026
+```
+
 ### 5. Revisar la instalación
 ```bash
 python gestionar.py check --deploy

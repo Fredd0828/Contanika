@@ -2416,3 +2416,76 @@ proxy.
 ### Pendientes
 - Contratar el VPS y crear la dirección en DuckDNS (usuario).
 - Correr el script en el VPS después del merge.
+
+## Lunes 16 de noviembre de 2026 — Calendario DIAN en el despliegue
+
+### Qué se hizo
+Contanika quedó instalado en https://contanika.tech (VPS de Hostinger), pero
+el usuario notó que no se calculaban vencimientos. Causa: la tabla de fechas
+DIAN (`tabla_referencia_dian`) solo la llena el comando
+`cargar_calendario_dian_2026`, que `instalar_vps.sh` no corría; el catálogo
+de obligaciones sí estaba (lo siembra la migración `clientes 0006`).
+
+- `instalar_vps.sh` corre `cargar_calendario_dian_2026` después de
+  `cargar_datos_iniciales`.
+- `actualizar.sh` **no** lo vuelve a correr: decisión del usuario, cada año el
+  Administrador sube el calendario nuevo desde **Calendario → Tabla DIAN**
+  (plantilla de Excel) y puede corregir fechas a mano; recargar 2026 desde el
+  código desharía esas correcciones.
+- `NUEVO_DESPACHO.md`, `DESPLIEGUE_VPS.md` y `AGENTS.md` incluyen el paso.
+- En el servidor ya instalado se cargó a mano con el mismo comando.
+
+### Pendientes
+- Calendario DIAN 2027: cuando la DIAN publique el decreto, el Administrador
+  lo sube con la plantilla de Excel (se ofreció armar el Excel desde el PDF
+  oficial) y recalcula los vencimientos, antes de enero.
+
+## Martes 17 de noviembre de 2026 — Plantilla del calendario DIAN con la forma del PDF
+
+### Qué se hizo
+El usuario pidió una plantilla que recoja **todos** los datos del PDF del
+calendario tributario, para subirla cada año. Decisiones suyas: forma del PDF,
+todas las obligaciones del PDF y la exógena incluida (en blanco).
+
+- **Plantilla nueva** (`calendario/importacion.py`):
+  - hoja «Por último dígito»: una fila por obligación y período, con mes, año
+    y día bajo cada dígito (1 … 0) y una columna «Todos los NIT»;
+  - hoja «Por dos dígitos»: pares «01-02» … «99-00» (renta y activos en el
+    exterior de personas naturales, exógena nacional);
+  - hojas «Obligaciones» (listas desplegables) e «Instrucciones».
+  - La de un año cargado sale llena; la de un año nuevo copia la estructura
+    del anterior, corre los períodos y deja los días en blanco. En la
+    pantalla se elige el año.
+- **Importación**: valida obligación del catálogo, período, mes, año y cada
+  día (dice hoja, fila y columna del error); el archivo manda en cada
+  obligación y período; no mezcla un dígito, dos dígitos y «Todos». Sigue
+  aceptando la lista larga anterior.
+- **Fecha única («TODOS»)**: aplica a cualquier cliente con la obligación,
+  incluso extranjeros sin cálculo por documento.
+- **Calendario 2026 completo**: de 440 a 704 fechas. Nuevas: consumo (= IVA
+  bimestral), gasolina y ACPM, carbono, IVA de servicios desde el exterior,
+  bebidas ultraprocesadas, PES, patrimonio, precios de transferencia
+  (informativa y documentación), país por país, plásticos, RUB y activos en
+  el exterior (grandes, jurídicas, naturales y RST, con las fechas de renta).
+  Catálogo de 10 a 27 obligaciones (migración `clientes 0008`).
+- **Corrección**: en el RST consolidado estaban cruzadas las fechas con el
+  PDF; la consolidada anual es en abril (20 al 24) y la de IVA en febrero
+  (16 al 20).
+- Guía nueva en la Ayuda: «Cargar el calendario DIAN del año».
+- `scripts/bd/02_datos_iniciales.sql` (bloques del calendario y del catálogo;
+  probado en una base vacía con `01` + `02`), `AGENTS.md` y `CAMBIOS_WORD.md`.
+
+### Cómo verificarlo
+Aplicar la migración `clientes 0008` y correr `cargar_calendario_dian_2026`.
+En Calendario → Tabla DIAN, descargar la plantilla 2026 (llena) y la 2027
+(en blanco) y compararlas con el PDF. Después pulsar «Calcular vencimientos
+DIAN» para corregir el RST consolidado en los clientes.
+
+### Resultado
+Suite completa 1454 en verde (pruebas nuevas de la plantilla, la importación,
+los pares de dígitos, los errores y la fecha única). Ruff, formato y
+`makemigrations --check` limpios.
+
+### Pendientes
+- En la base local y en el servidor: `migrate`, `cargar_calendario_dian_2026`
+  y «Calcular vencimientos DIAN».

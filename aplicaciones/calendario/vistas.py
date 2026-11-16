@@ -17,6 +17,7 @@ from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.views.generic import DetailView, ListView, View
 
 from aplicaciones.comunes.paginacion import PaginacionMixin
@@ -33,7 +34,7 @@ from .formularios import (
     TablaReferenciaDianForm,
     VencimientoManualForm,
 )
-from .importacion import generar_plantilla_dian, importar_dian
+from .importacion import anios_calendario, generar_plantilla_dian, importar_dian
 from .models import AnotacionCalendario, ConfiguracionAlerta, Vencimiento
 from .selectores import (
     anotaciones_visibles,
@@ -437,16 +438,20 @@ class CargarDianView(ModuloHabilitadoMixin, RolRequeridoMixin, View):
     roles_permitidos = ROLES_ADMIN
     template_name = "calendario/cargar_dian.html"
 
+    def _contexto(self, formulario):
+        cargados = anios_calendario()
+        # Se ofrecen los años cargados y el siguiente (sale con los días en blanco).
+        siguiente = (cargados[-1] if cargados else timezone.localdate().year) + 1
+        return {
+            "formulario": formulario,
+            "formulario_importar": ImportarDianForm(),
+            "opciones": opciones_filtro_calendario(),
+            "anios_cargados": cargados,
+            "anio_siguiente": siguiente,
+        }
+
     def get(self, request):
-        return render(
-            request,
-            self.template_name,
-            {
-                "formulario": TablaReferenciaDianForm(),
-                "formulario_importar": ImportarDianForm(),
-                "opciones": opciones_filtro_calendario(),
-            },
-        )
+        return render(request, self.template_name, self._contexto(TablaReferenciaDianForm()))
 
     def post(self, request):
         formulario = TablaReferenciaDianForm(request.POST)
@@ -454,15 +459,7 @@ class CargarDianView(ModuloHabilitadoMixin, RolRequeridoMixin, View):
             formulario.save()
             messages.success(request, "La referencia DIAN se guardó correctamente.")
             return redirect("calendario:cargar_dian")
-        return render(
-            request,
-            self.template_name,
-            {
-                "formulario": formulario,
-                "formulario_importar": ImportarDianForm(),
-                "opciones": opciones_filtro_calendario(),
-            },
-        )
+        return render(request, self.template_name, self._contexto(formulario))
 
 
 class ImportarDianView(ModuloHabilitadoMixin, RolRequeridoMixin, View):
@@ -478,12 +475,15 @@ class ImportarDianView(ModuloHabilitadoMixin, RolRequeridoMixin, View):
                 resultado = importar_dian(formulario.cleaned_data["archivo"])
                 messages.success(
                     request,
-                    f"Importación completada: {resultado['cargadas']} filas cargadas, "
-                    f"{resultado['omitidas']} actualizadas, "
-                    f"{len(resultado['errores'])} con error.",
+                    f"Importación completada: {resultado['cargadas']} fechas nuevas, "
+                    f"{resultado['omitidas']} actualizadas, {resultado['sin_cambios']} sin cambios, "
+                    f"{len(resultado['errores'])} con error. Ahora pulse «Calcular vencimientos DIAN» "
+                    "en la lista de vencimientos.",
                 )
                 for error in resultado["errores"][:10]:
                     messages.warning(request, error)
+                if len(resultado["errores"]) > 10:
+                    messages.warning(request, f"… y {len(resultado['errores']) - 10} errores más.")
             except ValueError as error:
                 messages.error(request, str(error))
         else:
@@ -498,12 +498,15 @@ class DescargarPlantillaDianView(ModuloHabilitadoMixin, RolRequeridoMixin, View)
     roles_permitidos = ROLES_ADMIN
 
     def get(self, request):
-        archivo = generar_plantilla_dian()
+        anio = request.GET.get("anio", "")
+        anio = int(anio) if anio.isdigit() and 2000 <= int(anio) <= 2100 else None
+        archivo = generar_plantilla_dian(anio)
         respuesta = HttpResponse(
             archivo.getvalue(),
             content_type=("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
         )
-        respuesta["Content-Disposition"] = 'attachment; filename="plantilla_calendario_dian.xlsx"'
+        nombre = f"calendario_dian_{anio}.xlsx" if anio else "calendario_dian.xlsx"
+        respuesta["Content-Disposition"] = f'attachment; filename="{nombre}"'
         return respuesta
 
 

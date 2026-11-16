@@ -124,6 +124,7 @@ scp "root@203.0.113.10:/var/backups/contanika/*" .\respaldos-contanika\
 | Base de datos | PostgreSQL en el mismo servidor, cerrado a internet; usuario `contanika_app` sin permiso para crear o borrar tablas; RLS activo |
 | Cortafuegos | Solo SSH (22), HTTP (80) y HTTPS (443) |
 | Tareas automáticas | Cobros cada 15 minutos y alertas cada hora (cron del usuario `contanika`) |
+| Calendario DIAN 2026 | Fechas por último dígito del NIT, para calcular los vencimientos. Cada año el Administrador sube el nuevo en **Calendario → Tabla DIAN** (plantilla de Excel) y luego pulsa **Calcular vencimientos DIAN** en la lista |
 | Actualizaciones de Ubuntu | Las de seguridad se instalan solas |
 
 ## Si algo falla
