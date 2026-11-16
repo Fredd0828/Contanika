@@ -24,7 +24,7 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import landscape, letter
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import cm
-from reportlab.platypus import CondPageBreak, KeepTogether, Paragraph, Table, TableStyle
+from reportlab.platypus import CondPageBreak, KeepTogether, Paragraph, Table
 
 from aplicaciones.comunes import paleta
 from aplicaciones.comunes.pdf import (
@@ -34,7 +34,10 @@ from aplicaciones.comunes.pdf import (
     encabezado_documento,
     estilo_tabla,
     estilos_documento,
+    letras,
     separador,
+    subtitulo_seccion,
+    tarjetas_resumen,
 )
 from aplicaciones.finanzas.templatetags.finanzas_tags import formato_pesos
 from aplicaciones.seguridad.models import ConfiguracionDespacho
@@ -184,6 +187,7 @@ def _grafico_excel(libro, grafico):
 
 TIPOS_A_LA_DERECHA = (PESOS, NUMERO, PORCENTAJE)
 MARGEN_REPORTE = 1.5 * cm
+COLUMNAS_COMPACTAS = 9
 
 
 def _dibujo_grafico(grafico, ancho):
@@ -200,11 +204,12 @@ def _dibujo_grafico(grafico, ancho):
     barras.data = [valores for _, valores in grafico.series]
     barras.barSpacing = 1
     barras.groupSpacing = 6
+    letra = letras()["texto"]
     tenue = color(paleta.TEXTO_TENUE)
     linea = color(paleta.BORDE)
     eje_categorias = barras.categoryAxis
     eje_categorias.categoryNames = grafico.etiquetas
-    eje_categorias.labels.fontName = "Helvetica"
+    eje_categorias.labels.fontName = letra
     eje_categorias.labels.fontSize = 7.5
     eje_categorias.labels.fillColor = tenue
     eje_categorias.strokeColor = linea
@@ -214,7 +219,7 @@ def _dibujo_grafico(grafico, ancho):
         eje_categorias.labels.dy = -6
     eje_valores = barras.valueAxis
     eje_valores.valueMin = 0
-    eje_valores.labels.fontName = "Helvetica"
+    eje_valores.labels.fontName = letra
     eje_valores.labels.fontSize = 7.5
     eje_valores.labels.fillColor = tenue
     eje_valores.strokeColor = linea
@@ -230,7 +235,7 @@ def _dibujo_grafico(grafico, ancho):
     if varias_series:
         leyenda = Legend()
         leyenda.x, leyenda.y = ancho - 3.4 * cm, alto - 0.6 * cm
-        leyenda.fontName = "Helvetica"
+        leyenda.fontName = letra
         leyenda.fontSize = 7.5
         leyenda.fillColor = tenue
         leyenda.dx = leyenda.dy = 7
@@ -245,36 +250,26 @@ def _dibujo_grafico(grafico, ancho):
     return dibujo
 
 
-def _tarjetas_resumen(resumen, ancho, estilos):
-    """Las cifras del resumen en una fila de tarjetas: etiqueta pequeña y valor grande."""
-    celdas = [
-        [
-            Paragraph(escape(str(etiqueta)).upper(), estilos["etiqueta"]),
-            Paragraph(escape(str(valor)), estilos["cifra"]),
-        ]
-        for etiqueta, valor in resumen
-    ]
-    tabla = Table([celdas], colWidths=[ancho / len(celdas)] * len(celdas))
-    tabla.setStyle(
-        TableStyle(
-            [
-                ("BACKGROUND", (0, 0), (-1, -1), color(paleta.SUPERFICIE)),
-                ("BOX", (0, 0), (-1, -1), 0.6, color(paleta.BORDE)),
-                ("LINEAFTER", (0, 0), (-2, -1), 0.4, color(paleta.BORDE_SUAVE)),
-                ("LINEABOVE", (0, 0), (-1, 0), 1.6, color(paleta.TEAL)),
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("TOPPADDING", (0, 0), (-1, -1), 9),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 9),
-                ("LEFTPADDING", (0, 0), (-1, -1), 11),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 11),
-            ]
+def _estilos_compactos(estilos):
+    """Letra un punto más pequeña para las tablas con muchas columnas, así no se parten las palabras."""
+    compactos = dict(estilos)
+    for nombre in ("celda", "celda_derecha", "celda_titulo", "celda_titulo_derecha"):
+        base = estilos[nombre]
+        compactos[nombre] = ParagraphStyle(
+            f"{nombre}_compacta", parent=base, fontSize=base.fontSize - 1, leading=base.leading - 1.2
         )
-    )
-    return tabla
+    return compactos
 
 
 def _tabla_seccion(seccion, ancho, estilos):
-    """Tabla de una sección: cifras a la derecha, renglón alterno y filas en mora en rojo."""
+    """
+    Tabla de una sección: cifras a la derecha, renglón alterno y filas en mora
+    en rojo. Con `COLUMNAS_COMPACTAS` columnas o más, la letra y los márgenes
+    de las celdas se reducen para que quepan sin partir palabras.
+    """
+    compacta = len(seccion.columnas) >= COLUMNAS_COMPACTAS
+    if compacta:
+        estilos = _estilos_compactos(estilos)
     total_ancho = sum(columna.ancho for columna in seccion.columnas)
     anchos = [ancho * columna.ancho / total_ancho for columna in seccion.columnas]
     derecha = [columna.tipo in TIPOS_A_LA_DERECHA for columna in seccion.columnas]
@@ -309,6 +304,9 @@ def _tabla_seccion(seccion, ancho, estilos):
     estilo = estilo_tabla(resaltadas=seccion.resaltadas, total_filas=len(filas) - 1)
     if not seccion.filas:
         estilo.add("SPAN", (0, 1), (-1, 1))
+    if compacta:
+        estilo.add("LEFTPADDING", (0, 0), (-1, -1), 4)
+        estilo.add("RIGHTPADDING", (0, 0), (-1, -1), 4)
     tabla.setStyle(estilo)
     return tabla
 
@@ -327,21 +325,22 @@ def exportar_pdf(definicion, resultado, usuario, filtros_texto):
     elementos = encabezado_documento(
         datos["objeto_despacho"],
         ancho,
-        escape(datos["titulo"]),
+        escape(definicion.nombre),
         [f"Generado el {datos['generado']}", f"Por {escape(datos['usuario'])}"],
         estilos,
+        etiqueta="REPORTE",
     )
     elementos.append(Paragraph(f"<b>Filtros aplicados:</b> {escape(datos['filtros'])}", estilos["nota"]))
-    elementos.append(separador(0.35))
+    elementos.append(separador(0.4))
     if resultado.resumen:
-        elementos += [_tarjetas_resumen(resultado.resumen, ancho, estilos), separador(0.45)]
+        elementos += [tarjetas_resumen(resultado.resumen, ancho, estilos), separador(0.55)]
     if resultado.grafico and resultado.grafico.etiquetas:
         elementos.append(
             KeepTogether(
                 [
-                    Paragraph(escape(resultado.grafico.titulo), estilos["subtitulo"]),
+                    *subtitulo_seccion(escape(resultado.grafico.titulo), ancho, estilos),
                     _dibujo_grafico(resultado.grafico, ancho),
-                    separador(0.3),
+                    separador(0.35),
                 ]
             )
         )
@@ -351,12 +350,7 @@ def exportar_pdf(definicion, resultado, usuario, filtros_texto):
         elementos.append(CondPageBreak(3.2 * cm))
         registros = len(seccion.filas)
         cuenta = f"{registros} registro{'s' if registros != 1 else ''}"
-        elementos.append(
-            Paragraph(
-                f'{escape(seccion.titulo)} <font size="8" color="{paleta.TEXTO_APAGADO}">· {cuenta}</font>',
-                estilos["subtitulo"],
-            )
-        )
+        elementos += subtitulo_seccion(escape(seccion.titulo), ancho, estilos, detalle=cuenta)
         elementos.append(_tabla_seccion(seccion, ancho, estilos))
         if seccion.nota_resaltado and seccion.resaltadas:
             elementos += [separador(0.12), Paragraph(escape(seccion.nota_resaltado), estilos["nota_roja"])]

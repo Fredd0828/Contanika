@@ -126,27 +126,28 @@ def construir_pdf_documento(documento, usuario_firmante):
     elementos = encabezado_documento(
         despacho,
         ancho,
-        f"Documento No. {documento.pk}",
+        f"No. {documento.pk}",
         [f"Expedido el {fecha}"],
         textos,
+        etiqueta="DOCUMENTO",
     )
-    elementos.append(Spacer(1, 0.9 * cm))
+    elementos.append(Spacer(1, 1.1 * cm))
     elementos.append(
         Paragraph(escape(documento.plantilla.nombre_plantilla).upper(), textos["titulo_centrado"])
     )
     # Una línea corta bajo el título lo separa del cuerpo, como en un certificado impreso.
     elementos.append(
         HRFlowable(
-            width=2.6 * cm,
-            thickness=1.4,
+            width=2.2 * cm,
+            thickness=2,
             color=color(paleta.TEAL),
-            spaceBefore=7,
-            spaceAfter=22,
+            spaceBefore=9,
+            spaceAfter=26,
             hAlign="CENTER",
         )
     )
     elementos.append(Paragraph(selectores.texto_certificado_renderizado(documento), textos["cuerpo"]))
-    elementos.append(Spacer(1, 1.6 * cm))
+    elementos.append(Spacer(1, 1.8 * cm))
     elementos.append(bloque_firma(usuario_firmante, None))
 
     return construir_pdf(

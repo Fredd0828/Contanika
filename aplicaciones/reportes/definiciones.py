@@ -92,11 +92,11 @@ class ReporteClientes(DefinicionReporte):
             Columna("Resp. IVA", ancho=8),
             Columna("Ciudad / municipio", ancho=18),
             Columna("Municipios adicionales", ancho=20),
-            Columna("Servicios", ancho=24),
+            Columna("Servicios", ancho=21),
             Columna("Contacto", ancho=22),
             Columna("Responsable", ancho=18),
             Columna("Estado", ancho=9),
-            Columna("Registro", FECHA, ancho=11),
+            Columna("Registro", FECHA, ancho=14),
         ]
         filas = []
         for cliente in consulta:

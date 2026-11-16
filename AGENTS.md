@@ -91,15 +91,22 @@ models.py → servicios.py → selectores.py → formularios.py → vistas.py �
 - **Estilo:** `ruff` debe pasar sin hallazgos.
 - **Selects abiertos:** los campos desplegables permiten escribir valores nuevos cuando aplique.
 - **Fechas editables:** ninguna fecha queda bloqueada, aunque el sistema la calcule automáticamente.
-- **PDF con la misma hoja (13-oct-2026, pedido por el usuario):** todo PDF
-  (reportes, cuentas de cobro, documentos y certificados) se arma con las
-  piezas de `aplicaciones/comunes/pdf.py`: `encabezado_documento` (despacho a
-  la izquierda, título y datos a la derecha), `estilos_documento`,
-  `estilo_tabla`, `cuadro_datos` y `construir_pdf`, que pone la franja
-  superior, los márgenes y el pie con los datos del despacho y «Página X de
-  Y». Un PDF nuevo no define estilos ni encabezados propios. Los PDF ya
-  guardados (documentos y cuentas de cobro) conservan su aspecto anterior
-  hasta que se vuelvan a generar.
+- **PDF con la misma hoja (13-oct-2026; rediseño 16-nov-2026, pedido por el
+  usuario):** todo PDF (reportes, cuentas de cobro, documentos y certificados)
+  se arma con las piezas de `aplicaciones/comunes/pdf.py`:
+  `encabezado_documento` (logo **y siempre al lado** nombre y datos del
+  despacho a la izquierda; a la derecha `etiqueta` pequeña en teal, título o
+  número grande y datos), `estilos_documento`, `estilo_tabla` (totales con
+  doble línea), `cuadro_datos`, `tarjetas_resumen`, `cuadro_destacado`,
+  `subtitulo_seccion` (barra teal) y `construir_pdf`, que pone la franja
+  superior, los márgenes, el pie con los datos del despacho y «Página X de Y»
+  y, con `sello=`, un sello en diagonal (la cuenta sin saldo lleva «PAGADA»).
+  Letras: Montserrat (títulos) y Open Sans (texto), recortadas a los
+  caracteres del español en `comunes/fuentes/` (licencia OFL); `letras()`
+  devuelve los nombres y cae a Helvetica si faltan los archivos. Nunca
+  escribir «Helvetica» a mano en un PDF. Un PDF nuevo no define estilos ni
+  encabezados propios. Los PDF ya guardados (documentos y cuentas de cobro)
+  conservan su aspecto anterior hasta que se vuelvan a generar.
 - **Historial de la tarea:** el detalle muestra solo los últimos 5 movimientos.
 - **Filtros desplegables:** todos los listados usan filtros desplegables.
 - **Tablas de a 10 (regla del usuario, 13-oct-2026):** ninguna tabla muestra
@@ -352,10 +359,9 @@ Ninguna funcionalidad se da por terminada sin:
   (Administrador y Contador Senior) en vez de construir el Módulo 8 completo.
 - `ConfiguracionDespacho.membrete_url` → `membrete` (`ImageField`,
   `upload_to="despacho/"`), cargado por el Administrador en la vista "Datos
-  del despacho" (`documentos:datos_despacho`). `servicios.encabezado_despacho()`
-  arma el encabezado del PDF: la imagen escalada sin deformar al ancho útil
-  (alto máximo 3 cm) o, si no hay membrete, nombre y ciudad como texto. El
-  Módulo 6 (cuenta de cobro "con membrete") debe reutilizar esta función.
+  del despacho" (`documentos:datos_despacho`). Es el logo que
+  `comunes/pdf.py::encabezado_documento` pone al lado del nombre del despacho
+  en todos los PDF (máximo 3,4 × 1,7 cm, sin deformarlo).
 - Séptima plantilla: sin definir en el spec; no se siembra, el Administrador
   la crea desde "Gestión de plantillas" cuando se defina.
 
@@ -406,8 +412,8 @@ Ninguna funcionalidad se da por terminada sin:
   validar, y el formset exige que la suma de valores por línea sea igual al
   total si se indicó alguno. El orden visual se conserva renumerando los
   nombres de los campos con JavaScript al subir/bajar líneas.
-- `aplicaciones/comunes/pdf.py::encabezado_despacho` es el encabezado común
-  de los PDF (membrete o texto) para Documentos y Cuentas de cobro.
+- El encabezado de los PDF es `aplicaciones/comunes/pdf.py::encabezado_documento`
+  (ver «PDF con la misma hoja»).
 - Montos en pesos: filtro `{{ valor|pesos }}` y función `formato_pesos` en
   `finanzas/templatetags/finanzas_tags.py` (`$ 1.200.000`).
 - La ficha del cliente abre la pestaña indicada en el `#hash` de la URL
