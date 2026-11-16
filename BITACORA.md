@@ -2416,3 +2416,23 @@ proxy.
 ### Pendientes
 - Contratar el VPS y crear la dirección en DuckDNS (usuario).
 - Correr el script en el VPS después del merge.
+
+## Lunes 16 de noviembre de 2026 — Calendario DIAN en el despliegue
+
+### Qué se hizo
+Contanika quedó instalado en https://contanika.tech (VPS de Hostinger), pero
+el usuario notó que no se calculaban vencimientos. Causa: la tabla de fechas
+DIAN (`tabla_referencia_dian`) solo la llena el comando
+`cargar_calendario_dian_2026`, que `instalar_vps.sh` no corría; el catálogo
+de obligaciones sí estaba (lo siembra la migración `clientes 0006`).
+
+- `instalar_vps.sh` corre `cargar_calendario_dian_2026` después de
+  `cargar_datos_iniciales`.
+- `actualizar.sh` lo vuelve a correr en cada actualización (es idempotente:
+  actualiza fechas corregidas y crea las que falten).
+- `NUEVO_DESPACHO.md`, `DESPLIEGUE_VPS.md` y `AGENTS.md` incluyen el paso.
+- En el servidor ya instalado se cargó a mano con el mismo comando.
+
+### Pendientes
+- Calendario DIAN 2027: cuando la DIAN publique el decreto, agregar los datos
+  y el comando de 2027 antes de enero.

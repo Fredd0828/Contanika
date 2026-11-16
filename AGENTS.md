@@ -256,6 +256,7 @@ python gestionar.py runserver 127.0.0.1:8000
 python gestionar.py makemigrations
 python gestionar.py migrate
 python gestionar.py cargar_datos_iniciales --correo-admin=correo@dominio.co --clave-admin=...
+python gestionar.py cargar_calendario_dian_2026   # sin esto no se calculan vencimientos
 bash scripts/calidad.sh
 ```
 

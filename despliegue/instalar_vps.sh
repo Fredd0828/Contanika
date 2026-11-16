@@ -266,6 +266,8 @@ gestionar cargar_datos_iniciales \
     --ciudad-despacho "$CIUDAD_DESPACHO" \
     --nombre-admin "$NOMBRE_ADMIN" \
     --correo-admin "$CORREO_ADMIN"
+# Fechas DIAN por último dígito del NIT: sin ellas no se calcula ningún vencimiento.
+gestionar cargar_calendario_dian_2026
 
 gestionar check --deploy --fail-level ERROR
 if curl -fsS "https://$DOMINIO/salud/" >/dev/null; then
