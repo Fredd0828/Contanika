@@ -21,6 +21,10 @@ class TablaReferenciaDian(models.Model):
     automáticamente la fecha de vencimiento de cada cliente.
     """
 
+    # Grupo de las obligaciones con una sola fecha para todos los NIT
+    # («independientemente del Número de Identificación Tributaria»).
+    TODOS = "TODOS"
+
     id_referencia = models.AutoField(primary_key=True)
     tipo_obligacion = models.CharField(max_length=40)
     grupo_nit = models.CharField(max_length=10)

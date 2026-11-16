@@ -4,7 +4,8 @@
 -- métodos de pago, conceptos facturables, obligaciones tributarias,
 -- plantillas base con sus campos
 -- (simples y repetibles), configuración del despacho y calendario oficial
--- DIAN 2026. No incluye usuarios ni credenciales por seguridad.
+-- DIAN 2026 completo (las dos páginas del PDF, 704 fechas).
+-- No incluye usuarios ni credenciales por seguridad.
 -- ============================================================================
 
 --
@@ -655,26 +656,290 @@ COPY public.tabla_referencia_dian (id_referencia, tipo_obligacion, grupo_nit, fe
 418	RST anticipo bimestral	8	2027-01-22	2026-06
 419	RST anticipo bimestral	9	2027-01-25	2026-06
 420	RST anticipo bimestral	0	2027-01-26	2026-06
-421	RST consolidada anual	1	2026-02-16	2025
-422	RST consolidada anual	2	2026-02-16	2025
-423	RST consolidada anual	3	2026-02-17	2025
-424	RST consolidada anual	4	2026-02-17	2025
-425	RST consolidada anual	5	2026-02-18	2025
-426	RST consolidada anual	6	2026-02-18	2025
-427	RST consolidada anual	7	2026-02-19	2025
-428	RST consolidada anual	8	2026-02-19	2025
-429	RST consolidada anual	9	2026-02-20	2025
-430	RST consolidada anual	0	2026-02-20	2025
-431	RST consolidada anual	1	2026-04-20	2026-IVA
-432	RST consolidada anual	2	2026-04-20	2026-IVA
-433	RST consolidada anual	3	2026-04-21	2026-IVA
-434	RST consolidada anual	4	2026-04-21	2026-IVA
-435	RST consolidada anual	5	2026-04-22	2026-IVA
-436	RST consolidada anual	6	2026-04-22	2026-IVA
-437	RST consolidada anual	7	2026-04-23	2026-IVA
-438	RST consolidada anual	8	2026-04-23	2026-IVA
-439	RST consolidada anual	9	2026-04-24	2026-IVA
-440	RST consolidada anual	0	2026-04-24	2026-IVA
+421	RST consolidada anual	1	2026-04-20	2025
+422	RST consolidada anual	2	2026-04-20	2025
+423	RST consolidada anual	3	2026-04-21	2025
+424	RST consolidada anual	4	2026-04-21	2025
+425	RST consolidada anual	5	2026-04-22	2025
+426	RST consolidada anual	6	2026-04-22	2025
+427	RST consolidada anual	7	2026-04-23	2025
+428	RST consolidada anual	8	2026-04-23	2025
+429	RST consolidada anual	9	2026-04-24	2025
+430	RST consolidada anual	0	2026-04-24	2025
+431	RST consolidada anual	1	2026-02-16	2026-IVA
+432	RST consolidada anual	2	2026-02-16	2026-IVA
+433	RST consolidada anual	3	2026-02-17	2026-IVA
+434	RST consolidada anual	4	2026-02-17	2026-IVA
+435	RST consolidada anual	5	2026-02-18	2026-IVA
+436	RST consolidada anual	6	2026-02-18	2026-IVA
+437	RST consolidada anual	7	2026-02-19	2026-IVA
+438	RST consolidada anual	8	2026-02-19	2026-IVA
+439	RST consolidada anual	9	2026-02-20	2026-IVA
+440	RST consolidada anual	0	2026-02-20	2026-IVA
+441	Impuesto al consumo	1	2026-03-10	2026-01
+442	Impuesto al consumo	2	2026-03-11	2026-01
+443	Impuesto al consumo	3	2026-03-12	2026-01
+444	Impuesto al consumo	4	2026-03-13	2026-01
+445	Impuesto al consumo	5	2026-03-16	2026-01
+446	Impuesto al consumo	6	2026-03-17	2026-01
+447	Impuesto al consumo	7	2026-03-18	2026-01
+448	Impuesto al consumo	8	2026-03-19	2026-01
+449	Impuesto al consumo	9	2026-03-20	2026-01
+450	Impuesto al consumo	0	2026-03-24	2026-01
+451	Impuesto al consumo	1	2026-05-12	2026-02
+452	Impuesto al consumo	2	2026-05-13	2026-02
+453	Impuesto al consumo	3	2026-05-14	2026-02
+454	Impuesto al consumo	4	2026-05-15	2026-02
+455	Impuesto al consumo	5	2026-05-19	2026-02
+456	Impuesto al consumo	6	2026-05-20	2026-02
+457	Impuesto al consumo	7	2026-05-21	2026-02
+458	Impuesto al consumo	8	2026-05-22	2026-02
+459	Impuesto al consumo	9	2026-05-25	2026-02
+460	Impuesto al consumo	0	2026-05-26	2026-02
+461	Impuesto al consumo	1	2026-07-09	2026-03
+462	Impuesto al consumo	2	2026-07-10	2026-03
+463	Impuesto al consumo	3	2026-07-14	2026-03
+464	Impuesto al consumo	4	2026-07-15	2026-03
+465	Impuesto al consumo	5	2026-07-16	2026-03
+466	Impuesto al consumo	6	2026-07-17	2026-03
+467	Impuesto al consumo	7	2026-07-21	2026-03
+468	Impuesto al consumo	8	2026-07-22	2026-03
+469	Impuesto al consumo	9	2026-07-23	2026-03
+470	Impuesto al consumo	0	2026-07-24	2026-03
+471	Impuesto al consumo	1	2026-09-09	2026-04
+472	Impuesto al consumo	2	2026-09-10	2026-04
+473	Impuesto al consumo	3	2026-09-11	2026-04
+474	Impuesto al consumo	4	2026-09-14	2026-04
+475	Impuesto al consumo	5	2026-09-15	2026-04
+476	Impuesto al consumo	6	2026-09-16	2026-04
+477	Impuesto al consumo	7	2026-09-17	2026-04
+478	Impuesto al consumo	8	2026-09-18	2026-04
+479	Impuesto al consumo	9	2026-09-21	2026-04
+480	Impuesto al consumo	0	2026-09-22	2026-04
+481	Impuesto al consumo	1	2026-11-11	2026-05
+482	Impuesto al consumo	2	2026-11-12	2026-05
+483	Impuesto al consumo	3	2026-11-13	2026-05
+484	Impuesto al consumo	4	2026-11-17	2026-05
+485	Impuesto al consumo	5	2026-11-18	2026-05
+486	Impuesto al consumo	6	2026-11-19	2026-05
+487	Impuesto al consumo	7	2026-11-20	2026-05
+488	Impuesto al consumo	8	2026-11-23	2026-05
+489	Impuesto al consumo	9	2026-11-24	2026-05
+490	Impuesto al consumo	0	2026-11-25	2026-05
+491	Impuesto al consumo	1	2027-01-13	2026-06
+492	Impuesto al consumo	2	2027-01-14	2026-06
+493	Impuesto al consumo	3	2027-01-15	2026-06
+494	Impuesto al consumo	4	2027-01-18	2026-06
+495	Impuesto al consumo	5	2027-01-19	2026-06
+496	Impuesto al consumo	6	2027-01-20	2026-06
+497	Impuesto al consumo	7	2027-01-21	2026-06
+498	Impuesto al consumo	8	2027-01-22	2026-06
+499	Impuesto al consumo	9	2027-01-25	2026-06
+500	Impuesto al consumo	0	2027-01-26	2026-06
+501	Gasolina y ACPM	TODOS	2026-02-13	2026-01
+502	Gasolina y ACPM	TODOS	2026-03-13	2026-02
+503	Gasolina y ACPM	TODOS	2026-04-16	2026-03
+504	Gasolina y ACPM	TODOS	2026-05-15	2026-04
+505	Gasolina y ACPM	TODOS	2026-06-16	2026-05
+506	Gasolina y ACPM	TODOS	2026-07-15	2026-06
+507	Gasolina y ACPM	TODOS	2026-08-18	2026-07
+508	Gasolina y ACPM	TODOS	2026-09-14	2026-08
+509	Gasolina y ACPM	TODOS	2026-10-15	2026-09
+510	Gasolina y ACPM	TODOS	2026-11-17	2026-10
+511	Gasolina y ACPM	TODOS	2026-12-15	2026-11
+512	Gasolina y ACPM	TODOS	2027-01-18	2026-12
+513	Impuesto al carbono	TODOS	2026-03-13	2026-01
+514	Impuesto al carbono	TODOS	2026-05-15	2026-02
+515	Impuesto al carbono	TODOS	2026-07-15	2026-03
+516	Impuesto al carbono	TODOS	2026-09-14	2026-04
+517	Impuesto al carbono	TODOS	2026-11-17	2026-05
+518	Impuesto al carbono	TODOS	2027-01-18	2026-06
+519	IVA servicios desde el exterior	TODOS	2026-03-13	2026-01
+520	IVA servicios desde el exterior	TODOS	2026-05-15	2026-02
+521	IVA servicios desde el exterior	TODOS	2026-07-15	2026-03
+522	IVA servicios desde el exterior	TODOS	2026-09-14	2026-04
+523	IVA servicios desde el exterior	TODOS	2026-11-17	2026-05
+524	IVA servicios desde el exterior	TODOS	2027-01-18	2026-06
+525	Bebidas ultraprocesadas	TODOS	2026-03-13	2026-01
+526	Bebidas ultraprocesadas	TODOS	2026-05-15	2026-02
+527	Bebidas ultraprocesadas	TODOS	2026-07-15	2026-03
+528	Bebidas ultraprocesadas	TODOS	2026-09-14	2026-04
+529	Bebidas ultraprocesadas	TODOS	2026-11-17	2026-05
+530	Bebidas ultraprocesadas	TODOS	2027-01-18	2026-06
+531	Presencia económica significativa	TODOS	2026-03-13	2026-01
+532	Presencia económica significativa	TODOS	2026-05-15	2026-02
+533	Presencia económica significativa	TODOS	2026-07-15	2026-03
+534	Presencia económica significativa	TODOS	2026-09-14	2026-04
+535	Presencia económica significativa	TODOS	2026-11-17	2026-05
+536	Presencia económica significativa	TODOS	2027-01-18	2026-06
+537	Presencia económica significativa	TODOS	2026-04-23	2025
+538	Impuesto al patrimonio	1	2026-05-12	2026-1C
+539	Impuesto al patrimonio	2	2026-05-13	2026-1C
+540	Impuesto al patrimonio	3	2026-05-14	2026-1C
+541	Impuesto al patrimonio	4	2026-05-15	2026-1C
+542	Impuesto al patrimonio	5	2026-05-19	2026-1C
+543	Impuesto al patrimonio	6	2026-05-20	2026-1C
+544	Impuesto al patrimonio	7	2026-05-21	2026-1C
+545	Impuesto al patrimonio	8	2026-05-22	2026-1C
+546	Impuesto al patrimonio	9	2026-05-25	2026-1C
+547	Impuesto al patrimonio	0	2026-05-26	2026-1C
+548	Impuesto al patrimonio	TODOS	2026-09-14	2026-2C
+549	Precios transferencia - informativa	1	2026-09-09	2025
+550	Precios transferencia - informativa	2	2026-09-10	2025
+551	Precios transferencia - informativa	3	2026-09-11	2025
+552	Precios transferencia - informativa	4	2026-09-14	2025
+553	Precios transferencia - informativa	5	2026-09-15	2025
+554	Precios transferencia - informativa	6	2026-09-16	2025
+555	Precios transferencia - informativa	7	2026-09-17	2025
+556	Precios transferencia - informativa	8	2026-09-18	2025
+557	Precios transferencia - informativa	9	2026-09-21	2025
+558	Precios transferencia - informativa	0	2026-09-22	2025
+559	Precios transferencia - documentación	1	2026-09-09	2025
+560	Precios transferencia - documentación	2	2026-09-10	2025
+561	Precios transferencia - documentación	3	2026-09-11	2025
+562	Precios transferencia - documentación	4	2026-09-14	2025
+563	Precios transferencia - documentación	5	2026-09-15	2025
+564	Precios transferencia - documentación	6	2026-09-16	2025
+565	Precios transferencia - documentación	7	2026-09-17	2025
+566	Precios transferencia - documentación	8	2026-09-18	2025
+567	Precios transferencia - documentación	9	2026-09-21	2025
+568	Precios transferencia - documentación	0	2026-09-22	2025
+569	Informe país por país	TODOS	2026-12-15	2025
+570	Plásticos de un solo uso	TODOS	2026-02-13	2025
+571	Beneficiarios finales (RUB)	TODOS	2026-02-02	2026-T1
+572	Beneficiarios finales (RUB)	TODOS	2026-05-04	2026-T2
+573	Beneficiarios finales (RUB)	TODOS	2026-08-03	2026-T3
+574	Beneficiarios finales (RUB)	TODOS	2026-11-03	2026-T4
+575	Activos exterior grandes contribuyentes	1	2026-04-13	2025
+576	Activos exterior grandes contribuyentes	2	2026-04-14	2025
+577	Activos exterior grandes contribuyentes	3	2026-04-15	2025
+578	Activos exterior grandes contribuyentes	4	2026-04-16	2025
+579	Activos exterior grandes contribuyentes	5	2026-04-20	2025
+580	Activos exterior grandes contribuyentes	6	2026-04-21	2025
+581	Activos exterior grandes contribuyentes	7	2026-04-22	2025
+582	Activos exterior grandes contribuyentes	8	2026-04-23	2025
+583	Activos exterior grandes contribuyentes	9	2026-04-24	2025
+584	Activos exterior grandes contribuyentes	0	2026-04-27	2025
+585	Activos exterior personas jurídicas	1	2026-05-12	2025
+586	Activos exterior personas jurídicas	2	2026-05-13	2025
+587	Activos exterior personas jurídicas	3	2026-05-14	2025
+588	Activos exterior personas jurídicas	4	2026-05-15	2025
+589	Activos exterior personas jurídicas	5	2026-05-19	2025
+590	Activos exterior personas jurídicas	6	2026-05-20	2025
+591	Activos exterior personas jurídicas	7	2026-05-21	2025
+592	Activos exterior personas jurídicas	8	2026-05-22	2025
+593	Activos exterior personas jurídicas	9	2026-05-25	2025
+594	Activos exterior personas jurídicas	0	2026-05-26	2025
+595	Activos exterior personas naturales	01	2026-08-12	2025
+596	Activos exterior personas naturales	02	2026-08-12	2025
+597	Activos exterior personas naturales	03	2026-08-13	2025
+598	Activos exterior personas naturales	04	2026-08-13	2025
+599	Activos exterior personas naturales	05	2026-08-14	2025
+600	Activos exterior personas naturales	06	2026-08-14	2025
+601	Activos exterior personas naturales	07	2026-08-18	2025
+602	Activos exterior personas naturales	08	2026-08-18	2025
+603	Activos exterior personas naturales	09	2026-08-19	2025
+604	Activos exterior personas naturales	10	2026-08-19	2025
+605	Activos exterior personas naturales	11	2026-08-20	2025
+606	Activos exterior personas naturales	12	2026-08-20	2025
+607	Activos exterior personas naturales	13	2026-08-21	2025
+608	Activos exterior personas naturales	14	2026-08-21	2025
+609	Activos exterior personas naturales	15	2026-08-24	2025
+610	Activos exterior personas naturales	16	2026-08-24	2025
+611	Activos exterior personas naturales	17	2026-08-25	2025
+612	Activos exterior personas naturales	18	2026-08-25	2025
+613	Activos exterior personas naturales	19	2026-08-26	2025
+614	Activos exterior personas naturales	20	2026-08-26	2025
+615	Activos exterior personas naturales	21	2026-08-27	2025
+616	Activos exterior personas naturales	22	2026-08-27	2025
+617	Activos exterior personas naturales	23	2026-08-28	2025
+618	Activos exterior personas naturales	24	2026-08-28	2025
+619	Activos exterior personas naturales	25	2026-08-31	2025
+620	Activos exterior personas naturales	26	2026-08-31	2025
+621	Activos exterior personas naturales	27	2026-09-01	2025
+622	Activos exterior personas naturales	28	2026-09-01	2025
+623	Activos exterior personas naturales	29	2026-09-02	2025
+624	Activos exterior personas naturales	30	2026-09-02	2025
+625	Activos exterior personas naturales	31	2026-09-03	2025
+626	Activos exterior personas naturales	32	2026-09-03	2025
+627	Activos exterior personas naturales	33	2026-09-04	2025
+628	Activos exterior personas naturales	34	2026-09-04	2025
+629	Activos exterior personas naturales	35	2026-09-07	2025
+630	Activos exterior personas naturales	36	2026-09-07	2025
+631	Activos exterior personas naturales	37	2026-09-08	2025
+632	Activos exterior personas naturales	38	2026-09-08	2025
+633	Activos exterior personas naturales	39	2026-09-09	2025
+634	Activos exterior personas naturales	40	2026-09-09	2025
+635	Activos exterior personas naturales	41	2026-09-10	2025
+636	Activos exterior personas naturales	42	2026-09-10	2025
+637	Activos exterior personas naturales	43	2026-09-11	2025
+638	Activos exterior personas naturales	44	2026-09-11	2025
+639	Activos exterior personas naturales	45	2026-09-14	2025
+640	Activos exterior personas naturales	46	2026-09-14	2025
+641	Activos exterior personas naturales	47	2026-09-15	2025
+642	Activos exterior personas naturales	48	2026-09-15	2025
+643	Activos exterior personas naturales	49	2026-09-16	2025
+644	Activos exterior personas naturales	50	2026-09-16	2025
+645	Activos exterior personas naturales	51	2026-09-17	2025
+646	Activos exterior personas naturales	52	2026-09-17	2025
+647	Activos exterior personas naturales	53	2026-09-18	2025
+648	Activos exterior personas naturales	54	2026-09-18	2025
+649	Activos exterior personas naturales	55	2026-09-21	2025
+650	Activos exterior personas naturales	56	2026-09-21	2025
+651	Activos exterior personas naturales	57	2026-09-22	2025
+652	Activos exterior personas naturales	58	2026-09-22	2025
+653	Activos exterior personas naturales	59	2026-09-23	2025
+654	Activos exterior personas naturales	60	2026-09-23	2025
+655	Activos exterior personas naturales	61	2026-09-24	2025
+656	Activos exterior personas naturales	62	2026-09-24	2025
+657	Activos exterior personas naturales	63	2026-09-25	2025
+658	Activos exterior personas naturales	64	2026-09-25	2025
+659	Activos exterior personas naturales	65	2026-09-28	2025
+660	Activos exterior personas naturales	66	2026-09-28	2025
+661	Activos exterior personas naturales	67	2026-10-01	2025
+662	Activos exterior personas naturales	68	2026-10-01	2025
+663	Activos exterior personas naturales	69	2026-10-02	2025
+664	Activos exterior personas naturales	70	2026-10-02	2025
+665	Activos exterior personas naturales	71	2026-10-05	2025
+666	Activos exterior personas naturales	72	2026-10-05	2025
+667	Activos exterior personas naturales	73	2026-10-06	2025
+668	Activos exterior personas naturales	74	2026-10-06	2025
+669	Activos exterior personas naturales	75	2026-10-07	2025
+670	Activos exterior personas naturales	76	2026-10-07	2025
+671	Activos exterior personas naturales	77	2026-10-08	2025
+672	Activos exterior personas naturales	78	2026-10-08	2025
+673	Activos exterior personas naturales	79	2026-10-09	2025
+674	Activos exterior personas naturales	80	2026-10-09	2025
+675	Activos exterior personas naturales	81	2026-10-13	2025
+676	Activos exterior personas naturales	82	2026-10-13	2025
+677	Activos exterior personas naturales	83	2026-10-14	2025
+678	Activos exterior personas naturales	84	2026-10-14	2025
+679	Activos exterior personas naturales	85	2026-10-15	2025
+680	Activos exterior personas naturales	86	2026-10-15	2025
+681	Activos exterior personas naturales	87	2026-10-16	2025
+682	Activos exterior personas naturales	88	2026-10-16	2025
+683	Activos exterior personas naturales	89	2026-10-19	2025
+684	Activos exterior personas naturales	90	2026-10-19	2025
+685	Activos exterior personas naturales	91	2026-10-20	2025
+686	Activos exterior personas naturales	92	2026-10-20	2025
+687	Activos exterior personas naturales	93	2026-10-21	2025
+688	Activos exterior personas naturales	94	2026-10-21	2025
+689	Activos exterior personas naturales	95	2026-10-22	2025
+690	Activos exterior personas naturales	96	2026-10-22	2025
+691	Activos exterior personas naturales	97	2026-10-23	2025
+692	Activos exterior personas naturales	98	2026-10-23	2025
+693	Activos exterior personas naturales	99	2026-10-26	2025
+694	Activos exterior personas naturales	00	2026-10-26	2025
+695	Activos exterior RST	1	2026-04-20	2025
+696	Activos exterior RST	2	2026-04-20	2025
+697	Activos exterior RST	3	2026-04-21	2025
+698	Activos exterior RST	4	2026-04-21	2025
+699	Activos exterior RST	5	2026-04-22	2025
+700	Activos exterior RST	6	2026-04-22	2025
+701	Activos exterior RST	7	2026-04-23	2025
+702	Activos exterior RST	8	2026-04-23	2025
+703	Activos exterior RST	9	2026-04-24	2025
+704	Activos exterior RST	0	2026-04-24	2025
 \.
 
 
@@ -776,7 +1041,7 @@ SELECT pg_catalog.setval('public.rol_id_rol_seq', 6, true);
 -- Name: tabla_referencia_dian_id_referencia_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.tabla_referencia_dian_id_referencia_seq', 440, true);
+SELECT pg_catalog.setval('public.tabla_referencia_dian_id_referencia_seq', 704, true);
 
 
 --
@@ -801,10 +1066,27 @@ COPY public.obligacion_tributaria (id_obligacion, nombre, ambito) FROM stdin;
 8	RST consolidada anual	Nacional
 9	Exógena nacional	Nacional
 10	Exógena distrital	Distrital
+11	Impuesto al consumo	Nacional
+12	Gasolina y ACPM	Nacional
+13	Impuesto al carbono	Nacional
+14	IVA servicios desde el exterior	Nacional
+15	Bebidas ultraprocesadas	Nacional
+16	Plásticos de un solo uso	Nacional
+17	Presencia económica significativa	Nacional
+18	Impuesto al patrimonio	Nacional
+19	Precios transferencia - informativa	Nacional
+20	Precios transferencia - documentación	Nacional
+21	Informe país por país	Nacional
+22	Beneficiarios finales (RUB)	Nacional
+23	Activos exterior grandes contribuyentes	Nacional
+24	Activos exterior personas jurídicas	Nacional
+25	Activos exterior personas naturales	Nacional
+26	Activos exterior RST	Nacional
+27	Exógena nacional grandes contribuyentes	Nacional
 \.
 
 
-SELECT pg_catalog.setval('public.obligacion_tributaria_id_obligacion_seq', 10, true);
+SELECT pg_catalog.setval('public.obligacion_tributaria_id_obligacion_seq', 27, true);
 
 
 --

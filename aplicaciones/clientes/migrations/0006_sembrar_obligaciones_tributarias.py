@@ -49,9 +49,7 @@ def sembrar_y_migrar(apps, schema_editor):
 
     catalogo = {}
     for nombre, ambito in CATALOGO_INICIAL:
-        obligacion, _ = ObligacionTributaria.objects.get_or_create(
-            nombre=nombre, defaults={"ambito": ambito}
-        )
+        obligacion, _ = ObligacionTributaria.objects.get_or_create(nombre=nombre, defaults={"ambito": ambito})
         catalogo[nombre] = obligacion
 
     for cliente in Cliente.objects.all():
@@ -69,7 +67,6 @@ def revertir(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("clientes", "0005_obligaciontributaria_clienteobligacion"),
     ]

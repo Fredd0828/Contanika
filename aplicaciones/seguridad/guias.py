@@ -225,7 +225,7 @@ GUIAS = (
         etiqueta_ruta="Ir a Vencimientos",
         requisitos=(
             "El cliente debe tener marcadas sus obligaciones tributarias en la ficha.",
-            "El calendario DIAN del año debe estar cargado; lo carga el Administrador desde el Calendario.",
+            "El calendario DIAN del año debe estar cargado (guía «Cargar el calendario DIAN del año»).",
         ),
         pasos=(
             Paso(
@@ -252,7 +252,56 @@ GUIAS = (
             "Recalcular no duplica vencimientos ni cambia los que ya están validados.",
             "La fecha siempre se puede editar, aunque la haya calculado el sistema.",
         ),
-        relacionadas=("registrar-vencimiento", "configurar-alerta", "presentar-vencimiento"),
+        relacionadas=("cargar-calendario-dian", "registrar-vencimiento", "configurar-alerta"),
+    ),
+    Guia(
+        slug="cargar-calendario-dian",
+        titulo="Cargar el calendario DIAN del año",
+        resumen="Suba cada año las fechas del calendario tributario con la plantilla de Excel.",
+        icono="bi-cloud-upload",
+        modulo=Modulo.MOD02_CALENDARIO,
+        roles=SOLO_ADMINISTRADOR,
+        ruta="calendario:cargar_dian",
+        etiqueta_ruta="Ir a Tabla DIAN",
+        requisitos=(
+            "El PDF del calendario tributario del año, publicado por la DIAN (normalmente en diciembre).",
+        ),
+        pasos=(
+            Paso(
+                "Descargue la plantilla del año nuevo",
+                "Entre a «Calendario» y pulse «Tabla DIAN». En «Año del calendario» elija el año nuevo "
+                "(dice «días en blanco») y pulse «Descargar plantilla».",
+            ),
+            Paso(
+                "Copie las fechas del PDF",
+                "En la hoja «Por último dígito» escriba en cada fila el mes, el año y el día debajo de "
+                "cada último dígito del NIT, igual que en el cuadro del PDF. Si el PDF dice "
+                "«Independientemente del NIT», escriba el día solo en «Todos los NIT».",
+            ),
+            Paso(
+                "Renta de personas naturales",
+                "En la hoja «Por dos dígitos» escriba el mes, el año y el día de cada par («01-02», "
+                "«03-04» … «99-00»).",
+            ),
+            Paso(
+                "Suba el archivo",
+                "En la misma pantalla pulse «Importar». Contanika revisa cada celda y le dice cuáles "
+                "tienen error; las filas correctas se cargan.",
+            ),
+            Paso(
+                "Calcule los vencimientos",
+                "Vaya a «Calendario» → «Lista» y pulse «Calcular vencimientos DIAN» para generar los "
+                "del año nuevo en todos los clientes.",
+            ),
+        ),
+        notas=(
+            "Lo que vence en enero del año siguiente lleva ese año en la columna «Año».",
+            "Una fila sin días no se carga: sirve para dejar algo pendiente (por ejemplo, la exógena "
+            "hasta que salga su resolución).",
+            "Para corregir una fecha, descargue la plantilla del año (sale llena), cambie el día y "
+            "vuelva a subirla.",
+        ),
+        relacionadas=("calcular-vencimientos", "registrar-vencimiento"),
     ),
     Guia(
         slug="registrar-vencimiento",

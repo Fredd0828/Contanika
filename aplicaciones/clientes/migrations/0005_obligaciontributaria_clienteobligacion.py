@@ -5,38 +5,68 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('clientes', '0004_limitar_nit_10_digitos'),
+        ("clientes", "0004_limitar_nit_10_digitos"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='ObligacionTributaria',
+            name="ObligacionTributaria",
             fields=[
-                ('id_obligacion', models.AutoField(primary_key=True, serialize=False)),
-                ('nombre', models.CharField(max_length=60, unique=True)),
-                ('ambito', models.CharField(choices=[('Nacional', 'Nacional'), ('Distrital', 'Distrital'), ('Municipal', 'Municipal')], default='Nacional', max_length=20)),
+                ("id_obligacion", models.AutoField(primary_key=True, serialize=False)),
+                ("nombre", models.CharField(max_length=60, unique=True)),
+                (
+                    "ambito",
+                    models.CharField(
+                        choices=[
+                            ("Nacional", "Nacional"),
+                            ("Distrital", "Distrital"),
+                            ("Municipal", "Municipal"),
+                        ],
+                        default="Nacional",
+                        max_length=20,
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'obligación tributaria',
-                'verbose_name_plural': 'obligaciones tributarias',
-                'db_table': 'obligacion_tributaria',
-                'ordering': ['nombre'],
+                "verbose_name": "obligación tributaria",
+                "verbose_name_plural": "obligaciones tributarias",
+                "db_table": "obligacion_tributaria",
+                "ordering": ["nombre"],
             },
         ),
         migrations.CreateModel(
-            name='ClienteObligacion',
+            name="ClienteObligacion",
             fields=[
-                ('id_cliente_obligacion', models.AutoField(primary_key=True, serialize=False)),
-                ('cliente', models.ForeignKey(db_column='id_cliente', on_delete=django.db.models.deletion.CASCADE, related_name='obligaciones', to='clientes.cliente')),
-                ('obligacion_tributaria', models.ForeignKey(db_column='id_obligacion', on_delete=django.db.models.deletion.PROTECT, related_name='clientes', to='clientes.obligaciontributaria')),
+                ("id_cliente_obligacion", models.AutoField(primary_key=True, serialize=False)),
+                (
+                    "cliente",
+                    models.ForeignKey(
+                        db_column="id_cliente",
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="obligaciones",
+                        to="clientes.cliente",
+                    ),
+                ),
+                (
+                    "obligacion_tributaria",
+                    models.ForeignKey(
+                        db_column="id_obligacion",
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="clientes",
+                        to="clientes.obligaciontributaria",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'obligación del cliente',
-                'verbose_name_plural': 'obligaciones del cliente',
-                'db_table': 'cliente_obligacion',
-                'constraints': [models.UniqueConstraint(fields=('cliente', 'obligacion_tributaria'), name='unico_cliente_obligacion')],
+                "verbose_name": "obligación del cliente",
+                "verbose_name_plural": "obligaciones del cliente",
+                "db_table": "cliente_obligacion",
+                "constraints": [
+                    models.UniqueConstraint(
+                        fields=("cliente", "obligacion_tributaria"), name="unico_cliente_obligacion"
+                    )
+                ],
             },
         ),
     ]

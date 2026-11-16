@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('clientes', '0003_agregar_tipo_documento'),
+        ("clientes", "0003_agregar_tipo_documento"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='cliente',
-            name='nit_cedula',
+            model_name="cliente",
+            name="nit_cedula",
             field=models.CharField(max_length=10),
         ),
     ]

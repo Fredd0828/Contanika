@@ -172,6 +172,13 @@ Los tipos exactos de todas las columnas están en `scripts/bd/01_esquema_contani
   solo en pantalla, igual que en HU028.
 - [ ] **HU004, criterio 4 (fecha anterior a hoy):** no se valida, porque ninguna fecha queda bloqueada
   (regla del usuario): se admiten vencimientos con fecha pasada.
+- [ ] **Carga del calendario DIAN (16-nov-2026):** la plantilla de Excel tiene la forma del PDF de la DIAN
+  (fila por obligación y período; mes, año y día por último dígito del NIT; «Todos los NIT»; hoja aparte
+  por dos dígitos). Se sube cada año desde Calendario → Tabla DIAN. El catálogo de obligaciones pasa de
+  10 a 27 (todo el PDF 2026: consumo, gasolina y ACPM, carbono, patrimonio, precios de transferencia,
+  activos en el exterior, IVA de servicios desde el exterior, bebidas ultraprocesadas, plásticos, PES,
+  RUB, país por país y exógena de grandes contribuyentes). `tabla_referencia_dian.grupo_nit` admite
+  «TODOS» (fecha única para cualquier NIT).
 
 ## 5. Entregables de la Fase 3
 
