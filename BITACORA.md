@@ -2346,3 +2346,28 @@ Ruff, formato, `check` y `makemigrations --check` limpios.
 
 ### Pendientes
 - Aplicar la migración `seguridad 0006` en la base local después del merge.
+
+## Lunes 16 de noviembre de 2026 — Fecha y pie de los PDF
+
+### Qué se hizo
+Al revisar una cuenta de cobro con el logo y los datos del despacho ya
+cargados, el usuario pidió corregir dos detalles:
+
+- **Mes en minúscula.** La traducción de Django escribe «16 de Noviembre de
+  2026»; en español el mes va en minúscula. Nueva función `fecha_larga`
+  (`aplicaciones/comunes/fechas.py`), usada en las cuentas de cobro (fecha,
+  fecha límite, corte de abonos y la línea «Honorarios contables noviembre
+  2026» del cobro automático), los certificados, el correo de la cuenta de
+  cobro y el texto de las alertas del calendario.
+- **Pie de página.** Con dirección, teléfono y correo, los datos del despacho
+  no cabían y el correo salía cortado. El pie lleva ahora solo el nombre y el
+  NIT; el resto ya está completo en el encabezado.
+
+### Resultado
+Suite completa 1418 en verde (3 pruebas nuevas de fechas y 2 del pie
+ajustadas). Ruff y formato limpios. Muestra de la cuenta de cobro No. 12
+revisada.
+
+### Pendientes
+- Después del merge, correr `regenerar_pdf_cuentas --aplicar` para que las
+  cuentas ya guardadas tomen la fecha y el pie nuevos.

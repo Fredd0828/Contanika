@@ -15,9 +15,9 @@ from django.core.mail import send_mail
 from django.db import transaction
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.formats import date_format
 
 from aplicaciones.clientes.models import Cliente
+from aplicaciones.comunes.fechas import fecha_larga
 from aplicaciones.comunicaciones.models import Comunicacion
 
 from . import selectores
@@ -393,7 +393,7 @@ def texto_alerta(vencimiento, hoy=None):
     hoy = hoy or timezone.localdate()
     dias = (vencimiento.fecha_vencimiento - hoy).days
     cuando = "vence hoy" if dias == 0 else f"vence en {dias} día{'s' if dias != 1 else ''}"
-    fecha = date_format(vencimiento.fecha_vencimiento, "j \\d\\e F \\d\\e Y")
+    fecha = fecha_larga(vencimiento.fecha_vencimiento)
     return f"{vencimiento.tipo_obligacion} de {vencimiento.cliente.nombre_razon_social} {cuando} ({fecha})."
 
 

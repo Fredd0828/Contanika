@@ -6,8 +6,8 @@ Módulo 10: reportes).
 Todos los PDF de la plataforma se arman con las mismas piezas, para que se
 vean como una sola papelería: franja de color arriba, encabezado con el logo
 y los datos del despacho a la izquierda y el tipo y número del documento a la
-derecha, tablas con el mismo estilo y un pie con los datos del despacho y
-«Página X de Y». Las letras son las de la plataforma: Montserrat en títulos
+derecha, tablas con el mismo estilo y un pie con el nombre y el NIT del
+despacho y «Página X de Y». Las letras son las de la plataforma: Montserrat en títulos
 y Open Sans en el texto (`fuentes/`, licencia OFL); si faltaran los archivos,
 se usa Helvetica y el PDF sale igual.
 """
@@ -460,7 +460,7 @@ def subtitulo_seccion(texto, ancho, estilos=None, detalle=""):
 class _LienzoConPie(canvas.Canvas):
     """
     Lienzo que, al terminar, pinta en cada página la franja de color de arriba,
-    el pie con los datos del despacho y «Página X de Y» y, si se pidió, un
+    el pie con el nombre y el NIT del despacho y «Página X de Y» y, si se pidió, un
     sello en diagonal (por ejemplo «PAGADA»). El total de páginas solo se
     conoce al final, por eso las páginas se guardan y se cierran juntas.
     """
@@ -567,13 +567,15 @@ def construir_pdf(elementos, *, tamano, titulo, despacho, margen_lateral=2.2 * c
         author=despacho.nombre_despacho if despacho else "",
         creator="Contanika",
     )
+    # El pie lleva solo el nombre y el NIT: la dirección, el teléfono y el
+    # correo ya están completos en el encabezado y en el pie no cabían.
     nombre = despacho.nombre_despacho if despacho else ""
-    datos = _datos_despacho(despacho)
+    nit = f"NIT {despacho.nit_despacho}" if despacho and despacho.nit_despacho else ""
     pie = type(
         "LienzoDelDocumento",
         (_LienzoConPie,),
         {
-            "texto_pie": " · ".join(p for p in (nombre, datos) if p),
+            "texto_pie": " · ".join(p for p in (nombre, nit) if p),
             # El pie se alinea con el contenido (el marco deja 6 puntos de relleno).
             "margen_pie": margen_lateral + 6,
             "sello": sello,

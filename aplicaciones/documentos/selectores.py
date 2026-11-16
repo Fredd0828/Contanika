@@ -8,11 +8,11 @@ comparten la misma forma de armar el contexto de una plantilla renderizada.
 
 from django.template import Context, Template
 from django.utils import timezone
-from django.utils.formats import date_format
 from django.utils.safestring import mark_safe
 from django.utils.text import slugify
 
 from aplicaciones.clientes.models import Cliente
+from aplicaciones.comunes.fechas import fecha_larga
 from aplicaciones.seguridad.models import ConfiguracionDespacho, Rol, Usuario
 
 from .models import CampoPlantilla, Documento, Plantilla
@@ -107,7 +107,7 @@ def _contexto_fijo(cliente, periodo, descripcion, fecha_expedicion=None):
         "descripcion": descripcion,
         "nombre_despacho": despacho.nombre_despacho if despacho else "",
         "ciudad_despacho": despacho.ciudad if despacho else "",
-        "fecha_expedicion": date_format(fecha_expedicion or timezone.localdate()),
+        "fecha_expedicion": fecha_larga(fecha_expedicion or timezone.localdate()),
     }
 
 

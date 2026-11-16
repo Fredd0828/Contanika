@@ -21,8 +21,8 @@ from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.formats import date_format
 
+from aplicaciones.comunes.fechas import fecha_larga
 from aplicaciones.comunicaciones.models import Comunicacion
 from aplicaciones.seguridad.models import ConfiguracionDespacho
 
@@ -78,7 +78,7 @@ def _contexto_mensaje(cuenta, hoy=None):
         "nombre_despacho": despacho.nombre_despacho if despacho else "",
         "valor_total": formato_pesos(cuenta.valor_total),
         "saldo_pendiente": formato_pesos(saldo),
-        "fecha_vencimiento": date_format(cuenta.fecha_vencimiento_pago),
+        "fecha_vencimiento": fecha_larga(cuenta.fecha_vencimiento_pago),
         "en_mora": saldo > 0 and cuenta.fecha_vencimiento_pago < (hoy or timezone.localdate()),
         "cuenta_bancaria": cuenta.cuenta_bancaria,
         "metodo_pago": cuenta.metodo_pago,
