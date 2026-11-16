@@ -52,6 +52,23 @@
     </div>
 
     <div class="col-lg-4">
+        {% if accion == "editar" and usuario_editado.pk != user.pk %}
+        <div class="panel">
+            <div class="ph"><div class="ph-title"><i class="bi bi-key"></i> Acceso</div></div>
+            {% if usuario_editado.estado == "Activo" %}
+            <p class="text-muted small">
+                {% if usuario_editado.has_usable_password %}Si olvidó su contraseña{% else %}Aún no ha creado su contraseña. Si perdió el correo o el enlace venció{% endif %},
+                envíele un enlace nuevo para que la cree él mismo. Usted nunca conoce la contraseña.
+            </p>
+            <form method="post" action="{% url 'seguridad:reenviar_acceso' usuario_editado.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="ph-btn"><i class="bi bi-envelope-arrow-up"></i> Reenviar enlace de acceso</button>
+            </form>
+            {% else %}
+            <p class="text-muted small mb-0">El usuario está inactivo. Actívelo para poder enviarle un enlace de acceso.</p>
+            {% endif %}
+        </div>
+        {% endif %}
         <div class="panel">
             <div class="ph"><div class="ph-title"><i class="bi bi-shield-check"></i> Módulos del rol</div></div>
             <p class="text-muted small">Revise a qué módulos accederá el usuario con el rol elegido. Se configuran en «Módulos por rol».</p>

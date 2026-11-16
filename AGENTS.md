@@ -519,14 +519,30 @@ Ninguna funcionalidad se da por terminada sin:
 - Rama `feature/modulo-8-equipo`, creada desde `feature/modulo-7-comunicaciones`.
   Vive en la app `seguridad` (sus tablas ya estaban ahí): `servicios.py`,
   `selectores.py`, `formularios.py` y plantillas en `seguridad/equipo/`.
-- **Usuarios** (solo Administrador): crear con contraseña temporal (validada
-  con `AUTH_PASSWORD_VALIDATORS`) y correo de bienvenida con usuario y clave
-  (`seguridad/correos/acceso.txt`, decisión del usuario 1-oct-2026); editar
-  datos, correo, rol y opcionalmente una nueva clave temporal (también se
-  envía); activar/inactivar; eliminar **solo sin historial**
-  (`servicios.tiene_historial` recorre todas las relaciones inversas de
-  `Usuario`); con historial se ofrece inactivar. Si el correo falla, el
-  usuario queda creado y se muestra un aviso.
+- **Usuarios** (solo Administrador): crear con nombre, correo, teléfono y rol,
+  **sin contraseña**; el usuario recibe un enlace de un solo uso para crearla
+  (`servicios.enviar_enlace_acceso`, `seguridad/correos/acceso.txt`). La
+  contraseña nunca viaja por correo y el Administrador nunca la conoce
+  (decisión del usuario 16-nov-2026; reemplaza la clave temporal del
+  1-oct-2026). Editar cambia datos, correo y rol, no la clave; «Reenviar
+  enlace de acceso» (`seguridad:reenviar_acceso`) manda uno nuevo. Si el
+  correo falla, el usuario queda creado y el listado muestra el enlace **una
+  sola vez** para entregarlo por otro medio. Activar/inactivar; eliminar
+  **solo sin historial** (`servicios.tiene_historial` recorre todas las
+  relaciones inversas de `Usuario`); con historial se ofrece inactivar.
+- **Enlaces de acceso:** generador de Django (`default_token_generator`),
+  vencen a los `PASSWORD_RESET_TIMEOUT` (3 días) y dejan de servir al crear la
+  clave. Rutas públicas `recuperar-contrasena/` («¿Olvidó su contraseña?»,
+  5 pedidos por minuto por IP, misma respuesta exista o no el correo) y
+  `crear-contrasena/<uidb64>/<token>/` (no sirve para usuarios inactivos).
+  Toda ruta pública nueva va en `RUTAS_PUBLICAS` de `generar_mapa_navegacion`
+  y en `test_las_rutas_publicas_son_solo_las_previstas`.
+- **Instalación por despacho:** Contanika se instala una vez por despacho
+  (`documentacion/NUEVO_DESPACHO.md`). `cargar_datos_iniciales
+  --nombre-despacho … --correo-admin …` crea al primer Administrador; sin
+  `--clave-admin` recibe el enlace (si el correo falla, sale en la terminal).
+  Correo: `documentacion/CONFIGURAR_CORREO.md`; `check --deploy` avisa si
+  falta `CORREO_HOST` o si `URL_SITIO` es local (`comunes/checks.py`).
 - **Administradores** (`servicios.validar_administradores`): siempre queda al
   menos uno activo; más de uno activo exige la casilla/confirmación
   (`ConfirmacionRequerida`). Nadie se inactiva ni se elimina a sí mismo.
