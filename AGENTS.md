@@ -47,7 +47,8 @@ codigo/
 │   ├── expediente/               # Bitácora por cliente
 │   ├── finanzas/                 # Honorarios, cuentas de cobro, abonos
 │   ├── comunicaciones/           # Comunicaciones automáticas y manuales
-│   └── reportes/                 # Reportes y análisis
+│   ├── reportes/                 # Reportes y análisis
+│   └── asistente/                # Asistente de consultas (preguntas guiadas)
 ├── plantillas/                   # Templates Bootstrap 5
 ├── estaticos/                    # CSS propio, JS
 ├── scripts/
@@ -714,6 +715,23 @@ Ninguna funcionalidad se da por terminada sin:
   siempre la de producción.
 - El reporte de credenciales sigue en el M1 sin descarga (spec), aunque la
   HU028 lo liste.
+
+### Asistente de consultas (16-nov-2026)
+
+- App `aplicaciones/asistente/`, menú «Soporte → Asistente». Un interruptor
+  en «Módulos por rol»: `Modulo.SEC_ASISTENTE`; migración `seguridad 0006`.
+  La app no tiene modelos ni tablas propias.
+- `consultas.py`: catálogo de preguntas de validación; cada una reutiliza el
+  selector de su módulo (misma visibilidad que la pantalla) y devuelve una
+  `Respuesta` (tabla corta de máximo 15 filas + enlace al módulo). Las
+  preguntas por cliente solo aceptan clientes de la lista permitida
+  (`ClienteNoPermitido`). Nunca toca credenciales ni modifica datos.
+- **Sin chat libre ni IA** (decisión del usuario, 16-nov-2026): el asistente
+  solo responde las preguntas sugeridas y no llama servicios externos.
+- Las preguntas frecuentes viven en `seguridad/guias.py`
+  (`PREGUNTAS_FRECUENTES`): las usan la página de Ayuda y el asistente.
+- Para agregar una pregunta: función `(usuario, cliente, hoy) -> Respuesta` en
+  `consultas.py` y registrarla en `CONSULTAS`.
 
 ---
 

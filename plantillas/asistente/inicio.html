@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+{% block titulo %}Asistente{% endblock %}
+
+{% block contenido %}
+<div class="as-pagina">
+<div class="as-pagina-rejilla">
+    <section class="panel as-chat" aria-label="Conversación con el asistente">
+        <div class="ph">
+            <div>
+                <div class="ph-title"><i class="bi bi-chat-square-dots"></i> Asistente de consultas</div>
+                <div class="ph-meta mt-1">Responde con los datos del sistema y los permisos de su rol. Solo consulta: no modifica nada.</div>
+            </div>
+            <div class="ph-actions">
+                <button type="button" class="ph-btn" id="asReiniciar">
+                    <i class="bi bi-arrow-counterclockwise"></i> Nueva conversación
+                </button>
+            </div>
+        </div>
+
+        <div class="as-mensajes" id="asMensajes" aria-live="polite">
+            <div class="as-msg as-msg-bot">
+                <p class="mb-0">Hola, {{ user.nombre }}. Elija una de las preguntas sugeridas.</p>
+            </div>
+        </div>
+    </section>
+
+    <aside class="panel as-sugerencias" aria-label="Preguntas sugeridas">
+        <div class="ph"><div class="ph-title"><i class="bi bi-lightning-charge"></i> Preguntas sugeridas</div></div>
+        {% if consultas %}
+        <div class="as-chips">
+            {% for item in consultas %}
+            <button type="button" class="as-chip" data-url="{% url 'asistente:consultar' item.consulta.slug %}"{% if item.consulta.pide_cliente %} data-plantilla="asCliente-{{ item.consulta.slug }}"{% endif %} title="{{ item.consulta.descripcion }}">
+                <i class="bi {{ item.consulta.icono }}"></i><span>{{ item.consulta.pregunta }}</span>
+            </button>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="small text-muted">Su rol no tiene habilitado ningún módulo con preguntas sugeridas.</p>
+        {% endif %}
+
+        {# Abierto en pantallas anchas; en las angostas empieza cerrado (ver el script). #}
+        <details class="as-dudas" id="asDudas" open>
+            <summary class="as-subtitulo">Dudas de uso ({{ preguntas_frecuentes|length }})</summary>
+            <div class="as-chips">
+                {% for faq in preguntas_frecuentes %}
+                <button type="button" class="as-chip as-chip-faq" data-plantilla="asFaq-{{ forloop.counter0 }}">
+                    <i class="bi bi-question-circle"></i><span>{{ faq.pregunta }}</span>
+                </button>
+                {% endfor %}
+            </div>
+        </details>
+        <a class="as-enlace mt-3" href="{% url 'seguridad:ayuda' %}">Ver las guías paso a paso <i class="bi bi-arrow-right"></i></a>
+    </aside>
+</div>
+</div>
+
+<form id="asCsrf" hidden>{% csrf_token %}</form>
+
+{% for item in consultas %}{% if item.consulta.pide_cliente %}
+<template id="asCliente-{{ item.consulta.slug }}">
+    <div class="as-msg as-msg-bot">
+        {% if item.clientes %}
+        <form class="as-form-cliente" data-url="{% url 'asistente:consultar' item.consulta.slug %}">
+            <label class="as-etiqueta">¿De qué cliente?
+                <select name="cliente" class="form-select form-select-sm" required>
+                    <option value="">Elija un cliente…</option>
+                    {% for pk, etiqueta in item.clientes %}<option value="{{ pk }}">{{ etiqueta }}</option>{% endfor %}
+                </select>
+            </label>
+            <button type="submit" class="btn btn-sm btn-primary">Consultar</button>
+        </form>
+        {% else %}
+        <p class="mb-0">No tiene clientes disponibles para esta consulta.</p>
+        {% endif %}
+    </div>
+</template>
+{% endif %}{% endfor %}
+
+{% for faq in preguntas_frecuentes %}
+<template id="asFaq-{{ forloop.counter0 }}">
+    <div class="as-msg as-msg-bot"><p class="mb-0">{{ faq.respuesta }}</p></div>
+</template>
+{% endfor %}
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const mensajes = document.getElementById("asMensajes");
+    const csrf = document.querySelector("#asCsrf [name=csrfmiddlewaretoken]").value;
+    const pantallaAngosta = window.matchMedia("(max-width: 991px)");
+    if (pantallaAngosta.matches) {
+        document.getElementById("asDudas").open = false;
+    }
+
+    function mostrarUltimo() {
+        mensajes.scrollTop = mensajes.scrollHeight;
+        if (pantallaAngosta.matches) {
+            mensajes.lastElementChild.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        }
+    }
+
+    function agregarUsuario(texto) {
+        const burbuja = document.createElement("div");
+        burbuja.className = "as-msg as-msg-usuario";
+        burbuja.textContent = texto;
+        mensajes.appendChild(burbuja);
+        mostrarUltimo();
+    }
+
+    function agregarNodo(nodo) {
+        mensajes.appendChild(nodo);
+        mostrarUltimo();
+        return nodo;
+    }
+
+    function agregarPlantilla(id) {
+        const plantilla = document.getElementById(id);
+        return agregarNodo(plantilla.content.firstElementChild.cloneNode(true));
+    }
+
+    function agregarHTML(html) {
+        const plantilla = document.createElement("template");
+        plantilla.innerHTML = html.trim();
+        const nodo = plantilla.content.firstElementChild;
+        if (nodo) {
+            agregarNodo(nodo);
+        }
+        return nodo;
+    }
+
+    function pensando() {
+        const burbuja = document.createElement("div");
+        burbuja.className = "as-msg as-msg-bot as-pensando";
+        burbuja.setAttribute("aria-label", "Consultando");
+        burbuja.innerHTML = "<span></span><span></span><span></span>";
+        return agregarNodo(burbuja);
+    }
+
+    async function enviar(url, datos) {
+        const espera = pensando();
+        try {
+            const respuesta = await fetch(url, {
+                method: "POST",
+                body: datos,
+                credentials: "same-origin",
+                headers: { "X-CSRFToken": csrf, "X-Requested-With": "XMLHttpRequest" },
+            });
+            const html = await respuesta.text();
+            espera.remove();
+            if (respuesta.redirected || !html.trim().startsWith("<div")) {
+                window.location.reload();  // la sesión venció: vuelve al inicio de sesión
+                return;
+            }
+            agregarHTML(html);
+        } catch (error) {
+            espera.remove();
+            const aviso = document.createElement("div");
+            aviso.className = "as-msg as-msg-bot as-msg-error";
+            aviso.textContent = "No se pudo conectar con el servidor. Revise su conexión e intente de nuevo.";
+            agregarNodo(aviso);
+        }
+    }
+
+    document.querySelectorAll(".as-chip").forEach(function (chip) {
+        chip.addEventListener("click", function () {
+            agregarUsuario(chip.textContent.trim());
+            if (chip.dataset.plantilla) {
+                const nodo = agregarPlantilla(chip.dataset.plantilla);
+                const lista = nodo.querySelector("select");
+                if (lista) {
+                    lista.focus();
+                }
+                return;
+            }
+            enviar(chip.dataset.url, new FormData());
+        });
+    });
+
+    mensajes.addEventListener("submit", function (evento) {
+        const form = evento.target.closest(".as-form-cliente");
+        if (!form) {
+            return;
+        }
+        evento.preventDefault();
+        const lista = form.querySelector("select");
+        agregarUsuario(lista.options[lista.selectedIndex].text);
+        const datos = new FormData(form);
+        form.querySelectorAll("select, button").forEach(function (campo) { campo.disabled = true; });
+        enviar(form.dataset.url, datos);
+    });
+
+    document.getElementById("asReiniciar").addEventListener("click", function () {
+        window.location.reload();
+    });
+});
+</script>
+{% endblock %}

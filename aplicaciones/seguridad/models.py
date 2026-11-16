@@ -45,9 +45,12 @@ class Modulo(models.Model):
     tabla permiso_rol_modulo para habilitar o inhabilitar módulos por rol.
     `SEC_PANEL` no es un módulo: es el panel principal, que se habilita o
     inhabilita por rol en la misma matriz (decisión del usuario, 7-oct-2026).
+    `SEC_ASISTENTE` tampoco: es el asistente de consultas, que el
+    Administrador activa por rol igual que el panel.
     """
 
     SEC_PANEL = "PANEL"
+    SEC_ASISTENTE = "ASISTENTE"
 
     MOD01_CLIENTES = "MOD01"
     MOD02_CALENDARIO = "MOD02"
@@ -72,6 +75,7 @@ class Modulo(models.Model):
         (MOD09_EXPEDIENTE, "Expediente y bitácora por cliente"),
         (MOD10_REPORTES, "Reportes y análisis"),
         (SEC_PANEL, "Panel principal"),
+        (SEC_ASISTENTE, "Asistente de consultas"),
     ]
 
     id_modulo = models.AutoField(primary_key=True)

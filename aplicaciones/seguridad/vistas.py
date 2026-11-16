@@ -462,6 +462,7 @@ class AyudaView(LoginRequiredMixin, TemplateView):
         contexto = super().get_context_data(**kwargs)
         contexto["despacho"] = ConfiguracionDespacho.objects.first()
         contexto["grupos_guias"] = guias.guias_por_grupo(self.request.user)
+        contexto["preguntas_frecuentes"] = guias.PREGUNTAS_FRECUENTES
         return contexto
 
 

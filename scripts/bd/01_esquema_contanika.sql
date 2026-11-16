@@ -4,9 +4,10 @@
 -- Motor: PostgreSQL (16 local, compatible con PostgreSQL 15 de Supabase)
 -- Generado desde las migraciones de Django 5.2 LTS el 21 de septiembre de 2026.
 --
--- Contiene las 40 tablas del modelo relacional: las 36 del diccionario de
+-- Contiene las 42 tablas del modelo relacional: las 36 del diccionario de
 -- datos más honorario_servicio, configuracion_cobro y envio_programado,
--- agregadas en el Módulo 6, y descarga_reporte (Módulo 10) (numerales 2.4 y 2.5 del
+-- agregadas en el Módulo 6, descarga_reporte (Módulo 10), obligacion_tributaria
+-- y cliente_obligacion (cálculo DIAN por obligación) (numerales 2.4 y 2.5 del
 -- documento de proyecto) y los comentarios de cada tabla tomados del
 -- diccionario de datos. Las llaves foráneas se agregan al final del script.
 -- Incluye el disparador exigido por la guía: sobre la tabla abono, calcula el

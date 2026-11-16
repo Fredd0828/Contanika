@@ -2308,3 +2308,41 @@ que se vuelvan a generar.
 - En la BD local, «Datos del despacho» no tiene cargados el logo, la
   dirección, el teléfono ni el correo. Por eso los PDF salen sin logo y con el
   pie corto.
+
+---
+
+## Lunes 16 de noviembre de 2026 — Asistente de consultas
+
+### Qué se hizo
+- **Asistente de consultas** (menú «Soporte → Asistente»): ocho preguntas de
+  validación con los datos del sistema (vencimientos de la semana, atrasados y
+  por cliente; mis tareas y tareas atrasadas; hallazgos abiertos; cartera y
+  saldo de un cliente) y las preguntas frecuentes de uso. Cada respuesta trae
+  una tabla corta y el enlace al módulo. Solo consulta: no modifica nada.
+- **Mismos permisos que las pantallas:** cada pregunta reutiliza el selector de
+  su módulo; solo se ofrecen las de los módulos habilitados para el rol, y las
+  preguntas por cliente solo aceptan clientes de la lista permitida.
+- **Sin chat libre ni IA** (decisión del usuario): se construyó un chat con IA
+  opcional, pero el usuario decidió no ponerlo. Se retiró antes del commit: el
+  asistente no llama servicios externos, no guarda las preguntas y no agrega
+  dependencias ni tablas.
+- **Un interruptor nuevo** en «Equipo y roles → Módulos por rol»: «Asistente de
+  consultas» (migración `seguridad 0006`, habilitado para los tres roles).
+- Las preguntas frecuentes pasaron a `seguridad/guias.py` y las comparten la
+  Ayuda y el asistente. La respuesta de «Olvidé mi contraseña» quedó con el
+  enlace de recuperación del PR #27. Guía nueva «Consultar con el asistente».
+- Scripts SQL (cabecera corregida: 42 tablas), mapa de navegación (119
+  rutas) y `AGENTS.md` actualizados.
+
+### Cómo verificarlo (entorno local)
+Aplicar la migración `seguridad 0006` y entrar a «Asistente». Pulsar «¿Qué
+vence esta semana?». Entrar como Junior: no aparecen las preguntas de
+Honorarios si su rol no tiene ese módulo.
+
+### Resultado
+Suite completa 1415 en verde, sobre `main` con los PR #26 a #29 y los
+Dependabot #21 a #24. La app del asistente queda al 100 % de líneas y ramas.
+Ruff, formato, `check` y `makemigrations --check` limpios.
+
+### Pendientes
+- Aplicar la migración `seguridad 0006` en la base local después del merge.
