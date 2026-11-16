@@ -2178,3 +2178,28 @@ un NIT existente: la base lo rechaza.
 - Etiquetar `v1.0.0` después del merge.
 - Repetir el ensayo en Supabase: allá la base no se elimina como en el local.
 - Reforzar las ramas de Documentos (65 %) y Tareas (72,5 %).
+  **Hecho el 16 de noviembre** (ver la entrada siguiente).
+
+---
+
+## Lunes 16 de noviembre de 2026 — Pruebas de Documentos y Tareas
+
+### Qué se hizo
+Se agregaron 52 pruebas sin tocar el código de la aplicación. Documentos pasó
+de 65 % a 100 % de ramas y Tareas de 72,5 % a 100 %. Los casos nuevos:
+- **Documentos:** cliente precargado desde la ficha, formulario incompleto,
+  filas repetibles (la vacía y la marcada para borrar no llegan al documento),
+  campos de plantilla por AJAX, plantillas con errores y edición exitosa,
+  firma con extensión no permitida, datos del despacho con membrete no
+  permitido o sin registro previo.
+- **Seguridad:** la confirmación descarta el documento pendiente si la sesión
+  trae un cliente ajeno al Junior, una plantilla que ya no existe o un
+  firmante sin firma.
+- **Tareas:** formularios de crear y editar (página y ventana emergente),
+  datos inválidos, estado inexistente (JSON 400 o vuelta al tablero),
+  observación vacía, respuestas AJAX y filtros por cliente y responsable.
+
+### Cómo verificarlo
+`pytest pruebas/documentos pruebas/tareas --cov=aplicaciones/documentos
+--cov=aplicaciones/tareas --cov-branch --cov-report=term-missing`.
+Suite completa: 1324 en verde.

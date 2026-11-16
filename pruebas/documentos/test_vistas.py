@@ -386,3 +386,343 @@ def test_post_sin_csrf_es_rechazado(client, usuario_administrador, cliente, plan
         },
     )
     assert respuesta.status_code == 403
+
+
+# ---------------------------------------------------------------------------
+# Generar: cliente precargado, datos incompletos y filas repetibles
+# ---------------------------------------------------------------------------
+
+ES_AJAX = {"HTTP_X_REQUESTED_WITH": "XMLHttpRequest"}
+
+
+@pytest.fixture
+def plantilla_con_filas():
+    """Plantilla con un campo simple y dos repetibles (accionista y porcentaje)."""
+    plantilla = Plantilla.objects.create(
+        nombre_plantilla="Composición accionaria",
+        tipo_documento="Composición accionaria",
+        texto_predeterminado=(
+            "{{ cliente }} - {{ concepto }}\n"
+            "{% for fila in filas_repetibles %}{{ fila.accionista }} {{ fila.porcentaje }}%\n{% endfor %}"
+        ),
+    )
+    simple = CampoPlantilla.objects.create(
+        plantilla=plantilla, nombre_campo="Concepto", tipo_campo=CampoPlantilla.SIMPLE
+    )
+    accionista = CampoPlantilla.objects.create(
+        plantilla=plantilla, nombre_campo="Accionista", tipo_campo=CampoPlantilla.REPETIBLE, es_repetible=True
+    )
+    porcentaje = CampoPlantilla.objects.create(
+        plantilla=plantilla, nombre_campo="Porcentaje", tipo_campo=CampoPlantilla.REPETIBLE, es_repetible=True
+    )
+    return plantilla, simple, accionista, porcentaje
+
+
+def _nombres_plantillas(respuesta):
+    return [plantilla.name for plantilla in respuesta.templates]
+
+
+def test_generar_precarga_el_cliente_que_llega_desde_su_ficha(
+    client, usuario_administrador, cliente, plantilla_simple
+):
+    client.force_login(usuario_administrador)
+    respuesta = client.get(
+        reverse("documentos:generar"), {"cliente": cliente.pk, "plantilla": plantilla_simple.pk}
+    )
+    assert respuesta.status_code == 200
+    assert respuesta.context["formulario"].initial["cliente"] == str(cliente.pk)
+    assert respuesta.context["plantilla_seleccionada"] == plantilla_simple
+    assert respuesta.context["formulario_campos"] is not None
+
+
+def test_generar_con_datos_incompletos_vuelve_a_mostrar_el_formulario(
+    client, usuario_administrador, cliente, plantilla_simple, firmante
+):
+    client.force_login(usuario_administrador)
+    respuesta = client.post(
+        reverse("documentos:generar"),
+        {
+            "cliente": cliente.pk,
+            "plantilla": plantilla_simple.pk,
+            "periodo": "",
+            "usuario_firmante": firmante.pk,
+            f"campo_{_campo_id(plantilla_simple)}": "",
+        },
+    )
+    assert respuesta.status_code == 200
+    assert "periodo" in respuesta.context["formulario"].errors
+    assert respuesta.context["formulario_campos"].errors
+    assert "documento_pendiente" not in client.session
+
+
+def test_generar_guarda_solo_las_filas_repetibles_con_datos(
+    client, usuario_administrador, cliente, plantilla_con_filas, firmante
+):
+    """La fila vacía y la marcada para borrar no llegan al documento."""
+    plantilla, simple, accionista, porcentaje = plantilla_con_filas
+    client.force_login(usuario_administrador)
+    respuesta = client.post(
+        reverse("documentos:generar"),
+        {
+            "cliente": cliente.pk,
+            "plantilla": plantilla.pk,
+            "periodo": "2026",
+            "usuario_firmante": firmante.pk,
+            f"campo_{simple.pk}": "Participación",
+            "filas-TOTAL_FORMS": "3",
+            "filas-INITIAL_FORMS": "0",
+            "filas-MIN_NUM_FORMS": "0",
+            "filas-MAX_NUM_FORMS": "1000",
+            f"filas-0-campo_{accionista.pk}": "Ana Pérez",
+            f"filas-0-campo_{porcentaje.pk}": "60",
+            f"filas-1-campo_{accionista.pk}": "",
+            f"filas-1-campo_{porcentaje.pk}": "",
+            f"filas-2-campo_{accionista.pk}": "Luis Gómez",
+            f"filas-2-campo_{porcentaje.pk}": "40",
+            "filas-2-DELETE": "on",
+        },
+    )
+    assert respuesta.status_code == 302
+    filas = client.session["documento_pendiente"]["filas_repetibles"]
+    assert filas == [{str(accionista.pk): "Ana Pérez", str(porcentaje.pk): "60"}]
+
+    contenido = client.get(reverse("documentos:confirmar")).content.decode()
+    assert "Ana Pérez" in contenido
+    assert "Luis Gómez" not in contenido
+
+
+def test_campos_de_la_plantilla_se_cargan_por_ajax(client, usuario_administrador, plantilla_con_filas):
+    plantilla = plantilla_con_filas[0]
+    client.force_login(usuario_administrador)
+    respuesta = client.get(reverse("documentos:campos_plantilla"), {"plantilla": plantilla.pk}, **ES_AJAX)
+    assert respuesta.status_code == 200
+    assert "documentos/_campos_dinamicos.html" in _nombres_plantillas(respuesta)
+    assert respuesta.context["formset_filas"] is not None
+
+
+@pytest.mark.parametrize("parametros", [{"plantilla": 999999}, {}])
+def test_campos_de_plantilla_inexistente_responde_404(client, usuario_administrador, parametros):
+    client.force_login(usuario_administrador)
+    assert client.get(reverse("documentos:campos_plantilla"), parametros).status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# Confirmar: los datos de la sesión se vuelven a validar
+# ---------------------------------------------------------------------------
+
+
+def test_confirmar_por_post_sin_documento_pendiente_redirige(client, usuario_administrador):
+    client.force_login(usuario_administrador)
+    respuesta = client.post(reverse("documentos:confirmar"))
+    assert respuesta.status_code == 302
+    assert respuesta.url == reverse("documentos:generar")
+    assert not Documento.objects.exists()
+
+
+def _guardar_pendiente(client, **datos):
+    sesion = client.session
+    sesion["documento_pendiente"] = {
+        "periodo": "2026",
+        "descripcion": "",
+        "valores_simples": {},
+        "filas_repetibles": [],
+        **datos,
+    }
+    sesion.save()
+
+
+@pytest.mark.parametrize("metodo", ["get", "post"])
+@pytest.mark.parametrize("caso", ["cliente_ajeno", "plantilla_borrada", "firmante_sin_firma"])
+def test_confirmar_rechaza_datos_de_sesion_que_ya_no_son_validos(
+    client,
+    metodo,
+    caso,
+    usuario_junior,
+    usuario_senior,
+    cliente,
+    cliente_junior,
+    plantilla_simple,
+    firmante,
+):
+    """
+    Los ids guardados en la sesión no se aceptan sin revisar: un Junior con un
+    cliente que no es suyo, una plantilla que ya no existe o un firmante sin
+    firma hacen que se descarte el documento pendiente.
+    """
+    datos = {
+        "cliente_id": cliente_junior.pk,
+        "plantilla_id": plantilla_simple.pk,
+        "usuario_firmante_id": firmante.pk,
+    }
+    if caso == "cliente_ajeno":
+        datos["cliente_id"] = cliente.pk
+    elif caso == "plantilla_borrada":
+        datos["plantilla_id"] = 999999
+    else:
+        datos["usuario_firmante_id"] = usuario_senior.pk
+
+    client.force_login(usuario_junior)
+    _guardar_pendiente(client, **datos)
+    respuesta = getattr(client, metodo)(reverse("documentos:confirmar"))
+
+    assert respuesta.status_code == 302
+    assert respuesta.url == reverse("documentos:generar")
+    assert "documento_pendiente" not in client.session
+    assert not Documento.objects.exists()
+
+
+# ---------------------------------------------------------------------------
+# Plantillas: formularios, errores y edición
+# ---------------------------------------------------------------------------
+
+
+def _datos_plantilla(plantilla=None, nombre="Plantilla editada"):
+    datos = {
+        "nombre_plantilla": nombre,
+        "tipo_documento": "Certificado",
+        "texto_predeterminado": "Texto de {{ cliente }}",
+        "campos-MIN_NUM_FORMS": "0",
+        "campos-MAX_NUM_FORMS": "1000",
+    }
+    campos = list(plantilla.campos.all()) if plantilla else []
+    datos["campos-TOTAL_FORMS"] = str(len(campos))
+    datos["campos-INITIAL_FORMS"] = str(len(campos))
+    for indice, campo in enumerate(campos):
+        datos[f"campos-{indice}-id_campo"] = campo.pk
+        datos[f"campos-{indice}-nombre_campo"] = campo.nombre_campo
+        datos[f"campos-{indice}-tipo_campo"] = campo.tipo_campo
+    return datos
+
+
+def test_formulario_de_plantilla_nueva_carga(client, usuario_administrador):
+    client.force_login(usuario_administrador)
+    respuesta = client.get(reverse("documentos:plantilla_crear"))
+    assert respuesta.status_code == 200
+    assert respuesta.context["accion"] == "crear"
+
+
+def test_crear_plantilla_sin_nombre_no_guarda(client, usuario_administrador):
+    client.force_login(usuario_administrador)
+    respuesta = client.post(reverse("documentos:plantilla_crear"), _datos_plantilla(nombre=""))
+    assert respuesta.status_code == 200
+    assert "nombre_plantilla" in respuesta.context["formulario"].errors
+    assert not Plantilla.objects.exists()
+
+
+def test_formulario_de_editar_plantilla_carga(client, usuario_administrador, plantilla_simple):
+    client.force_login(usuario_administrador)
+    respuesta = client.get(reverse("documentos:plantilla_editar", args=[plantilla_simple.pk]))
+    assert respuesta.status_code == 200
+    assert respuesta.context["plantilla"] == plantilla_simple
+
+
+def test_editar_plantilla_inexistente_responde_404(client, usuario_administrador):
+    client.force_login(usuario_administrador)
+    assert client.get(reverse("documentos:plantilla_editar", args=[999999])).status_code == 404
+
+
+def test_editar_plantilla_guarda_los_cambios(client, usuario_administrador, plantilla_simple):
+    client.force_login(usuario_administrador)
+    respuesta = client.post(
+        reverse("documentos:plantilla_editar", args=[plantilla_simple.pk]),
+        _datos_plantilla(plantilla_simple, nombre="Certificado renombrado"),
+    )
+    assert respuesta.status_code == 302
+    assert respuesta.url == reverse("documentos:plantillas")
+    plantilla_simple.refresh_from_db()
+    assert plantilla_simple.nombre_plantilla == "Certificado renombrado"
+    assert plantilla_simple.campos.count() == 1
+
+
+def test_editar_plantilla_sin_nombre_no_guarda(client, usuario_administrador, plantilla_simple):
+    client.force_login(usuario_administrador)
+    respuesta = client.post(
+        reverse("documentos:plantilla_editar", args=[plantilla_simple.pk]),
+        _datos_plantilla(plantilla_simple, nombre=""),
+    )
+    assert respuesta.status_code == 200
+    plantilla_simple.refresh_from_db()
+    assert plantilla_simple.nombre_plantilla == "Certificado simple"
+
+
+# ---------------------------------------------------------------------------
+# Mi firma
+# ---------------------------------------------------------------------------
+
+
+def _datos_firma(nombre_archivo="firma.png"):
+    imagen = _imagen_prueba()
+    imagen.name = nombre_archivo
+    return {"firma": imagen, "identificacion": "1032456789", "numero_tarjeta_profesional": "654321-T"}
+
+
+def test_mi_firma_en_ventana_emergente_usa_la_plantilla_modal(client, usuario_senior):
+    client.force_login(usuario_senior)
+    respuesta = client.get(reverse("documentos:mi_firma"), **ES_AJAX)
+    assert respuesta.status_code == 200
+    assert "documentos/mi_firma_form_modal.html" in _nombres_plantillas(respuesta)
+
+
+def test_guardar_mi_firma_redirige_a_generar(client, usuario_senior):
+    client.force_login(usuario_senior)
+    respuesta = client.post(reverse("documentos:mi_firma"), _datos_firma())
+    assert respuesta.status_code == 302
+    assert respuesta.url == reverse("documentos:generar")
+    usuario_senior.refresh_from_db()
+    assert usuario_senior.firma.name.startswith("firmas/")
+    assert usuario_senior.numero_tarjeta_profesional == "654321-T"
+
+
+def test_guardar_mi_firma_por_ajax_recarga_la_pagina(client, usuario_senior):
+    client.force_login(usuario_senior)
+    respuesta = client.post(reverse("documentos:mi_firma"), _datos_firma(), **ES_AJAX)
+    assert respuesta.status_code == 200
+    assert f'window.location.href = "{reverse("documentos:generar")}"' in respuesta.content.decode()
+
+
+@pytest.mark.parametrize("ajax", [False, True])
+def test_mi_firma_rechaza_extension_no_permitida(client, usuario_senior, ajax):
+    client.force_login(usuario_senior)
+    extra = ES_AJAX if ajax else {}
+    respuesta = client.post(reverse("documentos:mi_firma"), _datos_firma("firma.gif"), **extra)
+    assert respuesta.status_code == 200
+    assert "firma" in respuesta.context["formulario"].errors
+    esperada = "documentos/mi_firma_form_modal.html" if ajax else "documentos/mi_firma_form.html"
+    assert esperada in _nombres_plantillas(respuesta)
+    usuario_senior.refresh_from_db()
+    assert not usuario_senior.firma
+
+
+# ---------------------------------------------------------------------------
+# Datos del despacho
+# ---------------------------------------------------------------------------
+
+
+def test_datos_del_despacho_carga_para_el_administrador(client, usuario_administrador, despacho):
+    client.force_login(usuario_administrador)
+    respuesta = client.get(reverse("documentos:datos_despacho"))
+    assert respuesta.status_code == 200
+    assert respuesta.context["formulario"].instance == despacho
+
+
+def test_datos_del_despacho_carga_aunque_aun_no_exista(client, usuario_administrador, despacho):
+    despacho.delete()
+    client.force_login(usuario_administrador)
+    respuesta = client.get(reverse("documentos:datos_despacho"))
+    assert respuesta.status_code == 200
+    assert respuesta.context["formulario"].instance.pk is None
+
+
+def test_datos_del_despacho_rechaza_membrete_no_permitido(client, usuario_administrador, despacho):
+    client.force_login(usuario_administrador)
+    imagen = _imagen_prueba()
+    imagen.name = "membrete.gif"
+    respuesta = client.post(
+        reverse("documentos:datos_despacho"),
+        {"nombre_despacho": "Otro nombre", "membrete": imagen, "ciudad": "Bogotá D.C."},
+    )
+    assert respuesta.status_code == 200
+    assert "membrete" in respuesta.context["formulario"].errors
+    despacho.refresh_from_db()
+    assert despacho.nombre_despacho == "Befrec Y Asociados SAS"
+    assert not despacho.membrete

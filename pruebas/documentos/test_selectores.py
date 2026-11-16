@@ -173,3 +173,19 @@ def test_contexto_previsualizacion_usa_id_campo_como_llave(plantilla_simple, cli
     )
     assert contexto["concepto"] == "Honorarios"
     assert contexto["cliente"] == cliente.nombre_razon_social
+
+
+def test_documentos_del_cliente_solo_trae_los_suyos_y_respeta_el_limite(
+    usuario_administrador, cliente, cliente_junior, plantilla_simple
+):
+    for _ in range(3):
+        Documento.objects.create(
+            cliente=cliente, plantilla=plantilla_simple, usuario_generador=usuario_administrador
+        )
+    Documento.objects.create(
+        cliente=cliente_junior, plantilla=plantilla_simple, usuario_generador=usuario_administrador
+    )
+
+    documentos = list(selectores.documentos_del_cliente(usuario_administrador, cliente, limite=2))
+    assert len(documentos) == 2
+    assert {documento.cliente for documento in documentos} == {cliente}
