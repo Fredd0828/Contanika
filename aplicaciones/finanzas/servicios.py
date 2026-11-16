@@ -25,6 +25,7 @@ from reportlab.platypus import KeepTogether, Paragraph, Spacer, Table
 
 from aplicaciones.clientes.models import Cliente
 from aplicaciones.comunes import paleta
+from aplicaciones.comunes.fechas import fecha_larga
 from aplicaciones.comunes.pdf import (
     ancho_util,
     color,
@@ -224,7 +225,7 @@ def _seccion_abonos_pdf(cuenta, estilos, ancho):
     # El saldo pendiente es el dato que el cliente busca: va destacado en crema.
     estilo.add("BACKGROUND", (0, -1), (-1, -1), color(paleta.CREMA))
     tabla.setStyle(estilo)
-    corte = date_format(timezone.localdate())
+    corte = fecha_larga(timezone.localdate())
     elementos = [
         *subtitulo_seccion("Pagos y abonos recibidos", ancho, textos, detalle=f"estado de cuenta al {corte}"),
         tabla,
@@ -303,7 +304,7 @@ def construir_pdf_cuenta_cobro(cuenta):
     saldo = cuenta.saldo_pendiente
 
     ciudad = escape(despacho.ciudad) if despacho and despacho.ciudad else ""
-    fecha = date_format(timezone.localtime(cuenta.fecha_generacion).date())
+    fecha = fecha_larga(timezone.localtime(cuenta.fecha_generacion).date())
     elementos = encabezado_documento(
         despacho,
         ancho,
@@ -323,7 +324,7 @@ def construir_pdf_cuenta_cobro(cuenta):
                     f"{identificacion}</font>",
                 ),
                 ("Período facturado", escape(_texto_periodo(cuenta))),
-                ("Fecha límite de pago", date_format(cuenta.fecha_vencimiento_pago)),
+                ("Fecha límite de pago", fecha_larga(cuenta.fecha_vencimiento_pago)),
             ],
             ancho,
             3,
@@ -598,7 +599,7 @@ def generar_cobros_mensuales(configuracion, ahora):
             continue
         sugerencia = selectores.sugerencia_cuenta_cobro(cliente)
         lineas = sugerencia["lineas"] or [
-            {"descripcion_linea": f"Honorarios contables {date_format(inicio, 'F Y')}", "valor_linea": None}
+            {"descripcion_linea": f"Honorarios contables {fecha_larga(inicio, 'F Y')}", "valor_linea": None}
         ]
         cuenta = generar_cuenta_cobro(
             cliente=cliente,

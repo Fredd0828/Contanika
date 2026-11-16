@@ -11,7 +11,6 @@ from django.core.files.base import ContentFile
 from django.db import transaction
 from django.db.models import ProtectedError
 from django.utils import timezone
-from django.utils.formats import date_format
 from django.utils.html import escape
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle
@@ -19,6 +18,7 @@ from reportlab.lib.units import cm
 from reportlab.platypus import HRFlowable, KeepTogether, Paragraph, Spacer
 
 from aplicaciones.comunes import paleta
+from aplicaciones.comunes.fechas import fecha_larga
 from aplicaciones.comunes.pdf import (
     ancho_util,
     color,
@@ -121,7 +121,7 @@ def construir_pdf_documento(documento, usuario_firmante):
     ancho = ancho_util(letter, MARGEN_DOCUMENTO)
     textos = estilos_documento()
     despacho = ConfiguracionDespacho.objects.first()
-    fecha = date_format(timezone.localtime(documento.fecha_generacion).date())
+    fecha = fecha_larga(timezone.localtime(documento.fecha_generacion).date())
 
     elementos = encabezado_documento(
         despacho,

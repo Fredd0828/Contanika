@@ -100,14 +100,19 @@ models.py → servicios.py → selectores.py → formularios.py → vistas.py �
   número grande y datos), `estilos_documento`, `estilo_tabla` (totales con
   doble línea), `cuadro_datos`, `tarjetas_resumen`, `cuadro_destacado`,
   `subtitulo_seccion` (barra teal) y `construir_pdf`, que pone la franja
-  superior, los márgenes, el pie con los datos del despacho y «Página X de Y»
-  y, con `sello=`, un sello en diagonal (la cuenta sin saldo lleva «PAGADA»).
+  superior, los márgenes, el pie (solo nombre y NIT del despacho, más
+  «Página X de Y») y, con `sello=`, un sello en diagonal (la cuenta sin saldo
+  lleva «PAGADA»).
   Letras: Montserrat (títulos) y Open Sans (texto), recortadas a los
   caracteres del español en `comunes/fuentes/` (licencia OFL); `letras()`
   devuelve los nombres y cae a Helvetica si faltan los archivos. Nunca
   escribir «Helvetica» a mano en un PDF. Un PDF nuevo no define estilos ni
   encabezados propios. Los PDF ya guardados (documentos y cuentas de cobro)
   conservan su aspecto anterior hasta que se vuelvan a generar.
+- **Fechas en español (16-nov-2026):** las fechas largas de PDF, correos y
+  alertas se escriben con `fecha_larga` (`aplicaciones/comunes/fechas.py`),
+  que deja el mes en minúscula («16 de noviembre de 2026»). No usar
+  `date_format` directo para fechas con el nombre del mes.
 - **Historial de la tarea:** el detalle muestra solo los últimos 5 movimientos.
 - **Filtros desplegables:** todos los listados usan filtros desplegables.
 - **Tablas de a 10 (regla del usuario, 13-oct-2026):** ninguna tabla muestra

@@ -55,16 +55,17 @@ def test_construir_pdf_numera_las_paginas(despacho, textos_del_pie):
     contenido = pdf.construir_pdf(elementos, tamano=A4, titulo="Prueba", despacho=despacho)
     assert contenido.startswith(b"%PDF")
     assert textos_del_pie["derecha"] == ["Página 1 de 2", "Página 2 de 2"]
-    assert textos_del_pie["izquierda"][0].startswith("Despacho de Prueba · NIT 900123456")
+    # El pie lleva solo el nombre y el NIT; el resto ya está en el encabezado.
+    assert textos_del_pie["izquierda"] == ["Despacho de Prueba · NIT 900123456"] * 2
 
 
 def test_el_pie_se_recorta_si_no_cabe(despacho, textos_del_pie):
-    despacho.direccion = "Dirección muy larga " * 20
+    despacho.nombre_despacho = "Despacho con un nombre muy largo " * 10
     estilos = pdf.estilos_documento()
     pdf.construir_pdf([Paragraph("Texto", estilos["normal"])], tamano=A4, titulo="Prueba", despacho=despacho)
     pie = textos_del_pie["izquierda"][0]
     assert pie.endswith("…")
-    assert len(pie) < len(despacho.direccion)
+    assert len(pie) < len(despacho.nombre_despacho)
 
 
 def test_construir_pdf_sin_despacho(textos_del_pie):
