@@ -2178,3 +2178,44 @@ un NIT existente: la base lo rechaza.
 - Etiquetar `v1.0.0` después del merge.
 - Repetir el ensayo en Supabase: allá la base no se elimina como en el local.
 - Reforzar las ramas de Documentos (65 %) y Tareas (72,5 %).
+
+---
+
+## Lunes 16 de noviembre de 2026 — PDF con diseño más profesional
+
+**Pedido del usuario:** que los PDF se vean más profesionales. Eligió usar las
+mismas letras de la plataforma.
+
+### Qué se hizo
+- **Letras:** Montserrat en títulos y Open Sans en el texto, en
+  `aplicaciones/comunes/fuentes/` con su licencia OFL. Se recortaron a los
+  caracteres del español y quedaron en unos 300 KB (completas pesaban 2 MB).
+  Si faltan los archivos, el PDF sale con Helvetica.
+- **Encabezado:** antes, con logo, desaparecían el nombre y los datos del
+  despacho. Ahora el logo va siempre al lado del nombre, con los datos en dos
+  renglones ordenados. A la derecha va el tipo de documento en pequeño
+  («CUENTA DE COBRO», «REPORTE», «DOCUMENTO») y el número o título en grande.
+- **Tablas:** más aire, los totales con doble línea y los títulos de sección
+  con una barra teal.
+- **Cuenta de cobro:**
+  - «Cobrar a» y «Fecha límite de pago»;
+  - en el recuadro del valor, el saldo pendiente cuando hay abonos;
+  - nota final con el teléfono y el correo del despacho;
+  - **sello «PAGADA»** en diagonal cuando el saldo llega a cero;
+  - cabe en una hoja con tres conceptos, abonos y datos de pago.
+- **Reportes:** tarjetas de cifras separadas y gráficos con las letras nuevas.
+  Las tablas de 9 columnas o más usan letra un punto más pequeña para no
+  partir palabras. En el reporte de clientes, «Registro» quedó más ancha para
+  que la fecha quepa completa.
+- **Certificados:** título con más aire y línea teal más marcada.
+- **Limpieza:** se quitó `encabezado_despacho`, que ya no usaba nadie, y se
+  corrigió `AGENTS.md`.
+
+### Cómo verificarlo
+Descargar desde la plataforma un reporte, una cuenta de cobro y un
+certificado nuevos. Los PDF ya guardados conservan el diseño anterior hasta
+que se vuelvan a generar.
+
+### Pendientes
+- Decidir si se regeneran las cuentas de cobro y los certificados ya
+  guardados para que tomen el diseño nuevo.
