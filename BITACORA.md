@@ -2371,3 +2371,48 @@ revisada.
 ### Pendientes
 - Después del merge, correr `regenerar_pdf_cuentas --aplicar` para que las
   cuentas ya guardadas tomen la fecha y el pie nuevos.
+
+## Lunes 16 de noviembre de 2026 — Despliegue en un VPS
+
+### Qué se hizo
+El usuario quiere probar Contanika en internet antes de seguir con la
+documentación. Decisiones suyas: VPS básico con Ubuntu 24.04, dirección gratis
+en DuckDNS con HTTPS, PostgreSQL en el mismo VPS y base nueva y vacía (un
+despacho nuevo, sin los datos de prueba locales).
+
+- **Arreglo de seguridad que bloqueaba a todos.** django-axes tomaba la IP de
+  `REMOTE_ADDR`; detrás de nginx siempre es 127.0.0.1, así que cinco intentos
+  fallidos de cualquier persona habrían bloqueado el inicio de sesión de todos
+  durante una hora. Ahora usa `comunes.vistas.direccion_ip`
+  (`AXES_CLIENT_IP_CALLABLE`), la misma de los límites por minuto, y nginx
+  reemplaza `X-Forwarded-For` para que no se pueda falsificar.
+- **`despliegue/instalar_vps.sh`**: instalación completa en un solo paso, con
+  preguntas al inicio:
+  - paquetes, memoria de intercambio si hay poca RAM y cortafuegos (solo SSH,
+    HTTP y HTTPS);
+  - usuario `contanika` sin privilegios y código en `/srv/contanika/codigo`;
+  - PostgreSQL local con los roles de `scripts/bd/03` (claves aleatorias) y
+    RLS de `scripts/bd/04`; migraciones con el dueño de las tablas;
+  - `.env` de producción con secretos generados (nunca se muestran);
+  - gunicorn como servicio de systemd, nginx y HTTPS con certbot;
+  - cron de cobros y alertas, y respaldo diario de la base y `media/`;
+  - despacho nuevo con `cargar_datos_iniciales`: el Administrador recibe su
+    enlace por correo.
+- **`despliegue/actualizar.sh`**: respaldo, `git pull`, librerías,
+  migraciones, privilegios y RLS, estáticos y reinicio.
+- Plantillas `contanika.service` y `nginx-contanika.conf`, y
+  `respaldar.sh` (guarda 14 días).
+- Guía `documentacion/DESPLIEGUE_VPS.md` paso a paso; `AGENTS.md` al día.
+
+### Cómo se verificó
+Ensayo en un PostgreSQL 16 temporal con los mismos pasos del script: roles y
+migraciones como dueño, 0 tablas sin RLS, la aplicación no puede crear tablas,
+despacho y Administrador creados, `check --deploy` sin errores y gunicorn con
+la configuración de producción (salud, inicio, login y estilos en 200;
+http → https con 301; otro dominio en 400; cookies `__Host-`). nginx, certbot
+y systemd se prueban en el VPS real. 3 pruebas nuevas de la IP detrás del
+proxy.
+
+### Pendientes
+- Contratar el VPS y crear la dirección en DuckDNS (usuario).
+- Correr el script en el VPS después del merge.
