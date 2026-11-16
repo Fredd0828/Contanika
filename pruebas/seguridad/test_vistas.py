@@ -30,6 +30,20 @@ def test_pagina_de_inicio_abre_sin_sesion_y_ofrece_ingresar(client):
     assert f'href="{reverse("seguridad:iniciar_sesion")}"' in respuesta.content.decode()
 
 
+def test_pagina_de_inicio_muestra_el_video_de_presentacion(client):
+    """El video de la portada se sirve desde el propio sitio, con su imagen de portada y sin cargarse solo."""
+    from django.contrib.staticfiles import finders
+    from django.templatetags.static import static
+
+    html = client.get(reverse("seguridad:inicio")).content.decode()
+    assert f'src="{static("video/presentacion-contanika.mp4")}"' in html
+    assert f'poster="{static("video/presentacion-contanika.jpg")}"' in html
+    assert 'preload="none"' in html
+    assert "autoplay" not in html
+    assert finders.find("video/presentacion-contanika.mp4")
+    assert finders.find("video/presentacion-contanika.jpg")
+
+
 def test_pagina_de_inicio_con_sesion_lleva_al_panel(client, usuario_administrador):
     """Quien ya inició sesión no ve la presentación: entra directo al sistema."""
     client.force_login(usuario_administrador)
