@@ -2203,3 +2203,57 @@ de 65 % a 100 % de ramas y Tareas de 72,5 % a 100 %. Los casos nuevos:
 `pytest pruebas/documentos pruebas/tareas --cov=aplicaciones/documentos
 --cov=aplicaciones/tareas --cov-branch --cov-report=term-missing`.
 Suite completa: 1324 en verde.
+
+---
+
+## Lunes 16 de noviembre de 2026 — Acceso por enlace e instalación por despacho
+
+**Pedido del usuario:** entender cómo se registra a un colaborador y qué hacer
+cuando un despacho pague la suscripción. Decidió: una instalación de Contanika
+por despacho, y que cada persona cree su propia contraseña con un enlace.
+
+### Qué se hizo
+- **Crear usuario sin contraseña:** el Administrador escribe nombre, correo,
+  teléfono y rol. El usuario recibe un enlace de un solo uso, que vence a los
+  3 días, para crear su contraseña. La clave ya no viaja por correo y el
+  Administrador no la conoce. Mientras no la cree, el listado muestra «Acceso
+  pendiente».
+- **Reenviar enlace de acceso:** botón en el listado (sobre con flecha) y en
+  Editar. Editar ya no cambia la contraseña.
+- **Si el correo falla:** el usuario queda creado y el listado muestra el
+  enlace una sola vez, con botón para copiarlo.
+- **«¿Olvidó su contraseña?»** en el inicio de sesión. Responde lo mismo
+  exista o no el correo, admite 5 pedidos por minuto por IP y también le sirve
+  a quien aún no creó su clave. Un fallo del servidor de correo no se muestra.
+- **Cuatro rutas públicas nuevas:** `recuperar-contrasena/`, `…/enviado/`,
+  `crear-contrasena/<uidb64>/<token>/` y `crear-contrasena/listo/`. Están en
+  `RUTAS_PUBLICAS` y en la prueba de rutas públicas.
+- **`cargar_datos_iniciales`:**
+  - nuevos `--nombre-despacho` y `--ciudad-despacho` (antes fijaba «Befrec Y
+    Asociados SAS»);
+  - `--clave-admin` pasa a ser opcional: sin ella, el primer Administrador
+    recibe el enlace, y si el correo falla el enlace sale en la terminal.
+- **`check --deploy`** avisa si falta `CORREO_HOST` (`contanika.W001`) o si
+  `URL_SITIO` es local (`contanika.W002`).
+- **Ajustes:** `EMAIL_TIMEOUT = 20` y `PASSWORD_RESET_TIMEOUT` de 3 días.
+- **Guías nuevas:** `documentacion/NUEVO_DESPACHO.md` y
+  `documentacion/CONFIGURAR_CORREO.md` (Gmail paso a paso).
+- **Textos actualizados:** ayuda, guías «Crear un usuario» y «Mi perfil»,
+  página de inicio, `AGENTS.md`, `PR01_SEGURIDAD.md`, `CAMBIOS_WORD.md` (HU022)
+  y la matriz CRUD.
+
+### Cómo verificarlo (entorno local, correo por consola)
+1. Equipo y roles → Nuevo usuario. Sin contraseña, pulse «Crear usuario y
+   enviar acceso». El enlace aparece en la consola de `runserver`.
+2. Abra el enlace, cree la contraseña y entre.
+3. Abra el mismo enlace otra vez: dice que ya no sirve.
+4. En el inicio de sesión, pulse «¿Olvidó su contraseña?» con un correo
+   registrado y con uno inventado: la respuesta es la misma.
+
+Suite: 1309 en verde, sin las pruebas del PR #26.
+
+### Pendientes
+- El usuario: crear la contraseña de aplicación de Gmail y completar `CORREO_*`
+  (ver `CONFIGURAR_CORREO.md`).
+- `scripts/bd/02_datos_iniciales.sql` es la carga del despacho actual y conserva
+  su nombre; para otro despacho se usa el comando, no ese script.

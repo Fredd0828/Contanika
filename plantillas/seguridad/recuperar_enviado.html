@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block titulo %}Revise su correo{% endblock %}
+
+{% block contenido_publico %}
+<div id="login">
+    <div>
+        <div class="login-card">
+            {% include "seguridad/_tarjeta_acceso.html" with subtitulo="Revise su correo" %}
+            <div class="login-aviso"><i class="bi bi-envelope-check"></i></div>
+            <p class="login-texto">Si el correo que escribió está registrado en Contanika, en unos minutos le llegará un enlace para crear su nueva contraseña.</p>
+            <p class="login-texto">El enlace sirve una sola vez y vence en {{ dias }} día{{ dias|pluralize }}. Si no lo ve, revise la carpeta de correo no deseado o pídale ayuda al Administrador del despacho.</p>
+            <a class="login-btn" href="{% url 'seguridad:iniciar_sesion' %}"><i class="bi bi-box-arrow-in-right"></i> Ir a iniciar sesión</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,8 +1,8 @@
 # Mapa de navegación — Contanika
 
-Entregable 3.3. Generado el 02/11/2026 con `python gestionar.py generar_mapa_navegacion` a partir de las rutas del sistema. No editar a mano: volver a generarlo cuando cambien las rutas.
+Entregable 3.3. Generado el 16/11/2026 con `python gestionar.py generar_mapa_navegacion` a partir de las rutas del sistema. No editar a mano: volver a generarlo cuando cambien las rutas.
 
-El sistema tiene **112 rutas**: 81 pantallas o descargas (GET) y 31 acciones que solo reciben formularios (POST).
+El sistema tiene **117 rutas**: 85 pantallas o descargas (GET) y 32 acciones que solo reciben formularios (POST).
 
 ## 1. Navegación general
 
@@ -69,6 +69,10 @@ Columnas de rol: «Sí» = el rol puede abrir la ruta; «—» = recibe 403. Ade
 | `/panel/` | `seguridad:panel` | GET | Sí | Sí | Sí | Panel principal del sistema. |
 | `/iniciar-sesion/` | `seguridad:iniciar_sesion` | GET · POST | Sí | Sí | Sí | Formulario de acceso al sistema (CU001). *(pública, sin sesión)* |
 | `/cerrar-sesion/` | `seguridad:cerrar_sesion` | GET · POST | Sí | Sí | Sí | Cierra la sesión activa y regresa al inicio de sesión. |
+| `/recuperar-contrasena/` | `seguridad:recuperar_contrasena` | GET · POST | Sí | Sí | Sí | «¿Olvidó su contraseña?»: envía al correo un enlace para crear una nueva. *(pública, sin sesión)* |
+| `/recuperar-contrasena/enviado/` | `seguridad:recuperar_enviado` | GET | Sí | Sí | Sí | Confirma que, si el correo está registrado, le llegará el enlace. *(pública, sin sesión)* |
+| `/crear-contrasena/<uidb64>/<token>/` | `seguridad:crear_contrasena` | GET · POST | Sí | Sí | Sí | Página a la que lleva el enlace del correo: el usuario escribe su nueva contraseña. El enlace sirve una sola vez, vence y no vale para un usuario inactivo. *(pública, sin sesión)* |
+| `/crear-contrasena/listo/` | `seguridad:contrasena_creada` | GET | Sí | Sí | Sí | Confirma que la contraseña quedó creada y lleva al inicio de sesión. *(pública, sin sesión)* |
 | `/perfil/` | `seguridad:perfil` | GET · POST | Sí | Sí | Sí | Datos propios del usuario; el correo y el rol solo los cambia el Administrador. |
 | `/ayuda/` | `seguridad:ayuda` | GET | Sí | Sí | Sí | Guías paso a paso de los procesos, guía rápida de los módulos, preguntas frecuentes y contacto de soporte del despacho. |
 | `/ayuda/guias/<slug:slug>/` | `seguridad:guia` | GET | Sí | Sí | Sí | Una guía paso a paso. Solo abre las guías de procesos que el usuario puede hacer (su rol y sus módulos habilitados); las demás responden 403. |
@@ -291,10 +295,11 @@ flowchart LR
 |---|---|---|---|---|---|---|
 | `/equipo/` | `seguridad:equipo` | GET | Sí | Sí | — | Resumen de tareas y vencimientos de cada miembro (Administrador y Senior, solo consulta). |
 | `/equipo/usuarios/` | `seguridad:usuarios` | GET | Sí | — | — | Listado del equipo con filtros por nombre, rol y estado. |
-| `/equipo/usuarios/nuevo/` | `seguridad:crear_usuario` | GET · POST | Sí | — | — | Alta de un usuario con rol y contraseña temporal; revisa los permisos del rol (HU022-2). |
-| `/equipo/usuarios/<int:pk>/editar/` | `seguridad:editar_usuario` | GET · POST | Sí | — | — | Edita datos, correo, rol y contraseña temporal de un usuario. |
+| `/equipo/usuarios/nuevo/` | `seguridad:crear_usuario` | GET · POST | Sí | — | — | Alta de un usuario con su rol; recibe un enlace para crear su contraseña (HU022-2). |
+| `/equipo/usuarios/<int:pk>/editar/` | `seguridad:editar_usuario` | GET · POST | Sí | — | — | Edita datos, correo y rol de un usuario. |
 | `/equipo/usuarios/<int:pk>/estado/` | `seguridad:estado_usuario` | POST | Sí | — | — | Activa o inactiva un usuario (POST). |
 | `/equipo/usuarios/<int:pk>/eliminar/` | `seguridad:eliminar_usuario` | POST | Sí | — | — | Elimina un usuario sin historial (POST); si tiene historial se sugiere inactivarlo. |
+| `/equipo/usuarios/<int:pk>/reenviar-acceso/` | `seguridad:reenviar_acceso` | POST | Sí | — | — | Reenvía al usuario el enlace para crear su contraseña (POST): enlace vencido o clave olvidada. |
 | `/equipo/permisos/` | `seguridad:permisos` | GET · POST | Sí | — | — | Interruptores de habilitación de cada módulo por rol. |
 
 ### MOD09 · Expediente y bitácora por cliente
@@ -339,7 +344,7 @@ Número de rutas que cada rol puede abrir, sobre el total del módulo.
 
 | Módulo | Rutas | Administrador | Contador Senior | Contador Junior |
 |---|---|---|---|---|
-| Sin módulo | 13 | 13 | 13 | 13 |
+| Sin módulo | 17 | 17 | 17 | 17 |
 | MOD01 · Gestión de clientes | 12 | 12 | 12 | 6 |
 | MOD02 · Calendario | 16 | 16 | 13 | 6 |
 | MOD03 · Tablero de tareas Kanban | 8 | 8 | 8 | 5 |
@@ -347,7 +352,7 @@ Número de rutas que cada rol puede abrir, sobre el total del módulo.
 | MOD05 · Hallazgos y revisiones | 9 | 9 | 9 | 8 |
 | MOD06 · Honorarios, cartera y cuentas de cobro | 22 | 22 | 4 | 4 |
 | MOD07 · Comunicaciones integradas | 3 | 3 | 3 | 2 |
-| MOD08 · Gestión de equipo y roles | 7 | 7 | 1 | 0 |
+| MOD08 · Gestión de equipo y roles | 8 | 8 | 1 | 0 |
 | MOD09 · Expediente y bitácora por cliente | 6 | 6 | 4 | 4 |
 | MOD10 · Reportes y análisis | 4 | 4 | 2 | 2 |
 

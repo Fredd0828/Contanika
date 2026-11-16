@@ -11,6 +11,14 @@ urlpatterns = [
     path("panel/", vistas.PanelView.as_view(), name="panel"),
     path("iniciar-sesion/", vistas.IniciarSesionView.as_view(), name="iniciar_sesion"),
     path("cerrar-sesion/", vistas.CerrarSesionView.as_view(), name="cerrar_sesion"),
+    path("recuperar-contrasena/", vistas.RecuperarContrasenaView.as_view(), name="recuperar_contrasena"),
+    path("recuperar-contrasena/enviado/", vistas.RecuperarEnviadoView.as_view(), name="recuperar_enviado"),
+    path(
+        "crear-contrasena/<uidb64>/<token>/",
+        vistas.CrearContrasenaView.as_view(),
+        name="crear_contrasena",
+    ),
+    path("crear-contrasena/listo/", vistas.ContrasenaCreadaView.as_view(), name="contrasena_creada"),
     path("perfil/", vistas.PerfilView.as_view(), name="perfil"),
     path("ayuda/", vistas.AyudaView.as_view(), name="ayuda"),
     path("ayuda/guias/<slug:slug>/", vistas.GuiaAyudaView.as_view(), name="guia"),
@@ -23,5 +31,10 @@ urlpatterns = [
         "equipo/usuarios/<int:pk>/estado/", vistas.CambiarEstadoUsuarioView.as_view(), name="estado_usuario"
     ),
     path("equipo/usuarios/<int:pk>/eliminar/", vistas.EliminarUsuarioView.as_view(), name="eliminar_usuario"),
+    path(
+        "equipo/usuarios/<int:pk>/reenviar-acceso/",
+        vistas.ReenviarAccesoView.as_view(),
+        name="reenviar_acceso",
+    ),
     path("equipo/permisos/", vistas.PermisosModulosView.as_view(), name="permisos"),
 ]

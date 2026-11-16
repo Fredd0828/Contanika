@@ -2,14 +2,18 @@
 {% if nuevo %}
 Se creó su usuario en Contanika con el rol {{ usuario.rol.nombre_rol }}.
 {% else %}
-El Administrador le asignó una nueva contraseña temporal en Contanika.
+El Administrador le envió un enlace para crear su contraseña de Contanika.
 {% endif %}
-Datos de acceso:
-- Usuario (correo): {{ usuario.correo }}
-- Contraseña temporal: {{ clave }}
-{% if url_sitio %}- Ingreso: {{ url_sitio }}
-{% endif %}
-Por seguridad, cambie la contraseña temporal al ingresar, en «Mi perfil».
+Su usuario es su correo: {{ usuario.correo }}
+
+Para crear su contraseña, abra este enlace:
+{{ enlace }}
+
+El enlace sirve una sola vez y vence en {{ dias }} día{{ dias|pluralize }}. Si vence,
+pídale al Administrador que se lo reenvíe, o use «¿Olvidó su contraseña?» en
+la página de inicio de sesión.
+
+Si usted no esperaba este correo, ignórelo.
 
 Contanika
 {% endautoescape %}

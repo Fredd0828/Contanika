@@ -5,6 +5,10 @@ Crea los tres roles, los diez módulos, los seis reportes, sus permisos por
 rol, la configuración del despacho y los catálogos base (tipos de servicio,
 métodos de pago, conceptos facturables y las seis plantillas de documento).
 El comando es idempotente: puede ejecutarse varias veces sin duplicar datos.
+
+Contanika se instala una vez por despacho (ver `documentacion/NUEVO_DESPACHO.md`):
+en una instalación nueva se indica el nombre del despacho y el correo de su
+primer Administrador, que recibe un enlace para crear su contraseña.
 """
 
 from django.core.management.base import BaseCommand
@@ -21,6 +25,10 @@ from aplicaciones.seguridad.models import (
     Rol,
     Usuario,
 )
+from aplicaciones.seguridad.servicios import dias_vigencia_enlace, enviar_enlace_acceso
+
+# Nombre provisional si no se indica `--nombre-despacho`; el Administrador lo cambia después.
+NOMBRE_DESPACHO_INICIAL = "Mi despacho contable"
 
 TIPOS_SERVICIO = [
     "Declaración de renta",
@@ -185,17 +193,30 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
+            "--nombre-despacho",
+            default=NOMBRE_DESPACHO_INICIAL,
+            help="Nombre del despacho de esta instalación (solo se usa la primera vez).",
+        )
+        parser.add_argument(
+            "--ciudad-despacho",
+            default="Bogotá D.C.",
+            help="Ciudad del despacho (solo se usa la primera vez).",
+        )
+        parser.add_argument(
             "--correo-admin",
-            help="Correo del superusuario Administrador a crear (opcional).",
+            help="Correo del primer Administrador a crear (opcional).",
         )
         parser.add_argument(
             "--nombre-admin",
             default="Administrador",
-            help="Nombre del superusuario Administrador a crear (opcional).",
+            help="Nombre del primer Administrador a crear (opcional).",
         )
         parser.add_argument(
             "--clave-admin",
-            help="Contraseña del superusuario Administrador a crear (opcional).",
+            help=(
+                "Contraseña del primer Administrador (opcional). Sin ella, el Administrador "
+                "recibe por correo un enlace para crearla."
+            ),
         )
 
     @transaction.atomic
@@ -204,7 +225,7 @@ class Command(BaseCommand):
         self._crear_modulos()
         self._crear_reportes()
         self._crear_permisos()
-        self._crear_configuracion()
+        self._crear_configuracion(nombre=options["nombre_despacho"], ciudad=options["ciudad_despacho"])
         self._crear_catalogos()
         self._crear_plantillas()
         self._crear_admin(opciones=options)
@@ -251,14 +272,20 @@ class Command(BaseCommand):
                     },
                 )
 
-    def _crear_configuracion(self):
-        ConfiguracionDespacho.objects.get_or_create(
-            pk=1,
-            defaults={
-                "nombre_despacho": "Befrec Y Asociados SAS",
-                "ciudad": "Bogotá D.C.",
-            },
+    def _crear_configuracion(self, nombre, ciudad):
+        """
+        Datos del despacho de esta instalación (una por despacho). Solo se
+        fijan la primera vez: después los edita el Administrador en
+        Documentos → Datos del despacho, y el comando no los pisa.
+        """
+        despacho, creado = ConfiguracionDespacho.objects.get_or_create(
+            pk=1, defaults={"nombre_despacho": nombre, "ciudad": ciudad}
         )
+        if not creado and nombre != NOMBRE_DESPACHO_INICIAL and despacho.nombre_despacho != nombre:
+            self.stdout.write(
+                f"El despacho ya existe como «{despacho.nombre_despacho}»; no se cambió. "
+                "Edítelo en Documentos → Datos del despacho."
+            )
         # Cobro automático del Módulo 6: se crea desactivado, lo activa el Administrador.
         ConfiguracionCobro.obtener()
 
@@ -294,18 +321,35 @@ class Command(BaseCommand):
                 )
 
     def _crear_admin(self, opciones):
-        correo = opciones.get("correo_admin")
+        """
+        Primer Administrador de la instalación. Con `--clave-admin` queda con
+        esa contraseña; sin ella recibe un enlace para crearla él mismo, y si
+        el correo no sale el enlace se muestra aquí para entregárselo.
+        """
+        correo = (opciones.get("correo_admin") or "").strip().lower()
         clave = opciones.get("clave_admin")
-        if not correo or not clave:
+        if not correo:
             return
-        if Usuario.objects.filter(correo=correo).exists():
+        if Usuario.objects.filter(correo__iexact=correo).exists():
             self.stdout.write(f"El usuario {correo} ya existe; no se creó de nuevo.")
             return
         rol_admin = Rol.objects.get(nombre_rol=Rol.ADMINISTRADOR)
-        Usuario.objects.create_superuser(
+        usuario = Usuario.objects.create_superuser(
             correo=correo,
             nombre=opciones["nombre_admin"],
-            password=clave,
+            password=clave or None,  # Sin clave queda inutilizable hasta que use el enlace.
             rol=rol_admin,
         )
-        self.stdout.write(f"Superusuario {correo} creado.")
+        self.stdout.write(f"Administrador {correo} creado.")
+        if clave:
+            return
+        enviado, enlace = enviar_enlace_acceso(usuario, nuevo=True)
+        if enviado:
+            self.stdout.write(f"Se le envió a {correo} el enlace para crear su contraseña.")
+        else:
+            self.stdout.write(
+                self.style.WARNING(
+                    "No se pudo enviar el correo. Entréguele este enlace para que cree su contraseña "
+                    f"(sirve una sola vez y vence en {dias_vigencia_enlace()} días):\n{enlace}"
+                )
+            )

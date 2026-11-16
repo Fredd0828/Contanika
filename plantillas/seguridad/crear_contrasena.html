@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block titulo %}Crear contraseña{% endblock %}
+
+{% block contenido_publico %}
+<div id="login">
+    <div>
+        <div class="login-card">
+            {% include "seguridad/_tarjeta_acceso.html" with subtitulo="Crear su contraseña" %}
+            {% if validlink %}
+            <p class="login-texto">Escriba su nueva contraseña dos veces. Debe tener al menos 10 caracteres, no ser solo números y no parecerse a su nombre ni a su correo.</p>
+            {% if form.errors %}
+            <div class="alert alert-danger py-2 px-3 small" role="alert">
+                {% for campo in form %}{% for error in campo.errors %}<div>{{ error }}</div>{% endfor %}{% endfor %}
+                {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
+            </div>
+            {% endif %}
+            <form method="post" novalidate>
+                {% csrf_token %}
+                <div class="lf">
+                    <label for="{{ form.new_password1.id_for_label }}">Nueva contraseña</label>
+                    <input type="password" name="{{ form.new_password1.html_name }}" id="{{ form.new_password1.id_for_label }}"
+                           autocomplete="new-password" required autofocus>
+                </div>
+                <div class="lf">
+                    <label for="{{ form.new_password2.id_for_label }}">Repita la contraseña</label>
+                    <input type="password" name="{{ form.new_password2.html_name }}" id="{{ form.new_password2.id_for_label }}"
+                           autocomplete="new-password" required>
+                </div>
+                <button type="submit" class="login-btn"><i class="bi bi-key"></i> Guardar contraseña</button>
+            </form>
+            {% else %}
+            <div class="alert alert-warning py-2 px-3 small" role="alert">
+                Este enlace ya no sirve: se usó antes o venció.
+            </div>
+            <p class="login-texto">Pida uno nuevo con «¿Olvidó su contraseña?» o pídale al Administrador del despacho que se lo reenvíe.</p>
+            <a class="login-btn" href="{% url 'seguridad:recuperar_contrasena' %}"><i class="bi bi-envelope"></i> Pedir un enlace nuevo</a>
+            {% endif %}
+        </div>
+        <div class="login-foot"><a href="{% url 'seguridad:iniciar_sesion' %}"><i class="bi bi-arrow-left"></i> Volver a iniciar sesión</a></div>
+    </div>
+</div>
+{% endblock %}

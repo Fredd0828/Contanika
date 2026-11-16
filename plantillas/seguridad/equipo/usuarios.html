@@ -4,6 +4,40 @@
 {% block contenido %}
 {% include "seguridad/equipo/_pestanas.html" with pestana="usuarios" %}
 
+{% if enlace_manual %}
+<div class="panel enlace-manual">
+    <div class="ph">
+        <div class="ph-title"><i class="bi bi-link-45deg"></i> Enlace de acceso de {{ enlace_manual.nombre }}</div>
+    </div>
+    <p class="small mb-2">
+        El correo a {{ enlace_manual.correo }} no salió. Copie este enlace y entrégueselo por WhatsApp u otro medio:
+        con él crea su contraseña. Sirve una sola vez y vence en {{ enlace_manual.dias }} día{{ enlace_manual.dias|pluralize }}.
+        <strong>Solo se muestra ahora.</strong>
+    </p>
+    <div class="input-group">
+        <input type="text" class="form-control" id="enlaceManual" value="{{ enlace_manual.enlace }}" readonly>
+        <button type="button" class="ph-btn" id="copiarEnlace"><i class="bi bi-clipboard"></i> Copiar</button>
+    </div>
+</div>
+<script>
+(function () {
+    const campo = document.getElementById('enlaceManual');
+    const boton = document.getElementById('copiarEnlace');
+    campo.addEventListener('focus', function () { campo.select(); });
+    boton.addEventListener('click', function () {
+        campo.select();
+        const listo = function () { boton.innerHTML = '<i class="bi bi-check2"></i> Copiado'; };
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(campo.value).then(listo);
+        } else {
+            document.execCommand('copy');
+            listo();
+        }
+    });
+})();
+</script>
+{% endif %}
+
 <div class="panel">
     <div class="ph">
         <div class="ph-title"><i class="bi bi-person-gear"></i> Usuarios del equipo</div>
@@ -57,11 +91,19 @@
                     <td>
                         {% if miembro.estado == "Activo" %}<span class="badge-est be-g">Activo</span>
                         {% else %}<span class="badge-est be-n">Inactivo</span>{% endif %}
+                        {% if not miembro.has_usable_password %}<span class="badge-est be-w" title="Aún no ha creado su contraseña">Acceso pendiente</span>{% endif %}
                     </td>
                     <td class="text-nowrap">{{ miembro.fecha_creacion|date:"d/m/Y" }}</td>
                     <td class="text-end text-nowrap">
                         <a class="icon-btn" href="{% url 'seguridad:editar_usuario' miembro.pk %}" title="Editar"><i class="bi bi-pencil"></i></a>
                         {% if miembro.pk != user.pk %}
+                        {% if miembro.estado == "Activo" %}
+                        <form method="post" action="{% url 'seguridad:reenviar_acceso' miembro.pk %}" class="d-inline"
+                              onsubmit="return confirm('¿Enviar a {{ miembro.nombre|escapejs }} un enlace para crear su contraseña?')">
+                            {% csrf_token %}
+                            <button type="submit" class="icon-btn" title="Reenviar enlace de acceso"><i class="bi bi-envelope-arrow-up"></i></button>
+                        </form>
+                        {% endif %}
                         <form method="post" action="{% url 'seguridad:estado_usuario' miembro.pk %}" class="d-inline form-estado"
                               data-nombre="{{ miembro.nombre }}" data-activo="{% if miembro.estado == 'Activo' %}1{% endif %}"
                               data-admin="{% if miembro.rol.nombre_rol == 'Administrador' %}1{% endif %}">
