@@ -1,0 +1,29 @@
+# Contanika - servicio de la aplicación (gunicorn). Plantilla: instalar_vps.sh
+# reemplaza __CODIGO__, __USUARIO__, __PUERTO__ y __TRABAJADORES__.
+[Unit]
+Description=Contanika (gunicorn)
+After=network.target postgresql.service
+Requires=postgresql.service
+
+[Service]
+User=__USUARIO__
+Group=__USUARIO__
+WorkingDirectory=__CODIGO__
+Environment=DJANGO_SETTINGS_MODULE=config.settings.produccion
+ExecStart=__CODIGO__/.venv/bin/gunicorn config.wsgi:application \
+    --bind 127.0.0.1:__PUERTO__ \
+    --workers __TRABAJADORES__ \
+    --timeout 60 \
+    --max-requests 500 --max-requests-jitter 50 \
+    --access-logfile - --error-logfile -
+Restart=on-failure
+RestartSec=5
+UMask=0027
+# Endurecimiento: el proceso no gana privilegios ni toca el sistema.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

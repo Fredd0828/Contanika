@@ -196,7 +196,10 @@ models.py → servicios.py → selectores.py → formularios.py → vistas.py �
 - XSS: escapar contenido en templates; no render HTML desde el usuario sin sanitizar.
 - Inyección SQL: usar ORM; nunca concatenar SQL manualmente.
 - Credenciales: cifradas con Fernet (`CREDENCIAL_CLAVE_CIFRADO` en `.env`).
-- Fuerza bruta: django-axes activo.
+- Fuerza bruta: django-axes activo. Toma la IP de `comunes.vistas.direccion_ip`
+  (`AXES_CLIENT_IP_CALLABLE`): detrás de nginx `REMOTE_ADDR` siempre es
+  127.0.0.1 y un bloqueo afectaría a todos. nginx **reemplaza**
+  `X-Forwarded-For` con `$remote_addr` para que nadie la falsifique.
 - **pr01 (endurecimiento, 7-oct-2026)** — detalle en `documentacion/PR01_SEGURIDAD.md`:
   - Cabeceras: `comunes.middleware.CabecerasSeguridadMiddleware` envía la CSP
     (`CSP_DIRECTIVAS` en `settings/base.py`). **Al cargar algo de un dominio
@@ -229,6 +232,13 @@ models.py → servicios.py → selectores.py → formularios.py → vistas.py �
   - Producción (`settings/produccion.py`) no arranca con secretos de
     desarrollo ni con `BD_USUARIO=postgres`. Scripts de BD para el despliegue:
     `scripts/bd/03_rol_aplicacion.sql` y `04_activar_rls.sql`.
+  - **Despliegue en VPS (16-nov-2026):** `despliegue/instalar_vps.sh` instala
+    todo en Ubuntu 24.04 (PostgreSQL local con los scripts 03 y 04, gunicorn
+    como servicio, nginx, HTTPS con certbot, cortafuegos, cron y respaldo
+    diario); `despliegue/actualizar.sh` actualiza desde `main`. Guía:
+    `documentacion/DESPLIEGUE_VPS.md`. Si una migración nueva necesita algo
+    del sistema (un paquete apt, una carpeta, una variable), agregarlo a los
+    dos scripts y a la guía.
   - Nunca escribir contraseñas ni claves en archivos versionados: hay una
     prueba que lo impide.
 - Variables sensibles: solo en `.env`, nunca en el código.

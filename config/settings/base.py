@@ -161,6 +161,10 @@ AXES_FAILURE_LIMIT = config("AXES_INTENTOS_MAXIMOS", default=5, cast=int)
 AXES_COOLOFF_TIME = config("AXES_TIEMPO_BLOQUEO_HORAS", default=1, cast=int)
 AXES_LOCKOUT_PARAMETERS = ["username", "ip_address"]
 AXES_RESET_ON_SUCCESS = True
+# La IP del visitante sale de la misma función que usan los límites por minuto.
+# Detrás de nginx, REMOTE_ADDR siempre es 127.0.0.1: sin esto, cinco intentos
+# fallidos de cualquier persona bloquearían el inicio de sesión de todos.
+AXES_CLIENT_IP_CALLABLE = "aplicaciones.comunes.vistas.direccion_ip"
 
 # ---------------------------------------------------------------
 # Correo electrónico saliente (alertas, cuentas de cobro y recordatorios)
