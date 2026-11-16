@@ -39,7 +39,7 @@ Abra el archivo `.env` de la carpeta `codigo/` y deje estas líneas así:
 CORREO_HOST=smtp.gmail.com
 CORREO_PUERTO=587
 CORREO_USUARIO=la-cuenta@gmail.com
-CORREO_CLAVE=abcdefghijklmnop
+CORREO_CLAVE=<las-16-letras-que-da-google>
 CORREO_REMITENTE=Contanika <la-cuenta@gmail.com>
 ```
 
