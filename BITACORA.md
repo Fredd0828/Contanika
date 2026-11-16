@@ -2218,4 +2218,14 @@ que se vuelvan a generar.
 
 ### Pendientes
 - Decidir si se regeneran las cuentas de cobro y los certificados ya
-  guardados para que tomen el diseño nuevo.
+  guardados para que tomen el diseño nuevo. **Hecho el mismo día para las
+  cuentas de cobro:**
+  - Comando `regenerar_pdf_cuentas`: sin `--aplicar` solo cuenta.
+  - Se corrió en la BD local y regeneró 8 de 8.
+  - Antes se respaldaron los archivos y sus rutas en
+    `contanika/respaldos/pdf_cuentas_2026-11-16/`.
+  - **Los certificados no se regeneran:** el documento no guarda con qué
+    firma se expidió, y rehacerlo con otra alteraría un documento firmado.
+- En la BD local, «Datos del despacho» no tiene cargados el logo, la
+  dirección, el teléfono ni el correo. Por eso los PDF salen sin logo y con el
+  pie corto.
