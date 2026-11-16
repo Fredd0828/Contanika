@@ -47,9 +47,9 @@ paso "Migraciones, privilegios y RLS"
 sql -d "$BD" < "$CODIGO/scripts/bd/03_rol_aplicacion.sql"
 sql -d "$BD" < "$CODIGO/scripts/bd/04_activar_rls.sql" >/dev/null
 gestionar collectstatic --noinput -v 0
-# El calendario DIAN se vuelve a cargar por si hubo correcciones de fechas
-# (no duplica: actualiza las existentes y crea las que falten).
-gestionar cargar_calendario_dian_2026
+# El calendario DIAN NO se recarga aquí: el Administrador lo sube cada año
+# desde Calendario → Tabla DIAN y puede corregir fechas a mano; recargarlo
+# desde el código desharía esas correcciones.
 install -m 750 -o root -g root "$CODIGO/despliegue/respaldar.sh" /usr/local/sbin/contanika-respaldar
 
 paso "Reiniciando"

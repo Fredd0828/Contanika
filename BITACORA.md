@@ -2428,11 +2428,14 @@ de obligaciones sí estaba (lo siembra la migración `clientes 0006`).
 
 - `instalar_vps.sh` corre `cargar_calendario_dian_2026` después de
   `cargar_datos_iniciales`.
-- `actualizar.sh` lo vuelve a correr en cada actualización (es idempotente:
-  actualiza fechas corregidas y crea las que falten).
+- `actualizar.sh` **no** lo vuelve a correr: decisión del usuario, cada año el
+  Administrador sube el calendario nuevo desde **Calendario → Tabla DIAN**
+  (plantilla de Excel) y puede corregir fechas a mano; recargar 2026 desde el
+  código desharía esas correcciones.
 - `NUEVO_DESPACHO.md`, `DESPLIEGUE_VPS.md` y `AGENTS.md` incluyen el paso.
 - En el servidor ya instalado se cargó a mano con el mismo comando.
 
 ### Pendientes
-- Calendario DIAN 2027: cuando la DIAN publique el decreto, agregar los datos
-  y el comando de 2027 antes de enero.
+- Calendario DIAN 2027: cuando la DIAN publique el decreto, el Administrador
+  lo sube con la plantilla de Excel (se ofreció armar el Excel desde el PDF
+  oficial) y recalcula los vencimientos, antes de enero.
