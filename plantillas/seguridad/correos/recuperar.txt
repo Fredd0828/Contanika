@@ -1,0 +1,16 @@
+{% autoescape off %}Hola, {{ user.nombre }}:
+
+Recibimos una solicitud para crear una nueva contraseña de Contanika para
+{{ user.correo }}.
+
+Para crearla, abra este enlace:
+{{ url_sitio }}{% url 'seguridad:crear_contrasena' uidb64=uid token=token %}
+
+El enlace sirve una sola vez y vence en {{ dias }} día{{ dias|pluralize }}. Su contraseña
+actual sigue funcionando hasta que cree la nueva.
+
+Si usted no lo pidió, ignore este correo: nadie puede cambiar su contraseña
+sin abrir el enlace.
+
+Contanika
+{% endautoescape %}

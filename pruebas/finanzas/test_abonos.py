@@ -280,7 +280,8 @@ def test_pdf_sin_abonos_no_trae_seccion_de_abonos(cuenta_cliente):
 def test_pdf_muestra_abonos_y_saldo_pendiente(cuenta_cliente, usuario_administrador, metodo_transferencia):
     _abonar(cuenta_cliente, "300000", usuario_administrador, metodo=metodo_transferencia)
     elementos = servicios._seccion_abonos_pdf(cuenta_cliente, getSampleStyleSheet(), 16 * cm)
-    tabla = next(elemento for elemento in elementos if isinstance(elemento, Table))
+    # La primera tabla es el subtítulo de la sección (con su barra); la de abonos es la última.
+    tabla = [elemento for elemento in elementos if isinstance(elemento, Table)][-1]
     filas = tabla._cellvalues
     assert filas[1][1].text == metodo_transferencia.nombre_metodo
     assert filas[1][2] == "$ 300.000"
@@ -293,6 +294,39 @@ def test_pdf_de_cuenta_pagada_lo_indica(cuenta_cliente, usuario_administrador):
     elementos = servicios._seccion_abonos_pdf(cuenta_cliente, getSampleStyleSheet(), 16 * cm)
     textos = [elemento.text for elemento in elementos if isinstance(elemento, Paragraph)]
     assert any("pagada en su totalidad" in texto for texto in textos)
+
+
+@pytest.fixture
+def sello_del_pdf(monkeypatch):
+    """Guarda el sello con el que se arma el PDF de la cuenta, sin dejar de generarlo."""
+    usados = []
+    original = servicios.construir_pdf
+
+    def construir(*args, **kwargs):
+        usados.append(kwargs.get("sello", ""))
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(servicios, "construir_pdf", construir)
+    return usados
+
+
+@pytest.mark.parametrize("monto, sello", [("300000", ""), ("1000000", "PAGADA")])
+def test_solo_la_cuenta_sin_saldo_lleva_el_sello_pagada(
+    cuenta_cliente, usuario_administrador, sello_del_pdf, monto, sello
+):
+    _abonar(cuenta_cliente, monto, usuario_administrador)
+    assert sello_del_pdf[-1] == sello
+
+
+def test_cuenta_con_abono_parcial_muestra_el_saldo_en_el_recuadro(cuenta_cliente, usuario_administrador):
+    _abonar(cuenta_cliente, "300000", usuario_administrador)
+    from aplicaciones.comunes.pdf import estilos_documento
+
+    recuadro = servicios._cuadro_deuda(
+        cuenta_cliente, None, 16 * cm, estilos_documento(), cuenta_cliente.saldo_pendiente
+    )
+    derecha = recuadro._cellvalues[0][1]
+    assert "Saldo pendiente" in derecha[-1].text and "700.000" in derecha[-1].text
 
 
 def test_registrar_abono_regenera_el_pdf(cuenta_cliente, usuario_administrador):

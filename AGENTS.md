@@ -91,15 +91,22 @@ models.py → servicios.py → selectores.py → formularios.py → vistas.py �
 - **Estilo:** `ruff` debe pasar sin hallazgos.
 - **Selects abiertos:** los campos desplegables permiten escribir valores nuevos cuando aplique.
 - **Fechas editables:** ninguna fecha queda bloqueada, aunque el sistema la calcule automáticamente.
-- **PDF con la misma hoja (13-oct-2026, pedido por el usuario):** todo PDF
-  (reportes, cuentas de cobro, documentos y certificados) se arma con las
-  piezas de `aplicaciones/comunes/pdf.py`: `encabezado_documento` (despacho a
-  la izquierda, título y datos a la derecha), `estilos_documento`,
-  `estilo_tabla`, `cuadro_datos` y `construir_pdf`, que pone la franja
-  superior, los márgenes y el pie con los datos del despacho y «Página X de
-  Y». Un PDF nuevo no define estilos ni encabezados propios. Los PDF ya
-  guardados (documentos y cuentas de cobro) conservan su aspecto anterior
-  hasta que se vuelvan a generar.
+- **PDF con la misma hoja (13-oct-2026; rediseño 16-nov-2026, pedido por el
+  usuario):** todo PDF (reportes, cuentas de cobro, documentos y certificados)
+  se arma con las piezas de `aplicaciones/comunes/pdf.py`:
+  `encabezado_documento` (logo **y siempre al lado** nombre y datos del
+  despacho a la izquierda; a la derecha `etiqueta` pequeña en teal, título o
+  número grande y datos), `estilos_documento`, `estilo_tabla` (totales con
+  doble línea), `cuadro_datos`, `tarjetas_resumen`, `cuadro_destacado`,
+  `subtitulo_seccion` (barra teal) y `construir_pdf`, que pone la franja
+  superior, los márgenes, el pie con los datos del despacho y «Página X de Y»
+  y, con `sello=`, un sello en diagonal (la cuenta sin saldo lleva «PAGADA»).
+  Letras: Montserrat (títulos) y Open Sans (texto), recortadas a los
+  caracteres del español en `comunes/fuentes/` (licencia OFL); `letras()`
+  devuelve los nombres y cae a Helvetica si faltan los archivos. Nunca
+  escribir «Helvetica» a mano en un PDF. Un PDF nuevo no define estilos ni
+  encabezados propios. Los PDF ya guardados (documentos y cuentas de cobro)
+  conservan su aspecto anterior hasta que se vuelvan a generar.
 - **Historial de la tarea:** el detalle muestra solo los últimos 5 movimientos.
 - **Filtros desplegables:** todos los listados usan filtros desplegables.
 - **Tablas de a 10 (regla del usuario, 13-oct-2026):** ninguna tabla muestra
@@ -352,10 +359,9 @@ Ninguna funcionalidad se da por terminada sin:
   (Administrador y Contador Senior) en vez de construir el Módulo 8 completo.
 - `ConfiguracionDespacho.membrete_url` → `membrete` (`ImageField`,
   `upload_to="despacho/"`), cargado por el Administrador en la vista "Datos
-  del despacho" (`documentos:datos_despacho`). `servicios.encabezado_despacho()`
-  arma el encabezado del PDF: la imagen escalada sin deformar al ancho útil
-  (alto máximo 3 cm) o, si no hay membrete, nombre y ciudad como texto. El
-  Módulo 6 (cuenta de cobro "con membrete") debe reutilizar esta función.
+  del despacho" (`documentos:datos_despacho`). Es el logo que
+  `comunes/pdf.py::encabezado_documento` pone al lado del nombre del despacho
+  en todos los PDF (máximo 3,4 × 1,7 cm, sin deformarlo).
 - Séptima plantilla: sin definir en el spec; no se siembra, el Administrador
   la crea desde "Gestión de plantillas" cuando se defina.
 
@@ -406,8 +412,8 @@ Ninguna funcionalidad se da por terminada sin:
   validar, y el formset exige que la suma de valores por línea sea igual al
   total si se indicó alguno. El orden visual se conserva renumerando los
   nombres de los campos con JavaScript al subir/bajar líneas.
-- `aplicaciones/comunes/pdf.py::encabezado_despacho` es el encabezado común
-  de los PDF (membrete o texto) para Documentos y Cuentas de cobro.
+- El encabezado de los PDF es `aplicaciones/comunes/pdf.py::encabezado_documento`
+  (ver «PDF con la misma hoja»).
 - Montos en pesos: filtro `{{ valor|pesos }}` y función `formato_pesos` en
   `finanzas/templatetags/finanzas_tags.py` (`$ 1.200.000`).
 - La ficha del cliente abre la pestaña indicada en el `#hash` de la URL
@@ -519,14 +525,30 @@ Ninguna funcionalidad se da por terminada sin:
 - Rama `feature/modulo-8-equipo`, creada desde `feature/modulo-7-comunicaciones`.
   Vive en la app `seguridad` (sus tablas ya estaban ahí): `servicios.py`,
   `selectores.py`, `formularios.py` y plantillas en `seguridad/equipo/`.
-- **Usuarios** (solo Administrador): crear con contraseña temporal (validada
-  con `AUTH_PASSWORD_VALIDATORS`) y correo de bienvenida con usuario y clave
-  (`seguridad/correos/acceso.txt`, decisión del usuario 1-oct-2026); editar
-  datos, correo, rol y opcionalmente una nueva clave temporal (también se
-  envía); activar/inactivar; eliminar **solo sin historial**
-  (`servicios.tiene_historial` recorre todas las relaciones inversas de
-  `Usuario`); con historial se ofrece inactivar. Si el correo falla, el
-  usuario queda creado y se muestra un aviso.
+- **Usuarios** (solo Administrador): crear con nombre, correo, teléfono y rol,
+  **sin contraseña**; el usuario recibe un enlace de un solo uso para crearla
+  (`servicios.enviar_enlace_acceso`, `seguridad/correos/acceso.txt`). La
+  contraseña nunca viaja por correo y el Administrador nunca la conoce
+  (decisión del usuario 16-nov-2026; reemplaza la clave temporal del
+  1-oct-2026). Editar cambia datos, correo y rol, no la clave; «Reenviar
+  enlace de acceso» (`seguridad:reenviar_acceso`) manda uno nuevo. Si el
+  correo falla, el usuario queda creado y el listado muestra el enlace **una
+  sola vez** para entregarlo por otro medio. Activar/inactivar; eliminar
+  **solo sin historial** (`servicios.tiene_historial` recorre todas las
+  relaciones inversas de `Usuario`); con historial se ofrece inactivar.
+- **Enlaces de acceso:** generador de Django (`default_token_generator`),
+  vencen a los `PASSWORD_RESET_TIMEOUT` (3 días) y dejan de servir al crear la
+  clave. Rutas públicas `recuperar-contrasena/` («¿Olvidó su contraseña?»,
+  5 pedidos por minuto por IP, misma respuesta exista o no el correo) y
+  `crear-contrasena/<uidb64>/<token>/` (no sirve para usuarios inactivos).
+  Toda ruta pública nueva va en `RUTAS_PUBLICAS` de `generar_mapa_navegacion`
+  y en `test_las_rutas_publicas_son_solo_las_previstas`.
+- **Instalación por despacho:** Contanika se instala una vez por despacho
+  (`documentacion/NUEVO_DESPACHO.md`). `cargar_datos_iniciales
+  --nombre-despacho … --correo-admin …` crea al primer Administrador; sin
+  `--clave-admin` recibe el enlace (si el correo falla, sale en la terminal).
+  Correo: `documentacion/CONFIGURAR_CORREO.md`; `check --deploy` avisa si
+  falta `CORREO_HOST` o si `URL_SITIO` es local (`comunes/checks.py`).
 - **Administradores** (`servicios.validar_administradores`): siempre queda al
   menos uno activo; más de uno activo exige la casilla/confirmación
   (`ConfirmacionRequerida`). Nadie se inactiva ni se elimina a sí mismo.

@@ -130,6 +130,9 @@ LOGIN_URL = "seguridad:iniciar_sesion"
 LOGIN_REDIRECT_URL = "seguridad:panel"
 LOGOUT_REDIRECT_URL = "seguridad:iniciar_sesion"
 
+# Vigencia del enlace de un solo uso para crear o recuperar la contraseña.
+PASSWORD_RESET_TIMEOUT = 60 * 60 * 24 * 3  # 3 días
+
 # ---------------------------------------------------------------
 # Internacionalización y zona horaria de Colombia
 # ---------------------------------------------------------------
@@ -167,6 +170,8 @@ EMAIL_PORT = config("CORREO_PUERTO", default=587, cast=int)
 EMAIL_HOST_USER = config("CORREO_USUARIO", default="")
 EMAIL_HOST_PASSWORD = config("CORREO_CLAVE", default="")
 EMAIL_USE_TLS = True
+# Si el servidor de correo no responde, la pantalla no se queda esperando indefinidamente.
+EMAIL_TIMEOUT = 20
 DEFAULT_FROM_EMAIL = config("CORREO_REMITENTE", default="Contanika <no-responder@contanika.co>")
 
 # Dirección pública del sistema: base de los enlaces que reciben los clientes

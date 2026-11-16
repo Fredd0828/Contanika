@@ -747,7 +747,7 @@ GUIAS = (
     Guia(
         slug="crear-usuario",
         titulo="Crear un usuario del equipo",
-        resumen="Dé acceso a un nuevo miembro del despacho con su rol y una contraseña temporal.",
+        resumen="Dé acceso a un nuevo miembro del despacho: él mismo crea su contraseña con un enlace.",
         icono="bi-person-gear",
         modulo=Modulo.MOD08_EQUIPO,
         roles=SOLO_ADMINISTRADOR,
@@ -764,23 +764,21 @@ GUIAS = (
                 "muestran los módulos que ve ese rol.",
             ),
             Paso(
-                "Escriba la «Contraseña temporal»",
-                "Debe cumplir las reglas de seguridad que indica el formulario.",
-            ),
-            Paso(
                 "Guarde",
-                "Pulse «Crear usuario y enviar acceso». El sistema le envía un correo con su usuario "
-                "y la contraseña temporal.",
+                "Pulse «Crear usuario y enviar acceso». El sistema le envía al correo un enlace para "
+                "que cree su contraseña. Usted no escribe ni conoce la contraseña.",
             ),
             Paso(
-                "Pídale que cambie la contraseña",
-                "La contraseña temporal la conoce usted: recomiéndele cambiarla en «Mi perfil» al "
-                "entrar por primera vez.",
+                "El usuario crea su contraseña",
+                "Abre el enlace, escribe su contraseña dos veces y ya puede entrar. Mientras no lo "
+                "haga, en el listado aparece «Acceso pendiente».",
             ),
         ),
         notas=(
-            "Si el correo no sale, el usuario queda creado igual y el sistema le avisa: entréguele "
-            "la contraseña por otro medio.",
+            "El enlace sirve una sola vez y vence a los 3 días. Si vence o el usuario lo perdió, "
+            "pulse «Reenviar enlace de acceso» (el sobre con la flecha en el listado, o en «Editar»).",
+            "Si el correo no sale, el usuario queda creado igual y el listado le muestra el enlace "
+            "una sola vez: cópielo y entrégueselo por WhatsApp u otro medio.",
             "Para crear otro Administrador debe marcar la casilla de confirmación.",
             "Un usuario con historial no se elimina: se inactiva.",
         ),
@@ -842,7 +840,8 @@ GUIAS = (
         ),
         notas=(
             "El correo y el rol solo los cambia el Administrador.",
-            "Si olvidó la contraseña, pídale al Administrador una temporal y cámbiela al entrar.",
+            "Si olvidó la contraseña, pulse «¿Olvidó su contraseña?» en el inicio de sesión: le "
+            "llega al correo un enlace para crear una nueva.",
             "Tras varios intentos fallidos el acceso se bloquea por un tiempo, por seguridad.",
         ),
     ),

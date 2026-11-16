@@ -322,3 +322,173 @@ def test_titulo_con_script_se_escapa_en_el_tablero(client, usuario_administrador
     contenido = client.get(reverse("tareas:tablero")).content.decode()
     assert "<script>alert('xss')</script>" not in contenido
     assert "&lt;script&gt;" in contenido
+
+
+# ---------------------------------------------------------------------------
+# Formularios de crear y editar: ventana emergente, cliente precargado y errores
+# ---------------------------------------------------------------------------
+
+ES_AJAX = {"HTTP_X_REQUESTED_WITH": "XMLHttpRequest"}
+
+
+def _nombres_plantillas(respuesta):
+    return [plantilla.name for plantilla in respuesta.templates]
+
+
+def _recarga_hacia(respuesta, url):
+    return f'window.location.href = "{url}"' in respuesta.content.decode()
+
+
+@pytest.mark.parametrize("usuario_fixture", ["usuario_administrador", "usuario_senior"])
+def test_formulario_de_crear_tarea_carga(client, request, usuario_fixture):
+    client.force_login(request.getfixturevalue(usuario_fixture))
+    respuesta = client.get(reverse("tareas:crear"))
+    assert respuesta.status_code == 200
+    assert "tareas/tarea_form.html" in _nombres_plantillas(respuesta)
+    assert respuesta.context["accion"] == "crear"
+
+
+def test_crear_tarea_desde_la_ficha_precarga_el_cliente(client, usuario_administrador, cliente):
+    client.force_login(usuario_administrador)
+    respuesta = client.get(reverse("tareas:crear"), {"cliente": cliente.pk}, **ES_AJAX)
+    assert respuesta.status_code == 200
+    assert "tareas/tarea_form_modal.html" in _nombres_plantillas(respuesta)
+    assert respuesta.context["formulario"].initial["cliente"] == str(cliente.pk)
+
+
+def test_crear_tarea_sin_titulo_no_guarda(client, usuario_senior, cliente):
+    client.force_login(usuario_senior)
+    respuesta = client.post(
+        reverse("tareas:crear"), {"cliente": cliente.pk, "titulo": "", "prioridad": Tarea.ALTA}
+    )
+    assert respuesta.status_code == 200
+    assert "titulo" in respuesta.context["formulario"].errors
+    assert not Tarea.objects.exists()
+
+
+def test_crear_tarea_por_ajax_recarga_el_tablero(client, usuario_senior, cliente):
+    client.force_login(usuario_senior)
+    respuesta = client.post(
+        reverse("tareas:crear"),
+        {"cliente": cliente.pk, "titulo": "Revisar nómina", "prioridad": Tarea.BAJA},
+        **ES_AJAX,
+    )
+    assert respuesta.status_code == 200
+    assert _recarga_hacia(respuesta, reverse("tareas:tablero"))
+    assert Tarea.objects.filter(titulo="Revisar nómina").exists()
+
+
+@pytest.mark.parametrize("ajax", [False, True])
+def test_formulario_de_editar_tarea_carga(client, usuario_senior, tarea_admin, ajax):
+    client.force_login(usuario_senior)
+    extra = ES_AJAX if ajax else {}
+    respuesta = client.get(reverse("tareas:editar", args=[tarea_admin.pk]), **extra)
+    assert respuesta.status_code == 200
+    esperada = "tareas/tarea_form_modal.html" if ajax else "tareas/tarea_form.html"
+    assert esperada in _nombres_plantillas(respuesta)
+    assert respuesta.context["tarea"] == tarea_admin
+
+
+def test_editar_tarea_con_prioridad_invalida_no_guarda(client, usuario_senior, tarea_admin):
+    client.force_login(usuario_senior)
+    respuesta = client.post(
+        reverse("tareas:editar", args=[tarea_admin.pk]),
+        {"cliente": tarea_admin.cliente_id, "titulo": "Título cambiado", "prioridad": "Urgentísima"},
+    )
+    assert respuesta.status_code == 200
+    assert "prioridad" in respuesta.context["formulario"].errors
+    tarea_admin.refresh_from_db()
+    assert tarea_admin.titulo == "Preparar retención en la fuente"
+
+
+def test_editar_tarea_por_ajax_recarga_el_tablero(client, usuario_senior, tarea_admin):
+    client.force_login(usuario_senior)
+    respuesta = client.post(
+        reverse("tareas:editar", args=[tarea_admin.pk]),
+        {"cliente": tarea_admin.cliente_id, "titulo": "Retención revisada", "prioridad": Tarea.MEDIA},
+        **ES_AJAX,
+    )
+    assert _recarga_hacia(respuesta, reverse("tareas:tablero"))
+    tarea_admin.refresh_from_db()
+    assert tarea_admin.titulo == "Retención revisada"
+
+
+def test_eliminar_tarea_por_ajax_recarga_el_tablero(client, usuario_administrador, tarea_admin):
+    client.force_login(usuario_administrador)
+    respuesta = client.post(reverse("tareas:eliminar", args=[tarea_admin.pk]), **ES_AJAX)
+    assert _recarga_hacia(respuesta, reverse("tareas:tablero"))
+    assert not Tarea.objects.filter(pk=tarea_admin.pk).exists()
+
+
+# ---------------------------------------------------------------------------
+# Estado inválido, observaciones y filtros del tablero
+# ---------------------------------------------------------------------------
+
+
+def test_cambiar_a_un_estado_que_no_existe_por_ajax_responde_400(client, usuario_administrador, tarea_admin):
+    client.force_login(usuario_administrador)
+    respuesta = client.post(
+        reverse("tareas:cambiar_estado", args=[tarea_admin.pk]), {"estado": "Inexistente"}, **ES_AJAX
+    )
+    assert respuesta.status_code == 400
+    assert respuesta.json() == {"ok": False, "error": "Estado no válido."}
+    tarea_admin.refresh_from_db()
+    assert tarea_admin.estado == Tarea.POR_HACER
+
+
+def test_cambiar_a_un_estado_que_no_existe_vuelve_al_tablero(client, usuario_administrador, tarea_admin):
+    client.force_login(usuario_administrador)
+    respuesta = client.post(
+        reverse("tareas:cambiar_estado", args=[tarea_admin.pk]), {"estado": "Inexistente"}
+    )
+    assert respuesta.status_code == 302
+    assert respuesta.url == reverse("tareas:tablero")
+    assert not HistorialTarea.objects.filter(tarea=tarea_admin).exists()
+
+
+def test_admin_cambia_estado_sin_ajax_y_vuelve_al_tablero(client, usuario_administrador, tarea_admin):
+    client.force_login(usuario_administrador)
+    respuesta = client.post(
+        reverse("tareas:cambiar_estado", args=[tarea_admin.pk]), {"estado": Tarea.TERMINADO}
+    )
+    assert respuesta.status_code == 302
+    assert respuesta.url == reverse("tareas:tablero")
+    tarea_admin.refresh_from_db()
+    assert tarea_admin.estado == Tarea.TERMINADO
+
+
+def test_observacion_vacia_no_se_guarda(client, usuario_junior, tarea_junior):
+    client.force_login(usuario_junior)
+    respuesta = client.post(reverse("tareas:agregar_observacion", args=[tarea_junior.pk]), {"contenido": ""})
+    assert respuesta.status_code == 302
+    assert respuesta.url == reverse("tareas:detalle", args=[tarea_junior.pk])
+    assert not ObservacionTarea.objects.filter(tarea=tarea_junior).exists()
+
+
+def test_observacion_por_ajax_recarga_el_detalle(client, usuario_junior, tarea_junior):
+    client.force_login(usuario_junior)
+    respuesta = client.post(
+        reverse("tareas:agregar_observacion", args=[tarea_junior.pk]),
+        {"contenido": "Listo el borrador."},
+        **ES_AJAX,
+    )
+    assert _recarga_hacia(respuesta, reverse("tareas:detalle", args=[tarea_junior.pk]))
+    assert ObservacionTarea.objects.filter(tarea=tarea_junior).count() == 1
+
+
+def test_detalle_en_ventana_emergente_usa_la_plantilla_modal(client, usuario_administrador, tarea_admin):
+    client.force_login(usuario_administrador)
+    respuesta = client.get(reverse("tareas:detalle", args=[tarea_admin.pk]), **ES_AJAX)
+    assert respuesta.status_code == 200
+    assert "tareas/tarea_detalle_modal.html" in _nombres_plantillas(respuesta)
+
+
+def test_tablero_filtra_por_cliente_y_responsable(client, usuario_administrador, tarea_admin, tarea_junior):
+    client.force_login(usuario_administrador)
+    respuesta = client.get(
+        reverse("tareas:tablero"),
+        {"cliente": tarea_junior.cliente_id, "responsable": tarea_junior.responsable_id},
+    )
+    assert respuesta.status_code == 200
+    visibles = [tarea for _, _, tareas in respuesta.context["tablero"] for tarea in tareas]
+    assert visibles == [tarea_junior]

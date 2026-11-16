@@ -17,8 +17,6 @@ from ..conftest import CLAVE_PRUEBAS
 
 pytestmark = pytest.mark.django_db
 
-CLAVE_TEMPORAL = "Temporal-Contanika-2026"
-
 
 def _formulario_crear(rol, correo="nuevo@befrec.co", **extra):
     datos = {
@@ -26,7 +24,6 @@ def _formulario_crear(rol, correo="nuevo@befrec.co", **extra):
         "correo": correo,
         "telefono": "3001112233",
         "rol": rol.pk,
-        "clave_temporal": CLAVE_TEMPORAL,
     }
     datos.update(extra)
     formulario = UsuarioCrearForm(datos)
@@ -56,26 +53,36 @@ def test_segundo_administrador_exige_confirmacion(usuario_administrador, rol_adm
 # ---------------------------------------------------------------------------
 
 
-def test_crear_usuario_cifra_la_clave_y_envia_correo(usuario_administrador, rol_junior):
-    usuario, enviado = servicios.crear_usuario(_formulario_crear(rol_junior, correo="NUEVO@Befrec.co"))
+def test_crear_usuario_envia_enlace_y_no_una_clave(usuario_administrador, rol_junior, settings):
+    settings.URL_SITIO = "https://contanika.ejemplo.co/"
+    usuario, enviado, enlace = servicios.crear_usuario(
+        _formulario_crear(rol_junior, correo="NUEVO@Befrec.co")
+    )
     assert enviado is True
     assert usuario.correo == "nuevo@befrec.co"
     assert usuario.estado == Usuario.ACTIVO
-    assert usuario.check_password(CLAVE_TEMPORAL)
-    assert usuario.password != CLAVE_TEMPORAL
+    assert not usuario.has_usable_password()
+    assert enlace.startswith("https://contanika.ejemplo.co/crear-contrasena/")
     assert len(mail.outbox) == 1
-    assert mail.outbox[0].to == ["nuevo@befrec.co"]
-    assert CLAVE_TEMPORAL in mail.outbox[0].body
-    assert "Contador Junior" in mail.outbox[0].body
+    correo = mail.outbox[0]
+    assert correo.to == ["nuevo@befrec.co"]
+    assert correo.subject == "Bienvenido a Contanika"
+    assert enlace in correo.body
+    assert "Contador Junior" in correo.body
+    assert "3 días" in correo.body
+    assert "contraseña temporal" not in correo.body.lower()
 
 
-def test_crear_usuario_aunque_falle_el_correo(usuario_administrador, rol_junior, monkeypatch):
+def test_crear_usuario_aunque_falle_el_correo_devuelve_el_enlace(
+    usuario_administrador, rol_junior, monkeypatch
+):
     def rechazar(*args, **kwargs):
         raise OSError("SMTP caído")
 
     monkeypatch.setattr(servicios, "send_mail", rechazar)
-    usuario, enviado = servicios.crear_usuario(_formulario_crear(rol_junior))
+    usuario, enviado, enlace = servicios.crear_usuario(_formulario_crear(rol_junior))
     assert enviado is False
+    assert "/crear-contrasena/" in enlace
     assert Usuario.objects.filter(pk=usuario.pk).exists()
 
 
@@ -85,25 +92,36 @@ def test_crear_segundo_administrador_sin_confirmar_no_guarda(usuario_administrad
     assert not Usuario.objects.filter(correo="nuevo@befrec.co").exists()
 
 
-def test_formulario_rechaza_clave_debil(rol_junior):
-    formulario = UsuarioCrearForm(
-        {"nombre": "X", "correo": "x@befrec.co", "rol": rol_junior.pk, "clave_temporal": "12345"}
-    )
-    assert not formulario.is_valid()
-    assert "clave_temporal" in formulario.errors
+def test_formulario_de_crear_no_pide_contrasena(rol_junior):
+    from aplicaciones.seguridad.formularios import UsuarioEditarForm
+
+    assert not any("clave" in nombre for nombre in UsuarioCrearForm().fields)
+    assert not any("clave" in nombre for nombre in UsuarioEditarForm().fields)
 
 
 def test_formulario_rechaza_correo_repetido(usuario_administrador, rol_junior):
     formulario = UsuarioCrearForm(
-        {
-            "nombre": "X",
-            "correo": usuario_administrador.correo,
-            "rol": rol_junior.pk,
-            "clave_temporal": CLAVE_TEMPORAL,
-        }
+        {"nombre": "X", "correo": usuario_administrador.correo, "rol": rol_junior.pk}
     )
     assert not formulario.is_valid()
     assert "correo" in formulario.errors
+
+
+def test_reenviar_acceso_manda_un_enlace_nuevo_sin_cambiar_la_clave(usuario_junior):
+    enviado, enlace = servicios.reenviar_acceso(usuario_junior)
+    assert enviado is True
+    assert mail.outbox[0].subject == "Contanika: enlace para crear su contraseña"
+    assert enlace in mail.outbox[0].body
+    usuario_junior.refresh_from_db()
+    assert usuario_junior.check_password(CLAVE_PRUEBAS)
+
+
+def test_reenviar_acceso_a_un_usuario_inactivo_se_rechaza(usuario_junior):
+    usuario_junior.estado = Usuario.INACTIVO
+    usuario_junior.save()
+    with pytest.raises(servicios.ErrorEquipo, match="inactivo"):
+        servicios.reenviar_acceso(usuario_junior)
+    assert mail.outbox == []
 
 
 # ---------------------------------------------------------------------------

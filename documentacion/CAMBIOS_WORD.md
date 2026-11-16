@@ -151,7 +151,9 @@ Los tipos exactos de todas las columnas están en `scripts/bd/01_esquema_contani
   o WhatsApp, aunque lo dispare una persona; «Manual» es el contacto anotado a mano.
 - [ ] **HU022 (usuarios):** siempre queda al menos un Administrador activo; crear otro exige
   confirmación; un usuario solo se elimina si no tiene historial, de lo contrario se inactiva. El
-  usuario nuevo recibe un correo con su acceso.
+  usuario nuevo recibe un correo con un enlace de un solo uso (vence a los 3 días) para crear su
+  propia contraseña: el Administrador no la escribe ni la conoce. El Administrador puede reenviar el
+  enlace, y cualquier usuario puede pedir uno nuevo con «¿Olvidó su contraseña?» (16-nov-2026).
 - [ ] **HU028 (reportes):** el reporte de credenciales sigue en el Módulo 1, solo en pantalla y sin
   descarga; hay uno por cliente y uno consolidado.
 - [ ] **HU040 (alertas):** correo automático al responsable, notificación interna en la campana de la

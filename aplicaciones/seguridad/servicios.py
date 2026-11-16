@@ -8,9 +8,13 @@ Reglas de los administradores (HU022-5):
 """
 
 from django.conf import settings
+from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.db import transaction
 from django.template.loader import render_to_string
+from django.urls import reverse
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
 
 from .models import Modulo, PermisoRolModulo, Rol, Usuario
 
@@ -46,56 +50,78 @@ def validar_administradores(usuario, rol, estado, confirmado=False):
         )
 
 
-def enviar_correo_acceso(usuario, clave, nuevo=True):
-    """
-    Envía al usuario su correo de acceso y la contraseña temporal (HU022-3).
+def dias_vigencia_enlace():
+    """Días que dura un enlace de acceso antes de vencer (`PASSWORD_RESET_TIMEOUT`)."""
+    return max(1, settings.PASSWORD_RESET_TIMEOUT // (60 * 60 * 24))
 
-    Devuelve False si el servidor de correo rechaza el envío: el usuario ya
-    quedó guardado y el Administrador puede entregarle los datos de otra forma.
+
+def enlace_acceso(usuario):
     """
-    contexto = {
-        "usuario": usuario,
-        "clave": clave,
-        "nuevo": nuevo,
-        "url_sitio": getattr(settings, "URL_SITIO", ""),
-    }
-    asunto = "Bienvenido a Contanika" if nuevo else "Contanika: nueva contraseña temporal"
+    Enlace de un solo uso para que el usuario cree su contraseña.
+
+    Usa el generador de Django: el enlace deja de servir en cuanto la
+    contraseña cambia, y vence a los `PASSWORD_RESET_TIMEOUT` segundos.
+    """
+    ruta = reverse(
+        "seguridad:crear_contrasena",
+        kwargs={
+            "uidb64": urlsafe_base64_encode(force_bytes(usuario.pk)),
+            "token": default_token_generator.make_token(usuario),
+        },
+    )
+    return f"{settings.URL_SITIO.rstrip('/')}{ruta}"
+
+
+def enviar_enlace_acceso(usuario, nuevo=True):
+    """
+    Envía al usuario el enlace para crear su contraseña (HU022-3).
+
+    La contraseña nunca viaja en el correo. Devuelve `(enviado, enlace)`: si
+    el servidor de correo falla, el Administrador recibe el enlace en
+    pantalla para entregarlo por otro medio.
+    """
+    enlace = enlace_acceso(usuario)
+    contexto = {"usuario": usuario, "enlace": enlace, "nuevo": nuevo, "dias": dias_vigencia_enlace()}
+    asunto = "Bienvenido a Contanika" if nuevo else "Contanika: enlace para crear su contraseña"
     cuerpo = render_to_string("seguridad/correos/acceso.txt", contexto)
     try:
         send_mail(asunto, cuerpo, None, [usuario.correo])
     except OSError:  # smtplib.SMTPException y los errores de conexión heredan de OSError
-        return False
-    return True
+        return False, enlace
+    return True, enlace
 
 
 def crear_usuario(formulario, confirmado=False):
     """
-    Crea el usuario con su contraseña temporal y le envía sus datos de acceso.
-    Devuelve el usuario y si el correo se pudo enviar.
+    Crea el usuario sin contraseña utilizable y le envía el enlace para que la
+    cree él mismo. Devuelve el usuario, si el correo salió y el enlace.
     """
     usuario = formulario.save(commit=False)
     validar_administradores(usuario, usuario.rol, Usuario.ACTIVO, confirmado)
-    clave = formulario.cleaned_data["clave_temporal"]
     usuario.estado = Usuario.ACTIVO
-    usuario.set_password(clave)
+    usuario.set_unusable_password()
     usuario.save()
-    return usuario, enviar_correo_acceso(usuario, clave, nuevo=True)
+    enviado, enlace = enviar_enlace_acceso(usuario, nuevo=True)
+    return usuario, enviado, enlace
 
 
 def actualizar_usuario(formulario, confirmado=False):
-    """
-    Guarda los datos del usuario. Si se indicó una contraseña temporal nueva,
-    la asigna y se la envía. Devuelve el usuario y si el correo se envió
-    (None cuando no hubo cambio de contraseña).
-    """
+    """Guarda los datos, el correo y el rol del usuario. La contraseña no se toca aquí."""
     usuario = formulario.save(commit=False)
     validar_administradores(usuario, usuario.rol, usuario.estado, confirmado)
-    clave = formulario.cleaned_data.get("clave_temporal")
-    if clave:
-        usuario.set_password(clave)
     usuario.save()
-    correo_enviado = enviar_correo_acceso(usuario, clave, nuevo=False) if clave else None
-    return usuario, correo_enviado
+    return usuario
+
+
+def reenviar_acceso(usuario):
+    """
+    Vuelve a enviar el enlace de acceso: sirve si el usuario perdió el correo,
+    si el enlace venció o si olvidó su contraseña. La contraseña actual sigue
+    sirviendo hasta que el usuario cree una nueva.
+    """
+    if usuario.estado != Usuario.ACTIVO:
+        raise ErrorEquipo("El usuario está inactivo: actívelo antes de enviarle un enlace de acceso.")
+    return enviar_enlace_acceso(usuario, nuevo=False)
 
 
 def cambiar_estado_usuario(usuario, estado, actor, confirmado=False):

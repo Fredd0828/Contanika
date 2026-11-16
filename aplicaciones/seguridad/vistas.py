@@ -9,10 +9,18 @@ Permisos (HU022-HU024, HU050):
   de módulos, igual que el inicio de sesión (HU050-4).
 """
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model, update_session_auth_hash
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.auth.views import LoginView, LogoutView
+from django.contrib.auth.views import (
+    LoginView,
+    LogoutView,
+    PasswordResetCompleteView,
+    PasswordResetConfirmView,
+    PasswordResetDoneView,
+    PasswordResetView,
+)
 from django.core.exceptions import PermissionDenied
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
@@ -25,9 +33,11 @@ from aplicaciones.comunes.vistas import LimitePeticionesMixin
 from . import guias, menu, panel, selectores, servicios
 from .formularios import (
     CambiarClaveForm,
+    CrearContrasenaForm,
     FiltroUsuariosForm,
     InicioSesionForm,
     PerfilForm,
+    RecuperarContrasenaForm,
     UsuarioCrearForm,
     UsuarioEditarForm,
 )
@@ -70,6 +80,71 @@ class CerrarSesionView(LogoutView):
     """Cierra la sesión activa y regresa al inicio de sesión."""
 
     next_page = reverse_lazy("seguridad:iniciar_sesion")
+
+
+# ---------------------------------------------------------------------------
+# Crear o recuperar la contraseña con un enlace de un solo uso (rutas públicas)
+# ---------------------------------------------------------------------------
+
+
+class RecuperarContrasenaView(LimitePeticionesMixin, PasswordResetView):
+    """
+    «¿Olvidó su contraseña?»: envía al correo un enlace para crear una nueva.
+
+    Responde lo mismo exista o no la cuenta, para no revelar qué correos
+    están registrados, y limita los intentos por minuto de cada dirección IP.
+    """
+
+    limite_por_minuto = 5
+    template_name = "seguridad/recuperar_contrasena.html"
+    form_class = RecuperarContrasenaForm
+    email_template_name = "seguridad/correos/recuperar.txt"
+    subject_template_name = "seguridad/correos/recuperar_asunto.txt"
+    success_url = reverse_lazy("seguridad:recuperar_enviado")
+
+    def form_valid(self, form):
+        # El enlace usa la dirección pública configurada, no la que llegó en la petición.
+        self.extra_email_context = {
+            "url_sitio": settings.URL_SITIO.rstrip("/"),
+            "dias": servicios.dias_vigencia_enlace(),
+        }
+        return super().form_valid(form)
+
+
+class RecuperarEnviadoView(PasswordResetDoneView):
+    """Confirma que, si el correo está registrado, le llegará el enlace."""
+
+    template_name = "seguridad/recuperar_enviado.html"
+
+    def get_context_data(self, **kwargs):
+        contexto = super().get_context_data(**kwargs)
+        contexto["dias"] = servicios.dias_vigencia_enlace()
+        return contexto
+
+
+class CrearContrasenaView(LimitePeticionesMixin, PasswordResetConfirmView):
+    """
+    Página a la que lleva el enlace del correo: el usuario escribe su nueva
+    contraseña. El enlace sirve una sola vez, vence y no vale para un
+    usuario inactivo.
+    """
+
+    limite_por_minuto = 20
+    template_name = "seguridad/crear_contrasena.html"
+    form_class = CrearContrasenaForm
+    success_url = reverse_lazy("seguridad:contrasena_creada")
+
+    def get_user(self, uidb64):
+        usuario = super().get_user(uidb64)
+        if usuario is not None and not usuario.is_active:
+            return None
+        return usuario
+
+
+class ContrasenaCreadaView(PasswordResetCompleteView):
+    """Confirma que la contraseña quedó creada y lleva al inicio de sesión."""
+
+    template_name = "seguridad/contrasena_creada.html"
 
 
 class PanelView(LoginRequiredMixin, TemplateView):
@@ -127,12 +202,28 @@ class MixinAdministrarEquipo(ModuloHabilitadoMixin, RolRequeridoMixin):
     roles_permitidos = (Rol.ADMINISTRADOR,)
 
 
-def _avisar_correo(request, correo_enviado, usuario):
-    if correo_enviado is False:
-        messages.warning(
-            request,
-            f"No se pudo enviar el correo a {usuario.correo}. Entréguele sus datos de acceso por otro medio.",
-        )
+CLAVE_SESION_ENLACE_MANUAL = "enlace_acceso_manual"
+
+
+def _avisar_enlace(request, usuario, enviado, enlace):
+    """
+    Si el correo salió, lo confirma. Si falló, guarda el enlace para mostrarlo
+    una sola vez en el listado, y el Administrador lo entrega por otro medio.
+    """
+    if enviado:
+        messages.info(request, f"Se envió a {usuario.correo} el enlace para crear su contraseña.")
+        return
+    request.session[CLAVE_SESION_ENLACE_MANUAL] = {
+        "nombre": usuario.nombre,
+        "correo": usuario.correo,
+        "enlace": enlace,
+        "dias": servicios.dias_vigencia_enlace(),
+    }
+    messages.warning(
+        request,
+        f"No se pudo enviar el correo a {usuario.correo}. "
+        "Copie el enlace de acceso y entrégueselo por otro medio.",
+    )
 
 
 class ListaUsuariosView(MixinAdministrarEquipo, PaginacionMixin, ListView):
@@ -154,11 +245,13 @@ class ListaUsuariosView(MixinAdministrarEquipo, PaginacionMixin, ListView):
         parametros = self.request.GET.copy()
         parametros.pop("page", None)
         contexto["querystring"] = parametros.urlencode()
+        # El enlace que no salió por correo se muestra una sola vez.
+        contexto["enlace_manual"] = self.request.session.pop(CLAVE_SESION_ENLACE_MANUAL, None)
         return contexto
 
 
 class CrearUsuarioView(MixinAdministrarEquipo, View):
-    """Alta de un usuario con rol y contraseña temporal; revisa los permisos del rol (HU022-2)."""
+    """Alta de un usuario con su rol; recibe un enlace para crear su contraseña (HU022-2)."""
 
     template_name = "seguridad/equipo/usuario_form.html"
 
@@ -176,20 +269,20 @@ class CrearUsuarioView(MixinAdministrarEquipo, View):
         formulario = UsuarioCrearForm(request.POST)
         if formulario.is_valid():
             try:
-                usuario, correo_enviado = servicios.crear_usuario(
+                usuario, enviado, enlace = servicios.crear_usuario(
                     formulario, confirmado=formulario.cleaned_data["confirmar_otro_administrador"]
                 )
             except servicios.ErrorEquipo as error:
                 formulario.add_error(None, str(error))
             else:
                 messages.success(request, f"Se creó el usuario {usuario.nombre}.")
-                _avisar_correo(request, correo_enviado, usuario)
+                _avisar_enlace(request, usuario, enviado, enlace)
                 return redirect("seguridad:usuarios")
         return render(request, self.template_name, self._contexto(formulario))
 
 
 class EditarUsuarioView(MixinAdministrarEquipo, View):
-    """Edita datos, correo, rol y contraseña temporal de un usuario."""
+    """Edita datos, correo y rol de un usuario."""
 
     template_name = "seguridad/equipo/usuario_form.html"
 
@@ -212,17 +305,30 @@ class EditarUsuarioView(MixinAdministrarEquipo, View):
         formulario = UsuarioEditarForm(request.POST, instance=usuario)
         if formulario.is_valid():
             try:
-                usuario, correo_enviado = servicios.actualizar_usuario(
+                usuario = servicios.actualizar_usuario(
                     formulario, confirmado=formulario.cleaned_data["confirmar_otro_administrador"]
                 )
             except servicios.ErrorEquipo as error:
                 formulario.add_error(None, str(error))
             else:
                 messages.success(request, f"Se actualizaron los datos de {usuario.nombre}.")
-                _avisar_correo(request, correo_enviado, usuario)
                 return redirect("seguridad:usuarios")
         usuario.refresh_from_db()
         return render(request, self.template_name, self._contexto(formulario, usuario))
+
+
+class ReenviarAccesoView(MixinAdministrarEquipo, View):
+    """Reenvía al usuario el enlace para crear su contraseña (POST): enlace vencido o clave olvidada."""
+
+    def post(self, request, pk):
+        usuario = get_object_or_404(Usuario, pk=pk)
+        try:
+            enviado, enlace = servicios.reenviar_acceso(usuario)
+        except servicios.ErrorEquipo as error:
+            messages.error(request, str(error))
+        else:
+            _avisar_enlace(request, usuario, enviado, enlace)
+        return redirect("seguridad:usuarios")
 
 
 class CambiarEstadoUsuarioView(MixinAdministrarEquipo, View):

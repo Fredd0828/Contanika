@@ -104,7 +104,7 @@ controla y se prueba cada riesgo de seguridad. El detalle ruta por ruta está en
 
 | Entidad | Crear | Consultar | Actualizar | Eliminar |
 |---|---|---|---|---|
-| Usuario | A | A | A (datos, rol, estado, contraseña temporal) | A (solo sin historial) |
+| Usuario | A | A | A (datos, rol, estado, reenviar enlace de acceso) | A (solo sin historial) |
 | Módulos y secciones por rol | — | A | A | — |
 | Panel de trabajo del equipo | — | A · S | — | — |
 | Perfil propio y contraseña | — | A · S · J | A · S · J | — |

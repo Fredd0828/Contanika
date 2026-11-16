@@ -2178,3 +2178,133 @@ un NIT existente: la base lo rechaza.
 - Etiquetar `v1.0.0` después del merge.
 - Repetir el ensayo en Supabase: allá la base no se elimina como en el local.
 - Reforzar las ramas de Documentos (65 %) y Tareas (72,5 %).
+  **Hecho el 16 de noviembre** (ver la entrada siguiente).
+
+---
+
+## Lunes 16 de noviembre de 2026 — Pruebas de Documentos y Tareas
+
+### Qué se hizo
+Se agregaron 52 pruebas sin tocar el código de la aplicación. Documentos pasó
+de 65 % a 100 % de ramas y Tareas de 72,5 % a 100 %. Los casos nuevos:
+- **Documentos:** cliente precargado desde la ficha, formulario incompleto,
+  filas repetibles (la vacía y la marcada para borrar no llegan al documento),
+  campos de plantilla por AJAX, plantillas con errores y edición exitosa,
+  firma con extensión no permitida, datos del despacho con membrete no
+  permitido o sin registro previo.
+- **Seguridad:** la confirmación descarta el documento pendiente si la sesión
+  trae un cliente ajeno al Junior, una plantilla que ya no existe o un
+  firmante sin firma.
+- **Tareas:** formularios de crear y editar (página y ventana emergente),
+  datos inválidos, estado inexistente (JSON 400 o vuelta al tablero),
+  observación vacía, respuestas AJAX y filtros por cliente y responsable.
+
+### Cómo verificarlo
+`pytest pruebas/documentos pruebas/tareas --cov=aplicaciones/documentos
+--cov=aplicaciones/tareas --cov-branch --cov-report=term-missing`.
+Suite completa: 1324 en verde.
+
+---
+
+## Lunes 16 de noviembre de 2026 — Acceso por enlace e instalación por despacho
+
+**Pedido del usuario:** entender cómo se registra a un colaborador y qué hacer
+cuando un despacho pague la suscripción. Decidió: una instalación de Contanika
+por despacho, y que cada persona cree su propia contraseña con un enlace.
+
+### Qué se hizo
+- **Crear usuario sin contraseña:** el Administrador escribe nombre, correo,
+  teléfono y rol. El usuario recibe un enlace de un solo uso, que vence a los
+  3 días, para crear su contraseña. La clave ya no viaja por correo y el
+  Administrador no la conoce. Mientras no la cree, el listado muestra «Acceso
+  pendiente».
+- **Reenviar enlace de acceso:** botón en el listado (sobre con flecha) y en
+  Editar. Editar ya no cambia la contraseña.
+- **Si el correo falla:** el usuario queda creado y el listado muestra el
+  enlace una sola vez, con botón para copiarlo.
+- **«¿Olvidó su contraseña?»** en el inicio de sesión. Responde lo mismo
+  exista o no el correo, admite 5 pedidos por minuto por IP y también le sirve
+  a quien aún no creó su clave. Un fallo del servidor de correo no se muestra.
+- **Cuatro rutas públicas nuevas:** `recuperar-contrasena/`, `…/enviado/`,
+  `crear-contrasena/<uidb64>/<token>/` y `crear-contrasena/listo/`. Están en
+  `RUTAS_PUBLICAS` y en la prueba de rutas públicas.
+- **`cargar_datos_iniciales`:**
+  - nuevos `--nombre-despacho` y `--ciudad-despacho` (antes fijaba «Befrec Y
+    Asociados SAS»);
+  - `--clave-admin` pasa a ser opcional: sin ella, el primer Administrador
+    recibe el enlace, y si el correo falla el enlace sale en la terminal.
+- **`check --deploy`** avisa si falta `CORREO_HOST` (`contanika.W001`) o si
+  `URL_SITIO` es local (`contanika.W002`).
+- **Ajustes:** `EMAIL_TIMEOUT = 20` y `PASSWORD_RESET_TIMEOUT` de 3 días.
+- **Guías nuevas:** `documentacion/NUEVO_DESPACHO.md` y
+  `documentacion/CONFIGURAR_CORREO.md` (Gmail paso a paso).
+- **Textos actualizados:** ayuda, guías «Crear un usuario» y «Mi perfil»,
+  página de inicio, `AGENTS.md`, `PR01_SEGURIDAD.md`, `CAMBIOS_WORD.md` (HU022)
+  y la matriz CRUD.
+
+### Cómo verificarlo (entorno local, correo por consola)
+1. Equipo y roles → Nuevo usuario. Sin contraseña, pulse «Crear usuario y
+   enviar acceso». El enlace aparece en la consola de `runserver`.
+2. Abra el enlace, cree la contraseña y entre.
+3. Abra el mismo enlace otra vez: dice que ya no sirve.
+4. En el inicio de sesión, pulse «¿Olvidó su contraseña?» con un correo
+   registrado y con uno inventado: la respuesta es la misma.
+
+Suite: 1309 en verde, sin las pruebas del PR #26.
+
+### Pendientes
+- El usuario: crear la contraseña de aplicación de Gmail y completar `CORREO_*`
+  (ver `CONFIGURAR_CORREO.md`).
+- `scripts/bd/02_datos_iniciales.sql` es la carga del despacho actual y conserva
+  su nombre; para otro despacho se usa el comando, no ese script.
+
+---
+
+## Lunes 16 de noviembre de 2026 — PDF con diseño más profesional
+
+**Pedido del usuario:** que los PDF se vean más profesionales. Eligió usar las
+mismas letras de la plataforma.
+
+### Qué se hizo
+- **Letras:** Montserrat en títulos y Open Sans en el texto, en
+  `aplicaciones/comunes/fuentes/` con su licencia OFL. Se recortaron a los
+  caracteres del español y quedaron en unos 300 KB (completas pesaban 2 MB).
+  Si faltan los archivos, el PDF sale con Helvetica.
+- **Encabezado:** antes, con logo, desaparecían el nombre y los datos del
+  despacho. Ahora el logo va siempre al lado del nombre, con los datos en dos
+  renglones ordenados. A la derecha va el tipo de documento en pequeño
+  («CUENTA DE COBRO», «REPORTE», «DOCUMENTO») y el número o título en grande.
+- **Tablas:** más aire, los totales con doble línea y los títulos de sección
+  con una barra teal.
+- **Cuenta de cobro:**
+  - «Cobrar a» y «Fecha límite de pago»;
+  - en el recuadro del valor, el saldo pendiente cuando hay abonos;
+  - nota final con el teléfono y el correo del despacho;
+  - **sello «PAGADA»** en diagonal cuando el saldo llega a cero;
+  - cabe en una hoja con tres conceptos, abonos y datos de pago.
+- **Reportes:** tarjetas de cifras separadas y gráficos con las letras nuevas.
+  Las tablas de 9 columnas o más usan letra un punto más pequeña para no
+  partir palabras. En el reporte de clientes, «Registro» quedó más ancha para
+  que la fecha quepa completa.
+- **Certificados:** título con más aire y línea teal más marcada.
+- **Limpieza:** se quitó `encabezado_despacho`, que ya no usaba nadie, y se
+  corrigió `AGENTS.md`.
+
+### Cómo verificarlo
+Descargar desde la plataforma un reporte, una cuenta de cobro y un
+certificado nuevos. Los PDF ya guardados conservan el diseño anterior hasta
+que se vuelvan a generar.
+
+### Pendientes
+- Decidir si se regeneran las cuentas de cobro y los certificados ya
+  guardados para que tomen el diseño nuevo. **Hecho el mismo día para las
+  cuentas de cobro:**
+  - Comando `regenerar_pdf_cuentas`: sin `--aplicar` solo cuenta.
+  - Se corrió en la BD local y regeneró 8 de 8.
+  - Antes se respaldaron los archivos y sus rutas en
+    `contanika/respaldos/pdf_cuentas_2026-11-16/`.
+  - **Los certificados no se regeneran:** el documento no guarda con qué
+    firma se expidió, y rehacerlo con otra alteraría un documento firmado.
+- En la BD local, «Datos del despacho» no tiene cargados el logo, la
+  dirección, el teléfono ni el correo. Por eso los PDF salen sin logo y con el
+  pie corto.

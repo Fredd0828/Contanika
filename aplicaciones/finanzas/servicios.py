@@ -17,10 +17,11 @@ from django.db.models import ProtectedError
 from django.utils import timezone
 from django.utils.formats import date_format
 from django.utils.html import escape
+from reportlab.lib.enums import TA_RIGHT
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import cm
-from reportlab.platypus import KeepTogether, Paragraph, Spacer, Table, TableStyle
+from reportlab.platypus import KeepTogether, Paragraph, Spacer, Table
 
 from aplicaciones.clientes.models import Cliente
 from aplicaciones.comunes import paleta
@@ -29,9 +30,12 @@ from aplicaciones.comunes.pdf import (
     color,
     construir_pdf,
     cuadro_datos,
+    cuadro_destacado,
     encabezado_documento,
     estilo_tabla,
     estilos_documento,
+    letras,
+    subtitulo_seccion,
 )
 from aplicaciones.seguridad.models import ConfiguracionDespacho
 
@@ -50,6 +54,9 @@ from .models import (
     MetodoPago,
 )
 from .templatetags.finanzas_tags import formato_pesos
+
+# Sello en diagonal de la cuenta de cobro que ya no tiene saldo.
+SELLO_PAGADA = "PAGADA"
 
 MESES_POR_PERIODO = {
     CuentaCobro.MENSUAL: 1,
@@ -219,11 +226,7 @@ def _seccion_abonos_pdf(cuenta, estilos, ancho):
     tabla.setStyle(estilo)
     corte = date_format(timezone.localdate())
     elementos = [
-        Paragraph(
-            "Pagos y abonos recibidos "
-            f'<font size="8" color="{paleta.TEXTO_APAGADO}">· estado de cuenta al {corte}</font>',
-            textos["subtitulo"],
-        ),
+        *subtitulo_seccion("Pagos y abonos recibidos", ancho, textos, detalle=f"estado de cuenta al {corte}"),
         tabla,
     ]
     if saldo <= 0:
@@ -231,7 +234,7 @@ def _seccion_abonos_pdf(cuenta, estilos, ancho):
         elementos.append(
             Paragraph("<b>Esta cuenta de cobro se encuentra pagada en su totalidad.</b>", textos["normal"])
         )
-    elementos.append(Spacer(1, 0.5 * cm))
+    elementos.append(Spacer(1, 0.4 * cm))
     return elementos
 
 
@@ -243,39 +246,43 @@ def actualizar_pdf_cuenta_cobro(cuenta):
     cuenta.archivo.save(nombre, ContentFile(construir_pdf_cuenta_cobro(cuenta)), save=True)
 
 
-def _cuadro_deuda(cuenta, despacho, ancho, textos):
-    """Quién le debe a quién y cuánto: el dato central de la cuenta, en un recuadro."""
+def _cuadro_deuda(cuenta, despacho, ancho, textos, saldo):
+    """
+    Quién le debe a quién y cuánto: el dato central de la cuenta, en un
+    recuadro. Si ya hubo abonos, debajo del valor va el saldo que falta.
+    """
     nombre_despacho = escape(despacho.nombre_despacho) if despacho else ""
     nit_despacho = f"NIT {escape(despacho.nit_despacho)}" if despacho and despacho.nit_despacho else ""
     monto = ParagraphStyle(
         "monto",
         parent=textos["derecha"],
-        fontName="Helvetica-Bold",
-        fontSize=17,
-        leading=21,
+        fontName=letras()["titulo"],
+        fontSize=19,
+        leading=23,
         textColor=color(paleta.TEAL_OSCURO),
     )
-    etiqueta_derecha = ParagraphStyle("etiqueta_derecha", parent=textos["etiqueta"], alignment=2)
+    etiqueta_derecha = ParagraphStyle("etiqueta_derecha", parent=textos["etiqueta"], alignment=TA_RIGHT)
+    nota_derecha = ParagraphStyle("nota_derecha", parent=textos["nota"], alignment=TA_RIGHT)
     izquierda = [Paragraph("DEBE A", textos["etiqueta"]), Paragraph(nombre_despacho, textos["valor"])]
     if nit_despacho:
         izquierda.append(Paragraph(nit_despacho, textos["nota"]))
     derecha = [Paragraph("LA SUMA DE", etiqueta_derecha), Paragraph(formato_pesos(cuenta.valor_total), monto)]
-    tabla = Table([[izquierda, derecha]], colWidths=[ancho * 0.58, ancho * 0.42])
-    tabla.setStyle(
-        TableStyle(
-            [
-                ("BACKGROUND", (0, 0), (-1, -1), color(paleta.CREMA_SUAVE)),
-                ("BOX", (0, 0), (-1, -1), 0.6, color(paleta.BORDE)),
-                ("LINEABOVE", (0, 0), (-1, 0), 1.6, color(paleta.TEAL)),
-                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                ("TOPPADDING", (0, 0), (-1, -1), 11),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 11),
-                ("LEFTPADDING", (0, 0), (-1, -1), 14),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 14),
-            ]
-        )
+    if 0 < saldo < cuenta.valor_total:
+        derecha.append(Paragraph(f"Saldo pendiente: <b>{formato_pesos(saldo)}</b>", nota_derecha))
+    return cuadro_destacado(izquierda, derecha, ancho)
+
+
+def _texto_contacto(despacho):
+    """Cierre de la cuenta con los datos de contacto del despacho (los que estén cargados)."""
+    if not despacho:
+        return ""
+    medios = [escape(medio) for medio in (despacho.telefono, despacho.correo) if medio]
+    if not medios:
+        return ""
+    return (
+        f"Para cualquier inquietud sobre esta cuenta de cobro, comuníquese con "
+        f"{escape(despacho.nombre_despacho)} al {' o '.join(medios)}."
     )
-    return tabla
 
 
 def construir_pdf_cuenta_cobro(cuenta):
@@ -293,38 +300,41 @@ def construir_pdf_cuenta_cobro(cuenta):
     textos = estilos_documento()
     despacho = ConfiguracionDespacho.objects.first()
     cliente = cuenta.cliente
+    saldo = cuenta.saldo_pendiente
 
     ciudad = escape(despacho.ciudad) if despacho and despacho.ciudad else ""
     fecha = date_format(timezone.localtime(cuenta.fecha_generacion).date())
     elementos = encabezado_documento(
         despacho,
         ancho,
-        f"CUENTA DE COBRO No. {cuenta.pk}",
+        f"No. {cuenta.pk}",
         [f"{ciudad}{', ' if ciudad else ''}{fecha}"],
         textos,
+        etiqueta="CUENTA DE COBRO",
     )
     identificacion = f"{escape(cliente.get_tipo_documento_display())} {escape(cliente.nit_cedula)}"
     elementos.append(
         cuadro_datos(
             [
                 (
-                    "Cliente",
+                    "Cobrar a",
                     f"{escape(cliente.nombre_razon_social)}<br/>"
-                    f'<font name="Helvetica" size="8.5" color="{paleta.TEXTO_TENUE}">{identificacion}</font>',
+                    f'<font name="{letras()["texto"]}" size="8.5" color="{paleta.TEXTO_TENUE}">'
+                    f"{identificacion}</font>",
                 ),
                 ("Período facturado", escape(_texto_periodo(cuenta))),
-                ("Fecha de vencimiento del pago", date_format(cuenta.fecha_vencimiento_pago)),
+                ("Fecha límite de pago", date_format(cuenta.fecha_vencimiento_pago)),
             ],
             ancho,
             3,
             textos,
         )
     )
+    elementos.append(Spacer(1, 0.4 * cm))
+    elementos.append(_cuadro_deuda(cuenta, despacho, ancho, textos, saldo))
     elementos.append(Spacer(1, 0.45 * cm))
-    elementos.append(_cuadro_deuda(cuenta, despacho, ancho, textos))
-    elementos.append(Spacer(1, 0.55 * cm))
 
-    elementos.append(Paragraph("Descripción del servicio", textos["subtitulo"]))
+    elementos += subtitulo_seccion("Descripción del servicio", ancho, textos)
     filas = [["Concepto", "Valor"]]
     for linea in cuenta.detalles.all():
         valor = formato_pesos(linea.valor_linea) if linea.valor_linea else ""
@@ -335,7 +345,7 @@ def construir_pdf_cuenta_cobro(cuenta):
     estilo.add("ALIGN", (1, 0), (1, -1), "RIGHT")
     tabla.setStyle(estilo)
     elementos.append(tabla)
-    elementos.append(Spacer(1, 0.5 * cm))
+    elementos.append(Spacer(1, 0.45 * cm))
     elementos.extend(_seccion_abonos_pdf(cuenta, None, ancho))
 
     pago = []
@@ -353,14 +363,22 @@ def construir_pdf_cuenta_cobro(cuenta):
         elementos.append(
             KeepTogether(
                 [
-                    Paragraph("Datos para el pago", textos["subtitulo"]),
+                    *subtitulo_seccion("Datos para el pago", ancho, textos),
                     cuadro_datos(pago, ancho, min(len(pago), 4), textos),
                 ]
             )
         )
+    contacto = _texto_contacto(despacho)
+    if contacto:
+        elementos += [Spacer(1, 0.35 * cm), Paragraph(contacto, textos["nota"])]
 
     return construir_pdf(
-        elementos, tamano=letter, titulo=f"Cuenta de cobro No. {cuenta.pk}", despacho=despacho
+        elementos,
+        tamano=letter,
+        titulo=f"Cuenta de cobro No. {cuenta.pk}",
+        despacho=despacho,
+        # Una cuenta sin saldo lleva el sello «PAGADA» en diagonal.
+        sello=SELLO_PAGADA if saldo <= 0 else "",
     )
 
 

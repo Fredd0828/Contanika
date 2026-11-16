@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block titulo %}Contraseña creada{% endblock %}
+
+{% block contenido_publico %}
+<div id="login">
+    <div>
+        <div class="login-card">
+            {% include "seguridad/_tarjeta_acceso.html" with subtitulo="Contraseña creada" %}
+            <div class="login-aviso login-aviso-ok"><i class="bi bi-check-circle"></i></div>
+            <p class="login-texto">Su contraseña quedó guardada. Ya puede entrar a Contanika con su correo y la contraseña que acaba de crear.</p>
+            <a class="login-btn" href="{% url 'seguridad:iniciar_sesion' %}"><i class="bi bi-box-arrow-in-right"></i> Iniciar sesión</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -89,3 +89,8 @@ def test_documento_valor_unico_por_documento_y_campo(documento, campo_concepto):
 def test_str_documento_detalle(documento, campo_concepto):
     detalle = DocumentoDetalle.objects.create(documento=documento, campo=campo_concepto, fila=1, valor="30%")
     assert str(detalle) == "Concepto fila 1: 30%"
+
+
+def test_str_documento_valor(documento, campo_concepto):
+    valor = DocumentoValor.objects.create(documento=documento, campo=campo_concepto, valor="Honorarios")
+    assert str(valor) == "Concepto: Honorarios"

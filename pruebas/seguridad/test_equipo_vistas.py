@@ -70,25 +70,92 @@ def test_junior_no_ve_panel_de_equipo_ni_el_menu(client, usuario_junior):
 # ---------------------------------------------------------------------------
 
 
-def test_administrador_crea_usuario(client, usuario_administrador, rol_junior):
+def _enlace_del_correo(correo):
+    """Ruta del enlace de acceso que trae el correo (sin el dominio)."""
+    linea = next(linea for linea in correo.body.splitlines() if "/crear-contrasena/" in linea)
+    return linea[linea.index("/crear-contrasena/") :].strip()
+
+
+def test_administrador_crea_usuario_y_este_crea_su_contrasena(client, usuario_administrador, rol_junior):
     client.force_login(usuario_administrador)
-    datos = {
-        "nombre": "Ana Contadora",
-        "correo": "ana@befrec.co",
-        "telefono": "",
-        "rol": rol_junior.pk,
-        "clave_temporal": CLAVE_TEMPORAL,
-    }
+    datos = {"nombre": "Ana Contadora", "correo": "ana@befrec.co", "telefono": "", "rol": rol_junior.pk}
     respuesta = client.post(reverse("seguridad:crear_usuario"), datos)
     assert respuesta.status_code == 302
     nuevo = Usuario.objects.get(correo="ana@befrec.co")
     assert nuevo.rol == rol_junior
+    assert not nuevo.has_usable_password()
     assert len(mail.outbox) == 1
     client.logout()
+
+    # El usuario abre el enlace, crea su contraseña y entra.
+    enlace = _enlace_del_correo(mail.outbox[0])
+    formulario = client.get(enlace, follow=True)
+    assert formulario.context["validlink"] is True
+    respuesta = client.post(
+        formulario.redirect_chain[-1][0],
+        {"new_password1": CLAVE_TEMPORAL, "new_password2": CLAVE_TEMPORAL},
+    )
+    assert respuesta.status_code == 302
+    assert respuesta.url == reverse("seguridad:contrasena_creada")
     respuesta = client.post(
         reverse("seguridad:iniciar_sesion"), {"username": "ana@befrec.co", "password": CLAVE_TEMPORAL}
     )
     assert respuesta.status_code == 302
+
+    # El mismo enlace ya no sirve.
+    client.logout()
+    assert client.get(enlace, follow=True).context["validlink"] is False
+
+
+def test_si_el_correo_falla_el_listado_muestra_el_enlace_una_vez(
+    client, usuario_administrador, rol_junior, monkeypatch
+):
+    from aplicaciones.seguridad import servicios
+
+    def rechazar(*args, **kwargs):
+        raise OSError("SMTP caído")
+
+    monkeypatch.setattr(servicios, "send_mail", rechazar)
+    client.force_login(usuario_administrador)
+    datos = {"nombre": "Luis", "correo": "luis@befrec.co", "telefono": "", "rol": rol_junior.pk}
+    respuesta = client.post(reverse("seguridad:crear_usuario"), datos, follow=True)
+    contenido = respuesta.content.decode()
+    assert "No se pudo enviar el correo" in contenido
+    assert "/crear-contrasena/" in contenido
+    assert respuesta.context["enlace_manual"]["correo"] == "luis@befrec.co"
+    assert "Acceso pendiente" in contenido
+
+    otra_vez = client.get(reverse("seguridad:usuarios"))
+    assert otra_vez.context["enlace_manual"] is None
+    assert "/crear-contrasena/" not in otra_vez.content.decode()
+
+
+def test_administrador_reenvia_el_enlace_de_acceso(client, usuario_administrador, usuario_junior):
+    client.force_login(usuario_administrador)
+    respuesta = client.post(reverse("seguridad:reenviar_acceso", kwargs={"pk": usuario_junior.pk}))
+    assert respuesta.status_code == 302
+    assert respuesta.url == reverse("seguridad:usuarios")
+    assert mail.outbox[0].to == [usuario_junior.correo]
+
+
+def test_no_se_reenvia_acceso_a_un_usuario_inactivo(client, usuario_administrador, usuario_junior):
+    usuario_junior.estado = Usuario.INACTIVO
+    usuario_junior.save()
+    client.force_login(usuario_administrador)
+    respuesta = client.post(
+        reverse("seguridad:reenviar_acceso", kwargs={"pk": usuario_junior.pk}), follow=True
+    )
+    assert "inactivo" in respuesta.content.decode()
+    assert mail.outbox == []
+
+
+def test_editar_usuario_muestra_el_boton_de_reenviar_acceso(client, usuario_administrador, usuario_junior):
+    client.force_login(usuario_administrador)
+    contenido = client.get(
+        reverse("seguridad:editar_usuario", kwargs={"pk": usuario_junior.pk})
+    ).content.decode()
+    assert reverse("seguridad:reenviar_acceso", kwargs={"pk": usuario_junior.pk}) in contenido
+    assert "clave_temporal" not in contenido
 
 
 def test_formulario_de_creacion_muestra_modulos_del_rol(client, usuario_administrador, modulo_clientes):
@@ -101,12 +168,7 @@ def test_formulario_de_creacion_muestra_modulos_del_rol(client, usuario_administ
 
 def test_crear_segundo_administrador_pide_confirmacion(client, usuario_administrador, rol_administrador):
     client.force_login(usuario_administrador)
-    datos = {
-        "nombre": "Otro",
-        "correo": "otro@befrec.co",
-        "rol": rol_administrador.pk,
-        "clave_temporal": CLAVE_TEMPORAL,
-    }
+    datos = {"nombre": "Otro", "correo": "otro@befrec.co", "rol": rol_administrador.pk}
     respuesta = client.post(reverse("seguridad:crear_usuario"), datos)
     assert respuesta.status_code == 200
     assert "Confirme" in respuesta.content.decode()
@@ -117,7 +179,9 @@ def test_crear_segundo_administrador_pide_confirmacion(client, usuario_administr
     assert Usuario.objects.filter(correo="otro@befrec.co").exists()
 
 
-def test_editar_usuario_cambia_rol_y_clave(client, usuario_administrador, usuario_junior, rol_senior):
+def test_editar_usuario_cambia_el_rol_sin_tocar_la_clave(
+    client, usuario_administrador, usuario_junior, rol_senior
+):
     client.force_login(usuario_administrador)
     datos = {
         "nombre": usuario_junior.nombre,
@@ -126,14 +190,14 @@ def test_editar_usuario_cambia_rol_y_clave(client, usuario_administrador, usuari
         "rol": rol_senior.pk,
         "identificacion": "",
         "numero_tarjeta_profesional": "",
-        "clave_temporal": CLAVE_TEMPORAL,
+        "clave_temporal": CLAVE_TEMPORAL,  # Campo que ya no existe: se ignora.
     }
     respuesta = client.post(reverse("seguridad:editar_usuario", kwargs={"pk": usuario_junior.pk}), datos)
     assert respuesta.status_code == 302
     usuario_junior.refresh_from_db()
     assert usuario_junior.rol == rol_senior
-    assert usuario_junior.check_password(CLAVE_TEMPORAL)
-    assert "nueva contraseña temporal" in mail.outbox[0].subject
+    assert usuario_junior.check_password(CLAVE_PRUEBAS)
+    assert mail.outbox == []
 
 
 def test_no_puede_quitarse_el_rol_si_es_el_unico_administrador(client, usuario_administrador, rol_senior):
