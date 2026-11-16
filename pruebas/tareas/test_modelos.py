@@ -36,3 +36,15 @@ def test_cambiar_estado_mismo_estado_no_crea_historial(tarea, usuario_administra
     resultado = tarea.cambiar_estado(Tarea.POR_HACER, usuario_administrador)
     assert resultado is None
     assert HistorialTarea.objects.count() == 0
+
+
+def test_str_historial_tarea(tarea, usuario_administrador):
+    historial = tarea.cambiar_estado(Tarea.EN_PROGRESO, usuario_administrador)
+    assert str(historial) == "Conciliar cartera de proveedores: Por hacer → En progreso"
+
+
+def test_str_observacion_tarea(tarea, usuario_junior):
+    from aplicaciones.tareas.models import ObservacionTarea
+
+    observacion = ObservacionTarea.objects.create(tarea=tarea, usuario=usuario_junior, contenido="Avance")
+    assert str(observacion) == f"Observación de {usuario_junior.nombre} en Conciliar cartera de proveedores"
