@@ -2,7 +2,7 @@
 
 Entregable 3.3. Generado el 16/11/2026 con `python gestionar.py generar_mapa_navegacion` a partir de las rutas del sistema. No editar a mano: volver a generarlo cuando cambien las rutas.
 
-El sistema tiene **117 rutas**: 85 pantallas o descargas (GET) y 32 acciones que solo reciben formularios (POST).
+El sistema tiene **119 rutas**: 86 pantallas o descargas (GET) y 33 acciones que solo reciben formularios (POST).
 
 ## 1. Navegación general
 
@@ -31,6 +31,7 @@ flowchart LR
         seguridad_equipo["Equipo y roles (MOD08)"]
     end
     subgraph Soporte["Menú · Soporte"]
+        asistente_inicio["Asistente (ASISTENTE)"]
         seguridad_ayuda["Ayuda"]
     end
     panel --> clientes_lista
@@ -43,6 +44,7 @@ flowchart LR
     panel --> comunicaciones_lista
     panel --> reportes_inicio
     panel --> seguridad_equipo
+    panel --> asistente_inicio
     panel --> seguridad_ayuda
     panel --> barra["Barra superior"]
     barra --> ayuda["Ayuda y guías paso a paso"]
@@ -78,6 +80,18 @@ Columnas de rol: «Sí» = el rol puede abrir la ruta; «—» = recibe 403. Ade
 | `/ayuda/guias/<slug:slug>/` | `seguridad:guia` | GET | Sí | Sí | Sí | Una guía paso a paso. Solo abre las guías de procesos que el usuario puede hacer (su rol y sus módulos habilitados); las demás responden 403. |
 | `/perfil/contrasena/` | `seguridad:cambiar_clave` | POST | Sí | Sí | Sí | Cambio de contraseña propia: exige la actual y conserva la sesión abierta. |
 | `/cuenta-cobro/<str:token>/` | `finanzas:pdf_publico` | GET | Sí | Sí | Sí | PDF de la cuenta de cobro para el cliente, sin sesión, por el enlace firmado que recibe en WhatsApp o en el recordatorio. Un token alterado o vencido responde 404. Como es pública, cada dirección IP tiene un tope de peticiones por minuto (429 al pasarse), para que nadie pruebe enlaces en masa. *(pública, sin sesión)* |
+
+### ASISTENTE · Asistente de consultas
+
+```mermaid
+flowchart LR
+    asistente_inicio(["/asistente/"])
+```
+
+| Ruta | Nombre | Métodos | Admin. | Senior | Junior | Qué hace |
+|---|---|---|---|---|---|---|
+| `/asistente/` | `asistente:inicio` | GET | Sí | Sí | Sí | Página del asistente con las preguntas sugeridas y las dudas de uso. |
+| `/asistente/consultar/<slug:slug>/` | `asistente:consultar` | POST | Sí | Sí | Sí | Responde una pregunta sugerida y devuelve el fragmento con la respuesta. |
 
 ### MOD01 · Gestión de clientes
 
@@ -345,6 +359,7 @@ Número de rutas que cada rol puede abrir, sobre el total del módulo.
 | Módulo | Rutas | Administrador | Contador Senior | Contador Junior |
 |---|---|---|---|---|
 | Sin módulo | 17 | 17 | 17 | 17 |
+| ASISTENTE · Asistente de consultas | 2 | 2 | 2 | 2 |
 | MOD01 · Gestión de clientes | 12 | 12 | 12 | 6 |
 | MOD02 · Calendario | 16 | 16 | 13 | 6 |
 | MOD03 · Tablero de tareas Kanban | 8 | 8 | 8 | 5 |

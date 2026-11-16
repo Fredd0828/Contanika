@@ -45,6 +45,7 @@ SECCIONES_MENU = [
     (
         "Soporte",
         [
+            ("Asistente", "asistente:inicio", "bi-chat-square-dots-fill", Modulo.SEC_ASISTENTE),
             ("Ayuda", "seguridad:ayuda", "bi-question-circle-fill", None),
         ],
     ),

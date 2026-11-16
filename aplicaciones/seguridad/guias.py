@@ -34,6 +34,7 @@ NOMBRES_MODULO = {
     Modulo.MOD07_COMUNICACIONES: "Comunicaciones",
     Modulo.MOD10_REPORTES: "Reportes",
     Modulo.MOD08_EQUIPO: "Equipo y roles",
+    Modulo.SEC_ASISTENTE: "Asistente",
 }
 
 
@@ -845,6 +846,43 @@ GUIAS = (
             "Tras varios intentos fallidos el acceso se bloquea por un tiempo, por seguridad.",
         ),
     ),
+    # ------------------------------------------------------------------
+    # Asistente de consultas
+    # ------------------------------------------------------------------
+    Guia(
+        slug="consultar-asistente",
+        titulo="Consultar con el asistente",
+        resumen="Valide en segundos qué vence, qué tareas siguen pendientes, qué hallazgos están abiertos "
+        "o qué saldo tiene un cliente.",
+        icono="bi-chat-square-dots",
+        modulo=Modulo.SEC_ASISTENTE,
+        ruta="asistente:inicio",
+        etiqueta_ruta="Ir al Asistente",
+        pasos=(
+            Paso("Abra el asistente", "En el menú lateral, sección «Soporte», entre a «Asistente»."),
+            Paso(
+                "Elija una pregunta",
+                "Pulse una de las preguntas sugeridas. Solo aparecen las de los módulos que su rol tiene "
+                "habilitados.",
+            ),
+            Paso(
+                "Indique el cliente si la pregunta lo pide",
+                "Las preguntas sobre un cliente muestran una lista para elegirlo; elíjalo y pulse "
+                "«Consultar».",
+            ),
+            Paso(
+                "Revise la respuesta",
+                "La respuesta trae los datos en una tabla corta y un enlace al módulo para ver el detalle o "
+                "hacer cambios. El asistente solo consulta: no modifica nada.",
+            ),
+        ),
+        notas=(
+            "El asistente usa los mismos permisos que el resto del sistema: no muestra información que usted "
+            "no podría ver en el módulo.",
+            "Las credenciales de los clientes nunca se muestran en el asistente.",
+        ),
+        relacionadas=("modulos-por-rol",),
+    ),
 )
 
 POR_SLUG = {guia.slug: guia for guia in GUIAS}
@@ -868,3 +906,54 @@ def guias_por_grupo(usuario):
     for guia in guias_visibles(usuario):
         grupos.setdefault(guia.grupo, []).append(guia)
     return [{"nombre": nombre, "guias": guias} for nombre, guias in grupos.items()]
+
+
+@dataclass(frozen=True)
+class PreguntaFrecuente:
+    """Pregunta frecuente de la ayuda, con respuesta fija."""
+
+    pregunta: str
+    respuesta: str
+
+
+# Se muestran en la página de Ayuda y el asistente de consultas también las
+# ofrece como «Dudas de uso».
+PREGUNTAS_FRECUENTES = (
+    PreguntaFrecuente(
+        "Olvidé mi contraseña, ¿qué hago?",
+        "En la página de inicio de sesión pulse «¿Olvidó su contraseña?» y escriba su correo: le llega "
+        "un enlace para crear una nueva. El Administrador también puede reenviarle el enlace desde Equipo "
+        "y roles.",
+    ),
+    PreguntaFrecuente(
+        "No veo un módulo en el menú.",
+        "El Administrador decide qué módulos ve cada rol. Si lo necesita, solicítele que lo habilite "
+        "para su rol.",
+    ),
+    PreguntaFrecuente(
+        "Me equivoqué en una anotación o en un abono, ¿cómo lo corrijo?",
+        "Por trazabilidad no se editan ni se borran. Registre una anotación aclaratoria; el "
+        "Administrador puede archivar la anotación incorrecta.",
+    ),
+    PreguntaFrecuente(
+        "¿Por qué no puedo modificar la información de algunos clientes?",
+        "El Contador Junior consulta todos los clientes, pero solo registra hallazgos, documentos y "
+        "anotaciones en los que tiene asignados; las credenciales, los honorarios y los reportes los ve "
+        "únicamente de esos clientes.",
+    ),
+    PreguntaFrecuente(
+        "¿Dónde descargo un listado en Excel?",
+        "En Reportes. Los demás módulos solo descargan documentos individuales (certificados y cuentas "
+        "de cobro).",
+    ),
+    PreguntaFrecuente(
+        "¿Cómo valido rápido qué vence o qué está pendiente?",
+        "Entre a «Asistente», en la sección «Soporte» del menú lateral, y elija una de las preguntas "
+        "sugeridas: vencimientos de la semana, tareas pendientes, hallazgos abiertos o saldo de un cliente.",
+    ),
+    PreguntaFrecuente(
+        "¿Debo cerrar sesión para ver la ayuda?",
+        "No. La opción «Ayuda» del menú lateral y el ícono de signo de pregunta de la barra superior "
+        "abren esta página desde cualquier pantalla.",
+    ),
+)

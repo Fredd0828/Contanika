@@ -1,0 +1,20 @@
+<div class="as-msg as-msg-bot as-msg-datos">
+    <div class="as-res-titulo">{{ respuesta.titulo }}</div>
+    {% if respuesta.filas %}
+    <div class="as-tabla-envoltura">
+        <table class="tbl as-tabla">
+            <thead><tr>{% for columna in respuesta.columnas %}<th scope="col">{{ columna }}</th>{% endfor %}</tr></thead>
+            <tbody>
+                {% for fila in respuesta.filas_con_columnas %}
+                <tr>{% for columna, valor in fila %}<td data-etiqueta="{{ columna }}">{{ valor }}</td>{% endfor %}</tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if respuesta.omitidas %}<p class="as-nota">Se muestran {{ respuesta.filas|length }} de {{ respuesta.total }}. El resto está en el módulo.</p>{% endif %}
+    {% else %}
+    <p class="as-vacio">{{ respuesta.vacio }}</p>
+    {% endif %}
+    {% if respuesta.nota %}<p class="as-nota">{{ respuesta.nota }}</p>{% endif %}
+    {% if respuesta.url %}<a class="as-enlace" href="{{ respuesta.url }}">{{ respuesta.etiqueta_url }} <i class="bi bi-arrow-right"></i></a>{% endif %}
+</div>

@@ -51,6 +51,7 @@ APLICACIONES_PROPIAS = [
     "aplicaciones.finanzas",
     "aplicaciones.comunicaciones",
     "aplicaciones.reportes",
+    "aplicaciones.asistente",
 ]
 
 INSTALLED_APPS = APLICACIONES_DJANGO + APLICACIONES_TERCEROS + APLICACIONES_PROPIAS

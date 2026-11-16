@@ -115,18 +115,10 @@
         <div class="panel h-100">
             <div class="ph"><div class="ph-title"><i class="bi bi-chat-square-text"></i> Preguntas frecuentes</div></div>
             <dl class="mb-0 small">
-                <dt>Olvidé mi contraseña, ¿qué hago?</dt>
-                <dd>En la página de inicio de sesión pulse «¿Olvidó su contraseña?» y escriba su correo: le llega un enlace para crear una nueva. El Administrador también puede reenviarle el enlace desde Equipo y roles.</dd>
-                <dt>No veo un módulo en el menú.</dt>
-                <dd>El Administrador decide qué módulos ve cada rol. Si lo necesita, solicítele que lo habilite para su rol.</dd>
-                <dt>Me equivoqué en una anotación o en un abono, ¿cómo lo corrijo?</dt>
-                <dd>Por trazabilidad no se editan ni se borran. Registre una anotación aclaratoria; el Administrador puede archivar la anotación incorrecta.</dd>
-                <dt>¿Por qué no puedo modificar la información de algunos clientes?</dt>
-                <dd>El Contador Junior consulta todos los clientes, pero solo registra hallazgos, documentos y anotaciones en los que tiene asignados; las credenciales, los honorarios y los reportes los ve únicamente de esos clientes.</dd>
-                <dt>¿Dónde descargo un listado en Excel?</dt>
-                <dd>En Reportes. Los demás módulos solo descargan documentos individuales (certificados y cuentas de cobro).</dd>
-                <dt>¿Debo cerrar sesión para ver la ayuda?</dt>
-                <dd class="mb-0">No. La opción «Ayuda» del menú lateral y el ícono <i class="bi bi-question-circle"></i> de la barra superior abren esta página desde cualquier pantalla.</dd>
+                {% for faq in preguntas_frecuentes %}
+                <dt>{{ faq.pregunta }}</dt>
+                <dd{% if forloop.last %} class="mb-0"{% endif %}>{{ faq.respuesta }}</dd>
+                {% endfor %}
             </dl>
         </div>
     </div>
