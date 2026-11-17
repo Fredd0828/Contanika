@@ -80,7 +80,7 @@
             </thead>
             <tbody>
                 {% for fila in seccion.filas %}
-                <tr{% if fila.resaltada %} style="background:#FDE2E1;color:#B42318"{% endif %}>
+                <tr{% if fila.resaltada %} style="background:var(--tinte-rojo);color:var(--rojo-texto)"{% endif %}>
                     {% for celda in fila.celdas %}
                     <td class="{% if celda.derecha %}text-end{% endif %}{% if celda.fecha %} text-nowrap{% endif %}">{{ celda.texto }}</td>
                     {% endfor %}
@@ -91,7 +91,7 @@
             </tbody>
         </table>
     </div>
-    {% if seccion.nota_resaltado %}<p class="small mt-2 mb-0" style="color:#B42318">{{ seccion.nota_resaltado }}</p>{% endif %}
+    {% if seccion.nota_resaltado %}<p class="small mt-2 mb-0" style="color:var(--rojo-texto)">{{ seccion.nota_resaltado }}</p>{% endif %}
     {% if seccion.recortada %}
     <p class="text-muted small mt-2 mb-0">En pantalla se muestran los primeros {{ filas_en_pantalla }} registros; la descarga en Excel o PDF los incluye todos.</p>
     {% endif %}

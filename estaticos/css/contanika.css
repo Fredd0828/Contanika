@@ -22,6 +22,18 @@
     --dim: #2a4a5a;
     --muted: #7a6a58;
     --ancho-menu: 232px;
+
+    /* Tintes de estado (fondos suaves de insignias, alertas y fechas) y el
+       teal que se usa como letra. En modo oscuro se redefinen más abajo. */
+    --tinte-rojo: #fdeaea;
+    --tinte-rojo-borde: #f6d2d2;
+    --tinte-naranja: #fff3e0;
+    --tinte-naranja-borde: #f7e0c0;
+    --tinte-verde: #eaf7f3;
+    --tinte-gris: #eef1f3;
+    --rojo-texto: #8a2c2c;
+    --teal-texto: #0d4a54;
+    --campo-busqueda: #ffecd1;
 }
 
 *,
@@ -73,13 +85,13 @@ a {
 
     --bs-primary: var(--teal);
     --bs-primary-rgb: var(--teal-rgb);
-    --bs-primary-text-emphasis: var(--teal-oscuro);
+    --bs-primary-text-emphasis: var(--teal-texto);
     --bs-primary-bg-subtle: var(--teal-suave);
     --bs-primary-border-subtle: var(--teal-borde);
 
     --bs-info: var(--teal);
     --bs-info-rgb: var(--teal-rgb);
-    --bs-info-text-emphasis: var(--teal-oscuro);
+    --bs-info-text-emphasis: var(--teal-texto);
     --bs-info-bg-subtle: var(--teal-suave);
     --bs-info-border-subtle: var(--teal-borde);
 
@@ -1789,7 +1801,8 @@ a.login-btn:hover {
 }
 
 .tb-search input {
-    background: var(--cream);
+    background: var(--campo-busqueda);
+    color: var(--text);
     border: 1px solid var(--border2);
     border-radius: 8px;
     padding: 8px 14px 8px 36px;
@@ -1895,7 +1908,7 @@ a.login-btn:hover {
 }
 
 .c-navy {
-    color: var(--navy);
+    color: var(--text);
 }
 
 .c-teal {
@@ -2207,7 +2220,7 @@ a.login-btn:hover {
     padding: 6px 10px;
     border-radius: 8px;
     border: 1px solid var(--border2);
-    background: #fff;
+    background: var(--card);
     color: var(--dim);
 }
 
@@ -2270,18 +2283,18 @@ a.login-btn:hover {
 }
 
 .bt-emp {
-    background: #e0f0f2;
+    background: var(--teal-suave);
     color: var(--teal);
 }
 
 .bt-pn {
-    background: #fff3e0;
+    background: var(--tinte-naranja);
     color: var(--brown);
 }
 
 .bt-doc {
-    background: #e8f5e9;
-    color: #2e7d32;
+    background: var(--tinte-verde);
+    color: var(--green);
 }
 
 .badge-est {
@@ -2293,34 +2306,34 @@ a.login-btn:hover {
 }
 
 .be-r {
-    background: #fdeaea;
+    background: var(--tinte-rojo);
     color: var(--red);
 }
 
 .be-w {
-    background: #fff3e0;
+    background: var(--tinte-naranja);
     color: var(--orange);
 }
 
 .be-g {
-    background: #eaf7f3;
+    background: var(--tinte-verde);
     color: var(--green);
 }
 
 .be-n {
-    background: #eef1f3;
+    background: var(--tinte-gris);
     color: var(--muted);
 }
 
 .be-teal {
-    background: #e0f0f2;
+    background: var(--teal-suave);
     color: var(--teal);
 }
 
 .chip-servicio {
     display: inline-block;
     font-size: 10.5px;
-    background: #eef1f3;
+    background: var(--tinte-gris);
     color: var(--dim);
     border-radius: 20px;
     padding: 2px 9px;
@@ -2586,7 +2599,7 @@ a.login-btn:hover {
 
 .cal-grid {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
+    grid-template-columns: repeat(7, minmax(0, 1fr));
     gap: 2px;
     background: var(--border2);
     border: 2px solid var(--border2);
@@ -2813,7 +2826,7 @@ a.cal-ev:hover {
 }
 
 .kb-col.dragover {
-    background: #e0f0f2;
+    background: var(--teal-suave);
 }
 
 .kb-col-h {
@@ -2880,19 +2893,19 @@ a.cal-ev:hover {
 }
 
 .kb-prio-alta {
-    background: #fdeaea;
+    background: var(--tinte-rojo);
     color: var(--red);
 }
 
 .kb-prio-media {
-    background: #fff3e0;
+    background: var(--tinte-naranja);
     color: var(--orange);
 }
 
 /* La prioridad baja va en gris en toda la plataforma: el verde queda para lo
    cumplido o al día (14-oct-2026, decisión del usuario). */
 .kb-prio-baja {
-    background: #eef1f3;
+    background: var(--tinte-gris);
     color: var(--dim);
 }
 
@@ -2940,7 +2953,7 @@ a.cal-ev:hover {
 }
 
 .kb-ver-mas:hover {
-    background: #e0f0f2;
+    background: var(--teal-suave);
     border-color: var(--teal);
 }
 
@@ -2986,7 +2999,7 @@ a.cal-ev:hover {
     height: 13px;
     border-radius: 50%;
     background: var(--teal);
-    border: 2px solid #fff;
+    border: 2px solid var(--card);
     box-shadow: 0 0 0 1px var(--border2);
 }
 
@@ -3091,7 +3104,7 @@ a.cal-ev:hover {
 }
 
 .pp-marca.pp-tono-verde {
-    color: var(--teal-oscuro);
+    color: var(--teal-texto);
 }
 
 .pp-marca::before,
@@ -3166,17 +3179,17 @@ a.cal-ev:hover {
 
 .pp-tono-rojo {
     --pp-tono: var(--red);
-    --pp-tinte: #fdeaea;
+    --pp-tinte: var(--tinte-rojo);
 }
 
 .pp-tono-naranja {
     --pp-tono: var(--orange);
-    --pp-tinte: #fff3e0;
+    --pp-tinte: var(--tinte-naranja);
 }
 
 .pp-tono-verde {
     --pp-tono: var(--green);
-    --pp-tinte: #eaf7f3;
+    --pp-tinte: var(--tinte-verde);
 }
 
 .pp-kpi-etq {
@@ -3356,7 +3369,7 @@ a.cal-ev:hover {
 }
 
 .pp-tablero .be-g {
-    color: var(--teal-oscuro);
+    color: var(--teal-texto);
 }
 
 .pp-tablero .be-n {
@@ -3486,7 +3499,7 @@ a.cal-ev:hover {
 
 /* Avance de lo terminado: en verde, como todo lo cumplido. */
 .pp-medidor-verde {
-    background: #eaf7f3;
+    background: var(--tinte-verde);
 }
 
 .pp-medidor-verde > span {
@@ -3552,7 +3565,7 @@ a.cal-ev:hover {
 }
 
 .pp-barra-pista:has(.pp-relleno-rojo) {
-    background: #fdeaea;
+    background: var(--tinte-rojo);
 }
 
 .pp-barra-num {
@@ -3596,8 +3609,8 @@ a.cal-ev:hover {
 
 /* Cifra que pide atención (saldo en mora). */
 .pp-cifra-alerta {
-    background: #fdeaea;
-    border-color: #f6d2d2;
+    background: var(--tinte-rojo);
+    border-color: var(--tinte-rojo-borde);
 }
 
 .pp-cifra-alerta .pp-cifra-etq,
@@ -3734,14 +3747,14 @@ a.cal-ev:hover {
 
 /* La fecha toma el tinte de la urgencia: vencido en rojo, hoy o mañana en naranja. */
 .pp-fecha-r {
-    background: #fdeaea;
-    border-color: #f6d2d2;
+    background: var(--tinte-rojo);
+    border-color: var(--tinte-rojo-borde);
     color: var(--brown);
 }
 
 .pp-fecha-w {
-    background: #fff3e0;
-    border-color: #f7e0c0;
+    background: var(--tinte-naranja);
+    border-color: var(--tinte-naranja-borde);
     color: var(--brown);
 }
 
@@ -4000,7 +4013,7 @@ a.cal-ev:hover {
     font-weight: 700;
     letter-spacing: 0.6px;
     text-transform: uppercase;
-    color: var(--teal-oscuro);
+    color: var(--teal-texto);
     margin: 0 0 8px;
     padding-bottom: 6px;
     border-bottom: 2px solid var(--teal-suave);
@@ -4097,7 +4110,7 @@ a.cal-ev:hover {
     display: flex;
     align-items: center;
     gap: 6px;
-    color: var(--teal-oscuro);
+    color: var(--teal-texto);
 }
 
 .ay-requisitos {
@@ -4264,9 +4277,9 @@ a.cal-ev:hover {
 }
 
 .as-msg-error {
-    background: #fdf0f0;
-    border-color: #f3c9c9;
-    color: #8a2c2c;
+    background: var(--tinte-rojo);
+    border-color: var(--tinte-rojo-borde);
+    color: var(--rojo-texto);
 }
 
 /* Las respuestas con datos usan todo el ancho para que la tabla respire. Dentro
@@ -4331,7 +4344,7 @@ a.cal-ev:hover {
 }
 
 .as-enlace:hover {
-    color: var(--teal-oscuro);
+    color: var(--teal-texto);
 }
 
 /* Puntos animados mientras llega la respuesta. */
@@ -4495,7 +4508,7 @@ a.cal-ev:hover {
     font-weight: 700;
     letter-spacing: 0.6px;
     text-transform: uppercase;
-    color: var(--teal-oscuro);
+    color: var(--teal-texto);
     margin: 18px 0 8px;
     padding-bottom: 6px;
     border-bottom: 2px solid var(--teal-suave);
@@ -4549,5 +4562,420 @@ a.cal-ev:hover {
         font-weight: 600;
         text-align: left;
         flex-shrink: 0;
+    }
+}
+
+/* ══════════ PROPÓSITO (panel principal) ══════════
+   La frase que dice qué es Contanika, arriba del resumen. */
+.pp-proposito {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin: 0;
+    padding: 14px 18px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--teal);
+    border-radius: 10px;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--dim);
+}
+
+.pp-proposito strong {
+    color: var(--text);
+}
+
+.pp-proposito-icono {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    border-radius: 10px;
+    background: var(--grad-teal);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+}
+
+/* ══════════ BOTÓN DE MODO CLARO / OSCURO ══════════ */
+.tb-tema {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 21px;
+    line-height: 1;
+    color: var(--text);
+    cursor: pointer;
+}
+
+.tb-tema:hover {
+    color: var(--teal);
+}
+
+.tb-tema:focus-visible {
+    outline: 2px solid var(--teal);
+    outline-offset: 3px;
+    border-radius: 6px;
+}
+
+.tb-tema-sol,
+[data-tema="oscuro"] .tb-tema-luna {
+    display: none;
+}
+
+[data-tema="oscuro"] .tb-tema-sol {
+    display: inline-block;
+}
+
+/* ══════════ MODO OSCURO ══════════
+   Solo dentro del sistema (con sesión): la página pública y el inicio de
+   sesión quedan en claro. Se redefinen los colores base; las bandas oscuras,
+   el menú lateral y los degradados de la marca no cambian. Bootstrap se pasa
+   a oscuro con `data-bs-theme="dark"` en la misma etiqueta <html>. */
+:root[data-tema="oscuro"] {
+    color-scheme: dark;
+
+    --bg: #0a131a;
+    --card: #111d26;
+    --card2: #162430;
+    --border: #223442;
+    --border2: #2f4555;
+    --text: #e6edf2;
+    --dim: #b9c8d2;
+    --muted: #a99d90;
+
+    /* Teal un poco más claro para que se lea sobre fondo oscuro. */
+    --teal: #2a9aa6;
+    --teal-rgb: 42, 154, 166;
+    --teal-suave: #143840;
+    --teal-borde: #1f4e55;
+    --teal-texto: #86d3dd;
+    --crema-suave: #2a2116;
+    --campo-busqueda: #162430;
+
+    --red: #ef6b6b;
+    --green: #34b583;
+    --brown: #e8ad8c;
+
+    --tinte-rojo: #3a1d22;
+    --tinte-rojo-borde: #5a2a30;
+    --tinte-naranja: #392814;
+    --tinte-naranja-borde: #5a3f1c;
+    --tinte-verde: #12342a;
+    --tinte-gris: #1d2a34;
+    --rojo-texto: #f3a6a6;
+
+    --bs-body-bg: var(--card);
+    --bs-body-color: var(--text);
+    --bs-emphasis-color: #fff;
+    --bs-border-color: var(--border2);
+    --bs-secondary-bg: var(--card2);
+    --bs-tertiary-bg: var(--card2);
+    --bs-link-color: var(--teal-texto);
+    --bs-link-color-rgb: 134, 211, 221;
+    --bs-link-hover-color: #fff;
+    --bs-link-hover-color-rgb: 255, 255, 255;
+}
+
+[data-tema="oscuro"] body {
+    background: var(--bg);
+}
+
+/* Sombras: sobre fondo oscuro se marcan con negro, no con navy. */
+[data-tema="oscuro"] .panel,
+[data-tema="oscuro"] .kpi,
+[data-tema="oscuro"] .tarjeta-modulo {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+/* Bootstrap deja `.bg-light` en claro aun en su tema oscuro. */
+[data-tema="oscuro"] .bg-light {
+    background-color: var(--card2) !important;
+}
+
+[data-tema="oscuro"] .ph-link {
+    color: var(--teal-texto);
+}
+
+[data-tema="oscuro"] .ph-link:hover {
+    color: #fff;
+}
+
+/* Eventos del calendario: el tinte de cada tipo, mezclado con el fondo oscuro. */
+[data-tema="oscuro"] .ev-nacional {
+    background: color-mix(in srgb, var(--teal) 32%, var(--card));
+}
+
+[data-tema="oscuro"] .ev-distrital {
+    background: color-mix(in srgb, var(--orange) 28%, var(--card));
+}
+
+[data-tema="oscuro"] .ev-municipal {
+    background: color-mix(in srgb, var(--brown) 26%, var(--card));
+}
+
+[data-tema="oscuro"] .ev-tarea {
+    background: color-mix(in srgb, var(--red) 28%, var(--card));
+}
+
+[data-tema="oscuro"] .ev-presentada {
+    background: color-mix(in srgb, var(--green) 28%, var(--card));
+}
+
+[data-tema="oscuro"] .ev-anotacion {
+    background: color-mix(in srgb, var(--orange) 34%, var(--card));
+}
+
+/* ══════════ TELÉFONO: PANTALLA COMPLETA Y LETRA MÁS GRANDE ══════════
+   En teléfono el contenido usa casi todo el ancho (márgenes mínimos) y se
+   amplía un 12 %: letras, botones, tarjetas y tablas crecen en la misma
+   proporción, sin descuadrar la distribución de cada pantalla. Los recuadros
+   internos (contenedores) se acomodan al ancho ya ampliado. */
+@media (max-width: 640px) {
+    :root {
+        --ancho-menu: 284px;
+    }
+
+    .content {
+        zoom: 1.12;
+        padding: 10px 8px 22px;
+        gap: 12px;
+    }
+
+    .panel,
+    .pp-tablero .panel {
+        --pp-rx: 13px;
+        --pp-ry: 14px;
+        padding: var(--pp-ry) var(--pp-rx);
+    }
+
+    /* Campos de texto: con 14,5 px (más la ampliación, 16 px) el teléfono no acerca la
+       pantalla sola al tocarlos. */
+    .content .form-control,
+    .content .form-select,
+    .content .filters input,
+    .content .filters select,
+    .content textarea {
+        font-size: 14.5px;
+    }
+
+    .pp-proposito {
+        align-items: flex-start;
+        padding: 12px 13px;
+        font-size: 13.5px;
+    }
+
+    .pp-proposito-icono {
+        width: 32px;
+        height: 32px;
+        font-size: 15px;
+    }
+
+    /* Barra superior: el saludo y los íconos un poco más grandes. */
+    .topbar {
+        padding: 10px 12px;
+        gap: 12px;
+    }
+
+    /* El saludo y la fecha en una línea cada uno: si no caben, se recortan
+       con puntos suspensivos en vez de partir la barra en tres renglones. */
+    .topbar > div:has(> .page-title) {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .page-title,
+    .page-sub {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .page-title {
+        font-size: 19px;
+    }
+
+    .page-sub {
+        font-size: 12.5px;
+    }
+
+    .topbar .me-2 {
+        margin-right: 2px !important;
+    }
+
+    /* Menú (cajón): entradas más grandes, fáciles de tocar. */
+    .nl {
+        font-size: 10px;
+        padding-top: 16px;
+    }
+
+    .ni {
+        font-size: 15px;
+        padding-top: 11px;
+        padding-bottom: 11px;
+    }
+
+    .ni i {
+        font-size: 18px;
+        width: 20px;
+    }
+
+    .av-name {
+        font-size: 14px;
+    }
+
+    .av-role {
+        font-size: 11.5px;
+    }
+}
+
+/* Calendario mensual en teléfono: siete columnas estrechas; cada evento queda
+   como una franja corta de color (el nombre completo sale al tocarlo). */
+@media (max-width: 640px) {
+    .cal-dia {
+        min-height: 70px;
+        padding: 4px 3px;
+    }
+
+    .cal-ev {
+        font-size: 9.5px;
+        padding: 2px 4px;
+        border-left-width: 3px;
+        border-radius: 5px;
+    }
+
+    .cal-head {
+        font-size: 10px;
+        letter-spacing: 0;
+    }
+}
+
+/* ══════════ TELÉFONO: TABLAS COMO TARJETAS Y FILTROS A TODO EL ANCHO ══════════
+   El guion de base.html marca cada tabla `.tbl` con `.tbl-tarjetas` y pone en
+   cada celda el nombre de su columna. En teléfono la fila es una tarjeta: la
+   primera celda hace de título y las demás van como «Columna … valor». */
+@media (max-width: 640px) {
+    .table-responsive:has(> .tbl-tarjetas) {
+        overflow: visible;
+    }
+
+    .tbl-tarjetas,
+    .tbl-tarjetas tbody,
+    .tbl-tarjetas tr,
+    .tbl-tarjetas td {
+        display: block;
+        width: 100%;
+    }
+
+    .tbl-tarjetas thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+    }
+
+    .tbl-tarjetas tbody tr {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 8px 12px;
+        margin-bottom: 10px;
+    }
+
+    .tbl-tarjetas tbody tr:last-child {
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 0;
+    }
+
+    .tbl-tarjetas tbody tr:hover {
+        background: var(--card);
+    }
+
+    /* Filas que la paginación o un desplegable ocultan siguen ocultas. */
+    .tbl-tarjetas tr[hidden] {
+        display: none;
+    }
+
+    /* El nombre de la columna flota a la izquierda y el valor (texto,
+       insignias o varias líneas) se alinea a la derecha, alrededor. */
+    .tbl-tarjetas td {
+        padding: 6px 0;
+        text-align: right;
+        border: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .tbl-tarjetas td::after {
+        content: "";
+        display: table;
+        clear: both;
+    }
+
+    .tbl-tarjetas td + td {
+        border-top: 1px dashed var(--border);
+    }
+
+    .tbl-tarjetas td::before {
+        content: attr(data-etiqueta);
+        float: left;
+        max-width: 46%;
+        margin-right: 12px;
+        padding-top: 2px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
+        color: var(--muted);
+        text-align: left;
+    }
+
+    /* La primera celda es el título de la tarjeta. */
+    .tbl-tarjetas td:first-child {
+        text-align: left;
+        font-size: 14px;
+        font-weight: 600;
+        padding-bottom: 7px;
+    }
+
+    .tbl-tarjetas td:first-child::before,
+    .tbl-tarjetas td[data-etiqueta=""]::before {
+        display: none;
+    }
+
+    /* Celdas sin título de columna (acciones) van a la derecha; las que ocupan
+       todo el ancho (un mensaje o un detalle desplegable) van como bloque. */
+
+    .tbl-tarjetas td[colspan] {
+        display: block;
+        text-align: left;
+    }
+
+    .tbl-tarjetas td .table {
+        margin-top: 4px;
+    }
+
+    /* Filtros: cada campo a todo el ancho; Filtrar y Limpiar, lado a lado. */
+    .filters {
+        gap: 10px 8px;
+    }
+
+    .filters .campo {
+        flex: 1 1 100%;
+    }
+
+    .filters .campo:has(> .ph-btn, > .ph-link, > .btn) {
+        flex: 1 1 calc(50% - 4px);
+    }
+
+    .filters .campo input,
+    .filters .campo select,
+    .filters .campo .ph-btn,
+    .filters .campo .ph-link,
+    .filters .campo .btn {
+        width: 100%;
+        justify-content: center;
     }
 }

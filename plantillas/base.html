@@ -18,6 +18,21 @@
             }
         } catch (error) { /* sin almacenamiento local: el menú abre desplegado */ }
     </script>
+    {% if user.is_authenticated %}
+    {% comment %}Modo claro u oscuro, antes de pintar. Sin elección guardada se sigue la del
+       equipo (teléfono o computador). Las páginas públicas quedan siempre en claro.{% endcomment %}
+    <script>
+        (function () {
+            var guardado = null;
+            try { guardado = localStorage.getItem("contanika.tema"); } catch (error) { /* sin almacenamiento local */ }
+            var oscuro = guardado ? guardado === "oscuro" : window.matchMedia("(prefers-color-scheme: dark)").matches;
+            if (oscuro) {
+                document.documentElement.setAttribute("data-tema", "oscuro");
+                document.documentElement.setAttribute("data-bs-theme", "dark");
+            }
+        })();
+    </script>
+    {% endif %}
 </head>
 <body>
 {% if user.is_authenticated %}
@@ -114,6 +129,11 @@
             </div>
         </div>
         {% endif %}
+        <button type="button" class="tb-tema me-2" id="btnTema" aria-pressed="false"
+                title="Cambiar a modo oscuro" aria-label="Cambiar a modo oscuro">
+            <i class="bi bi-moon-stars tb-tema-luna" aria-hidden="true"></i>
+            <i class="bi bi-sun tb-tema-sol" aria-hidden="true"></i>
+        </button>
         <a href="{% url 'seguridad:ayuda' %}" class="text-decoration-none me-2" style="font-size:21px;color:var(--text)" title="Ayuda" aria-label="Ayuda"><i class="bi bi-question-circle"></i></a>
         <a href="{% url 'seguridad:perfil' %}" class="text-decoration-none" title="Mi perfil">
             {% if user.foto %}
@@ -171,6 +191,62 @@
         });
         marcarEstado();
     }
+
+    // Modo claro u oscuro: el botón alterna y la elección queda guardada en
+    // este navegador. Las gráficas escuchan «contanika:tema» para repintarse.
+    (function () {
+        var boton = document.getElementById("btnTema");
+        if (!boton) { return; }
+        var raiz = document.documentElement;
+        var marcar = function () {
+            var oscuro = raiz.getAttribute("data-tema") === "oscuro";
+            var texto = oscuro ? "Cambiar a modo claro" : "Cambiar a modo oscuro";
+            boton.setAttribute("aria-pressed", oscuro ? "true" : "false");
+            boton.setAttribute("title", texto);
+            boton.setAttribute("aria-label", texto);
+        };
+        boton.addEventListener("click", function () {
+            var oscuro = raiz.getAttribute("data-tema") !== "oscuro";
+            if (oscuro) {
+                raiz.setAttribute("data-tema", "oscuro");
+                raiz.setAttribute("data-bs-theme", "dark");
+            } else {
+                raiz.removeAttribute("data-tema");
+                raiz.removeAttribute("data-bs-theme");
+            }
+            try {
+                localStorage.setItem("contanika.tema", oscuro ? "oscuro" : "claro");
+            } catch (error) { /* sin almacenamiento local: vale solo para esta página */ }
+            marcar();
+            window.dispatchEvent(new CustomEvent("contanika:tema"));
+        });
+        marcar();
+    })();
+
+    // Tablas en teléfono: cada fila se muestra como una tarjeta y cada celda
+    // lleva el nombre de su columna (data-etiqueta), que el CSS pinta a la
+    // izquierda del valor. Así ninguna tabla obliga a deslizar de lado.
+    // Una tabla puede quedarse como tabla con data-sin-tarjetas.
+    document.querySelectorAll(".content table.tbl").forEach(function (tabla) {
+        if (tabla.hasAttribute("data-sin-tarjetas") || tabla.classList.contains("as-tabla") || !tabla.tHead) { return; }
+        var filaTitulos = tabla.tHead.rows[tabla.tHead.rows.length - 1];
+        var titulos = [];
+        Array.prototype.forEach.call(filaTitulos.cells, function (celda) {
+            for (var i = 0; i < (celda.colSpan || 1); i++) { titulos.push(celda.textContent.trim()); }
+        });
+        Array.prototype.forEach.call(tabla.tBodies, function (cuerpo) {
+            Array.prototype.forEach.call(cuerpo.rows, function (fila) {
+                var columna = 0;
+                Array.prototype.forEach.call(fila.cells, function (celda) {
+                    if (!celda.hasAttribute("data-etiqueta")) {
+                        celda.setAttribute("data-etiqueta", (celda.colSpan || 1) > 1 ? "" : (titulos[columna] || ""));
+                    }
+                    columna += celda.colSpan || 1;
+                });
+            });
+        });
+        tabla.classList.add("tbl-tarjetas");
+    });
 
     // Tablas: ninguna muestra más de 10 registros a la vez. Los listados los
     // pagina el servidor (comunes/_paginacion.html); las demás tablas (reportes,
