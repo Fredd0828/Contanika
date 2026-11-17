@@ -1079,6 +1079,110 @@ a.login-btn:hover {
     margin-top: 8px;
 }
 
+/* --- Planes: el destacado es el Profesional, el que se vende --- */
+.pw-planes {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: stretch;
+    gap: 22px;
+}
+
+.pw-plan {
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 32px 28px;
+}
+
+.pw-plan h3 {
+    font-size: 1.2rem;
+    color: var(--teal-oscuro);
+}
+
+.pw-plan-precio {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+    margin-top: 14px;
+}
+
+.pw-plan-precio strong {
+    font-family: "Montserrat", sans-serif;
+    font-weight: 800;
+    font-size: clamp(1.9rem, 3.4vw, 2.6rem);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--navy);
+}
+
+.pw-plan-precio span {
+    font-size: 15px;
+    color: var(--dim);
+}
+
+.pw-plan-para {
+    color: var(--dim);
+    margin-top: 8px;
+}
+
+.pw-plan .pw-checks {
+    margin-top: 22px;
+    padding-top: 22px;
+    border-top: 1px solid var(--border);
+}
+
+.pw-plan-destacado {
+    background: var(--pw-oscuro);
+    border-color: transparent;
+    box-shadow: var(--pw-sombra);
+}
+
+.pw-plan-destacado h3 {
+    color: var(--orange);
+}
+
+.pw-plan-destacado .pw-plan-precio strong {
+    color: #fff;
+}
+
+.pw-plan-destacado .pw-plan-precio span,
+.pw-plan-destacado .pw-plan-para {
+    color: rgba(255, 255, 255, 0.78);
+}
+
+.pw-plan-destacado .pw-checks {
+    border-top-color: rgba(255, 255, 255, 0.16);
+}
+
+.pw-plan-destacado .pw-checks li {
+    color: #fff;
+}
+
+.pw-plan-destacado .pw-checks i {
+    background: var(--pw-naranja);
+    color: var(--navy);
+}
+
+.pw-plan-sello {
+    align-self: flex-start;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--navy);
+    background: var(--cream);
+    padding: 5px 12px;
+    border-radius: 999px;
+    margin-bottom: 16px;
+}
+
+.pw-planes-nota {
+    font-size: 14px;
+    color: var(--dim);
+    margin-top: 20px;
+}
+
 /* --- Seguridad --- */
 .pw-oscura {
     position: relative;
@@ -1314,7 +1418,8 @@ a.login-btn:hover {
     }
 
     .pw-roles,
-    .pw-pasos {
+    .pw-pasos,
+    .pw-planes {
         grid-template-columns: minmax(0, 1fr);
     }
 

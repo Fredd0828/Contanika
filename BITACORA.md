@@ -2489,3 +2489,31 @@ los pares de dígitos, los errores y la fecha única). Ruff, formato y
 ### Pendientes
 - En la base local y en el servidor: `migrate`, `cargar_calendario_dian_2026`
   y «Calcular vencimientos DIAN».
+
+## Lunes 16 de noviembre de 2026 — Planes en la página de inicio
+
+### Qué se hizo
+- Sección nueva «Planes» en la página web pública (`/#planes`), con enlace en
+  el menú superior. Modelo freemium según el número de clientes que gestiona
+  el contador o el despacho:
+  - **Gratuito**: $0, hasta 5 clientes, sin límite de tiempo.
+  - **Profesional**: $84.900 al mes, de 6 a 50 clientes (contador
+    independiente y despacho pequeño); 15 % de descuento con pago anual.
+  - **Empresarial**: a convenir, más de 50 clientes (despachos medianos).
+- Estilos `.pw-planes`, `.pw-plan`, `.pw-plan-destacado` (el Profesional va en
+  el degradado oscuro), `.pw-plan-sello` y `.pw-planes-nota` en
+  `contanika.css`; una sola columna desde 860 px.
+- Las cifras coinciden con el proyecto empresarial v2 (costos +25 %, arriendo,
+  70 suscriptores en el año 1).
+
+### Cómo verificarlo
+Abrir `/` sin sesión y pulsar «Planes» en el menú; revisar en teléfono,
+tableta y portátil.
+
+### Resultado
+`pruebas/seguridad/test_vistas.py` en verde (11, con la prueba nueva de los
+tres planes). Ruff limpio. Revisado a 375, 820 y 1366 px.
+
+### Pendientes
+- La sección no tiene botón de contratación: falta definir un canal de
+  contacto público (correo o WhatsApp).

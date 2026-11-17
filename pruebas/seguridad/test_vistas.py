@@ -44,6 +44,24 @@ def test_pagina_de_inicio_muestra_el_video_de_presentacion(client):
     assert finders.find("video/presentacion-contanika.jpg")
 
 
+def test_pagina_de_inicio_muestra_los_tres_planes(client):
+    """Modelo freemium: Gratuito hasta 5 clientes, Profesional a $84.900 y Empresarial a convenir."""
+    html = client.get(reverse("seguridad:inicio")).content.decode()
+    assert 'href="#planes"' in html
+    assert 'id="planes"' in html
+    for texto in (
+        "Gratuito",
+        "Hasta 5 clientes",
+        "Profesional",
+        "$84.900",
+        "De 6 a 50 clientes",
+        "Empresarial",
+        "A convenir",
+        "Más de 50 clientes",
+    ):
+        assert texto in html
+
+
 def test_pagina_de_inicio_con_sesion_lleva_al_panel(client, usuario_administrador):
     """Quien ya inició sesión no ve la presentación: entra directo al sistema."""
     client.force_login(usuario_administrador)
