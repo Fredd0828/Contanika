@@ -5,6 +5,13 @@
 
 {% block contenido %}
 <div class="pp-tablero">
+{# Qué es Contanika, en una frase: lo primero que se lee al entrar. #}
+<p class="pp-proposito">
+    <span class="pp-proposito-icono" aria-hidden="true"><i class="bi bi-grid-3x3-gap-fill"></i></span>
+    <span><strong>Contanika</strong> reúne en un solo lugar los clientes, el calendario tributario, las tareas, los
+        documentos y la cartera del despacho, para que ninguna obligación se venza y todo el equipo trabaje con la
+        misma información.</span>
+</p>
 {% if tablero.indicadores %}
 {# Resumen: el único bloque oscuro del tablero. El estado de cada cifra va en el punto de su detalle. #}
 <section class="pp-resumen" aria-label="Resumen del despacho">
@@ -387,9 +394,9 @@
 (function () {
     // Sin la librería (sin conexión), los datos siguen disponibles en «Ver los datos en tabla».
     if (!window.Chart) { return; }
-    const estilo = getComputedStyle(document.documentElement);
-    const color = function (nombre) { return estilo.getPropertyValue(nombre).trim(); };
-    const superficie = color('--card');
+    // Los colores se leen en cada llamada: cambian al pasar a modo oscuro.
+    const color = function (nombre) { return getComputedStyle(document.documentElement).getPropertyValue(nombre).trim(); };
+    const graficos = [];
     const pesos = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
     const compacto = new Intl.NumberFormat('es-CO', { notation: 'compact', maximumFractionDigits: 1 });
     const sinMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -403,7 +410,10 @@
         const fuente = document.getElementById(idDatos);
         if (!lienzo || !fuente) { return; }
         const datos = JSON.parse(fuente.textContent);
-        new Chart(lienzo, {
+        // En teléfono el contenido va ampliado (zoom de CSS): el lienzo se
+        // dibuja con más píxeles para que no se vea borroso.
+        const ampliacion = lienzo.currentCSSZoom || 1;
+        graficos.push(new Chart(lienzo, {
             type: 'bar',
             data: {
                 labels: datos.etiquetas,
@@ -415,7 +425,7 @@
                         maxBarThickness: 22,
                         borderRadius: { topLeft: 4, topRight: 4 },
                         // Separación de 2 px entre segmentos apilados, en el color del fondo.
-                        borderColor: superficie,
+                        borderColor: color('--card'),
                         borderWidth: opciones.apiladas ? { top: 2 } : 0,
                         borderSkipped: false
                     };
@@ -423,6 +433,7 @@
             },
             options: {
                 maintainAspectRatio: false,
+                devicePixelRatio: (window.devicePixelRatio || 1) * ampliacion,
                 animation: sinMovimiento ? false : { duration: 400 },
                 interaction: { mode: 'index', intersect: false },
                 plugins: {
@@ -454,8 +465,23 @@
                     }
                 }
             }
-        });
+        }));
     }
+
+    // Al cambiar entre modo claro y oscuro, las gráficas toman los colores nuevos.
+    window.addEventListener('contanika:tema', function () {
+        Chart.defaults.color = color('--muted');
+        graficos.forEach(function (grafico) {
+            const opciones = grafico.options;
+            opciones.plugins.legend.labels.color = color('--dim');
+            opciones.scales.x.border.color = color('--border2');
+            opciones.scales.y.grid.color = color('--border');
+            opciones.scales.x.ticks.color = color('--muted');
+            opciones.scales.y.ticks.color = color('--muted');
+            grafico.data.datasets.forEach(function (serie) { serie.borderColor = color('--card'); });
+            grafico.update('none');
+        });
+    });
 
     graficoBarras('graficoVencimientos', 'datos-vencimientos', {
         apiladas: true,
