@@ -16,6 +16,7 @@
                 <a href="#modulos">Módulos</a>
                 <a href="#como-funciona">Cómo funciona</a>
                 <a href="#roles">Roles</a>
+                <a href="#planes">Planes</a>
                 <a href="#seguridad">Seguridad</a>
             </div>
             <a class="pw-btn pw-btn-naranja pw-btn-chico" href="{% url 'seguridad:iniciar_sesion' %}">Ingresar</a>
@@ -212,6 +213,48 @@
                     <p>Registra el avance de sus tareas y de los clientes que tiene a su cargo.</p>
                 </li>
             </ul>
+        </section>
+
+        {# Modelo freemium: el plan se elige por el número de clientes que gestiona el contador o el despacho. #}
+        <section class="pw-seccion pw-ancho" id="planes">
+            <div class="pw-titulo">
+                <h2>Un plan para cada tamaño de despacho</h2>
+                <p>Empiece gratis y pase al plan Profesional cuando crezca el número de clientes que atiende.</p>
+            </div>
+            <ul class="pw-planes">
+                <li class="pw-plan">
+                    <h3>Gratuito</h3>
+                    <p class="pw-plan-precio"><strong>$0</strong></p>
+                    <p class="pw-plan-para">Para conocer Contanika con sus primeros clientes.</p>
+                    <ul class="pw-checks">
+                        <li><i class="bi bi-check2"></i>Hasta 5 clientes</li>
+                        <li><i class="bi bi-check2"></i>Sin límite de tiempo</li>
+                        <li><i class="bi bi-check2"></i>Pasa al plan Profesional cuando lo necesite</li>
+                    </ul>
+                </li>
+                <li class="pw-plan pw-plan-destacado">
+                    <p class="pw-plan-sello">Independientes y despachos pequeños</p>
+                    <h3>Profesional</h3>
+                    <p class="pw-plan-precio"><strong>$84.900</strong><span>al mes</span></p>
+                    <p class="pw-plan-para">Todo el trabajo del despacho en un solo lugar.</p>
+                    <ul class="pw-checks">
+                        <li><i class="bi bi-check2"></i>De 6 a 50 clientes</li>
+                        <li><i class="bi bi-check2"></i>Todos los módulos y los tres roles</li>
+                        <li><i class="bi bi-check2"></i>15 % de descuento con pago anual</li>
+                    </ul>
+                </li>
+                <li class="pw-plan">
+                    <h3>Empresarial</h3>
+                    <p class="pw-plan-precio"><strong>A convenir</strong></p>
+                    <p class="pw-plan-para">Para despachos contables medianos.</p>
+                    <ul class="pw-checks">
+                        <li><i class="bi bi-check2"></i>Más de 50 clientes</li>
+                        <li><i class="bi bi-check2"></i>Precio según el tamaño del despacho</li>
+                        <li><i class="bi bi-check2"></i>Plan acordado con el despacho</li>
+                    </ul>
+                </li>
+            </ul>
+            <p class="pw-planes-nota">Precios en pesos colombianos.</p>
         </section>
 
         <section class="pw-oscura" id="seguridad">
