@@ -247,7 +247,9 @@ models.py → servicios.py → selectores.py → formularios.py → vistas.py �
   - **Despliegue en VPS (16-nov-2026):** `despliegue/instalar_vps.sh` instala
     todo en Ubuntu 24.04 (PostgreSQL local con los scripts 03 y 04, gunicorn
     como servicio, nginx, HTTPS con certbot, cortafuegos, cron y respaldo
-    diario); `despliegue/actualizar.sh` actualiza desde `main`. Guía:
+    diario); `despliegue/actualizar.sh` actualiza desde `main`. Por HTTPS,
+    `despliegue/nginx-rechazo-443.conf` corta la conexión a quien no pide el
+    dominio (los dos scripts lo instalan y lo quitan si `nginx -t` falla). Guía:
     `documentacion/DESPLIEGUE_VPS.md`. Si una migración nueva necesita algo
     del sistema (un paquete apt, una carpeta, una variable), agregarlo a los
     dos scripts y a la guía.

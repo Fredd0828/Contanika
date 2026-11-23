@@ -50,6 +50,11 @@ CLAVE_SESION_DOCUMENTO_PENDIENTE = "documento_pendiente"
 PREFIJO_CAMPOS = "campos"
 
 
+def puede_firmar(usuario):
+    """Solo quien puede firmar ve los accesos a «Mi firma» (los demás recibirían 403)."""
+    return usuario.rol.nombre_rol in ROLES_FIRMANTES
+
+
 def _es_ajax(request):
     return request.headers.get("X-Requested-With") == "XMLHttpRequest"
 
@@ -83,6 +88,7 @@ class HistoricoDocumentosView(ModuloHabilitadoMixin, PaginacionMixin, ListView):
         contexto["formulario_filtro"] = self.formulario_filtro
         contexto["puede_eliminar"] = self.request.user.rol.nombre_rol in ROLES_ELIMINAN
         contexto["es_administrador"] = self.request.user.rol.nombre_rol in ROLES_ADMIN
+        contexto["puede_firmar"] = puede_firmar(self.request.user)
         return contexto
 
 
@@ -105,6 +111,7 @@ class GenerarDocumentoView(ModuloHabilitadoMixin, View):
             "plantilla_seleccionada": plantilla,
             "formulario_campos": construir_formulario_campos_simples(plantilla) if plantilla else None,
             "formset_filas": construir_formset_filas_repetibles(plantilla) if plantilla else None,
+            "puede_firmar": puede_firmar(request.user),
         }
         return render(request, self.template_name, contexto)
 
@@ -140,6 +147,7 @@ class GenerarDocumentoView(ModuloHabilitadoMixin, View):
             "plantilla_seleccionada": plantilla,
             "formulario_campos": formulario_campos,
             "formset_filas": formset_filas,
+            "puede_firmar": puede_firmar(request.user),
         }
         return render(request, self.template_name, contexto)
 

@@ -245,6 +245,15 @@ nginx -t
 systemctl reload nginx
 certbot --nginx --non-interactive --agree-tos --no-eff-email --redirect \
     -m "$CORREO_AVISOS" -d "$DOMINIO"
+# Por HTTPS, quien no pide el dominio no recibe respuesta (robots por IP o con nombres ajenos).
+REGLA_443=/etc/nginx/conf.d/contanika-rechazo-443.conf
+install -m 644 -o root -g root "$CODIGO/despliegue/nginx-rechazo-443.conf" "$REGLA_443"
+if nginx -t 2>/dev/null; then
+    systemctl reload nginx
+else
+    rm -f "$REGLA_443"
+    echo "Aviso: nginx no aceptó la regla de rechazo por HTTPS; se quitó y el sitio sigue igual."
+fi
 
 # ------------------------------------------------------------
 # 10. Tareas automáticas y respaldos

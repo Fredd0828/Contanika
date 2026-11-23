@@ -216,6 +216,29 @@ def test_senior_accede_a_mi_firma(client, usuario_senior):
     assert client.get(reverse("documentos:mi_firma")).status_code == 200
 
 
+@pytest.mark.parametrize(
+    ("usuario_fixture", "ve_enlace"),
+    [("usuario_administrador", True), ("usuario_senior", True), ("usuario_junior", False)],
+)
+def test_historico_muestra_mi_firma_solo_a_quien_puede_firmar(client, request, usuario_fixture, ve_enlace):
+    # DEF-015: el Junior veía «Mi firma» y al pulsarlo recibía 403.
+    client.force_login(request.getfixturevalue(usuario_fixture))
+    contenido = client.get(reverse("documentos:historico")).content.decode()
+    assert (reverse("documentos:mi_firma") in contenido) is ve_enlace
+
+
+@pytest.mark.parametrize(
+    ("usuario_fixture", "ve_enlace"),
+    [("usuario_administrador", True), ("usuario_senior", True), ("usuario_junior", False)],
+)
+def test_generar_ofrece_cargar_la_firma_solo_a_quien_firma(client, request, usuario_fixture, ve_enlace):
+    client.force_login(request.getfixturevalue(usuario_fixture))
+    contenido = client.get(reverse("documentos:generar")).content.decode()
+    assert (reverse("documentos:mi_firma") in contenido) is ve_enlace
+    if not ve_enlace:
+        assert "pida al Administrador o a un Contador Senior" in contenido
+
+
 @pytest.mark.parametrize("usuario_fixture", ["usuario_junior", "usuario_senior"])
 def test_solo_administrador_accede_a_datos_del_despacho(client, request, usuario_fixture):
     client.force_login(request.getfixturevalue(usuario_fixture))

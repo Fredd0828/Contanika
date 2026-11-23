@@ -2772,3 +2772,23 @@ migraciones sin hallazgos.
 ### Pendientes
 - Capturas de los módulos 6 a 10 para el Word del proyecto.
 - Revisión entre pares, firmas y fecha de entrega (del usuario).
+
+## Lunes 23 de noviembre de 2026 — «Mi firma» del Junior y rechazo por HTTPS
+
+### Qué se hizo
+Hallazgos de la revisión del registro del servidor (prueba PD-007):
+- **DEF-015:** el Histórico de documentos mostraba «Mi firma» a todos, y el
+  formulario de generación invitaba a «Cargue su firma»; el Contador Junior,
+  que no firma, recibía 403 al pulsarlos. Ahora solo los ven el Administrador
+  y el Contador Senior (`documentos.vistas.puede_firmar`); al Junior se le
+  dice quién carga la firma. Guía de ayuda de documentos al día.
+- **nginx por HTTPS:** robots que llegan por la IP, la IPv6 o con nombres
+  ajenos pasaban hasta Django (400 DisallowedHost en el registro).
+  `despliegue/nginx-rechazo-443.conf` (`ssl_reject_handshake`) corta esas
+  conexiones; `instalar_vps.sh` y `actualizar.sh` lo instalan en
+  `/etc/nginx/conf.d/` y lo quitan si `nginx -t` falla. Probado con el nginx
+  1.24 de Ubuntu 24.04 junto a un bloque como el de Certbot: el dominio
+  responde y la IP, la IPv6 y otro nombre son rechazados.
+
+### Resultado
+Pruebas de documentos y de la ayuda en verde (6 casos nuevos).

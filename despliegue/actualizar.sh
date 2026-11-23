@@ -52,6 +52,18 @@ gestionar collectstatic --noinput -v 0
 # desde el código desharía esas correcciones.
 install -m 750 -o root -g root "$CODIGO/despliegue/respaldar.sh" /usr/local/sbin/contanika-respaldar
 
+paso "nginx: rechazo por HTTPS de nombres ajenos"
+REGLA_443=/etc/nginx/conf.d/contanika-rechazo-443.conf
+install -m 644 -o root -g root "$CODIGO/despliegue/nginx-rechazo-443.conf" "$REGLA_443"
+if nginx -t 2>/dev/null; then
+    systemctl reload nginx
+    echo "Regla activa: por HTTPS solo responde el dominio del sistema."
+else
+    # Si este nginx no la acepta, se quita y el sitio sigue como estaba.
+    rm -f "$REGLA_443"
+    echo "Aviso: nginx no aceptó la regla de rechazo; se quitó y el sitio sigue igual."
+fi
+
 paso "Reiniciando"
 gestionar check --deploy --fail-level ERROR
 systemctl restart contanika

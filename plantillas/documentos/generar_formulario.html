@@ -40,7 +40,11 @@
                 {{ formulario.usuario_firmante }}
                 {% if formulario.usuario_firmante.errors %}<div class="text-danger small">{{ formulario.usuario_firmante.errors }}</div>{% endif %}
                 <div class="form-text">
+                    {% if puede_firmar %}
                     ¿No aparece su nombre? <a href="{% url 'documentos:mi_firma' %}">Cargue su firma</a> primero.
+                    {% else %}
+                    ¿No aparece quien firma? Firman el Administrador y los Contadores Senior: pida al Administrador o a un Contador Senior que cargue su firma.
+                    {% endif %}
                 </div>
             </div>
             <div class="col-12">
