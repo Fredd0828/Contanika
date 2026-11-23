@@ -36,7 +36,7 @@ def rol_junior(db):
 @pytest.fixture
 def usuario_administrador(rol_administrador):
     return Usuario.objects.create_user(
-        correo="paula@befrec.co",
+        correo="paula@ejemplo.co",
         nombre="Paula Andrea Blanco",
         password=CLAVE_PRUEBAS,
         rol=rol_administrador,
@@ -46,7 +46,7 @@ def usuario_administrador(rol_administrador):
 @pytest.fixture
 def usuario_senior(rol_senior):
     return Usuario.objects.create_user(
-        correo="senior@befrec.co",
+        correo="senior@ejemplo.co",
         nombre="Contador Senior",
         password=CLAVE_PRUEBAS,
         rol=rol_senior,
@@ -56,7 +56,7 @@ def usuario_senior(rol_senior):
 @pytest.fixture
 def usuario_junior(rol_junior):
     return Usuario.objects.create_user(
-        correo="junior@befrec.co",
+        correo="junior@ejemplo.co",
         nombre="Contador Junior",
         password=CLAVE_PRUEBAS,
         rol=rol_junior,

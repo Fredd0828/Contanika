@@ -31,7 +31,7 @@ def media_root_temporal(settings, tmp_path):
 @pytest.fixture
 def despacho(db):
     return ConfiguracionDespacho.objects.create(
-        pk=1, nombre_despacho="Befrec Y Asociados SAS", ciudad="Bogotá D.C."
+        pk=1, nombre_despacho="Despacho Ejemplo SAS", ciudad="Bogotá D.C."
     )
 
 

@@ -90,7 +90,7 @@ def test_login_con_credenciales_validas(client, usuario_administrador):
     """El inicio de sesión con credenciales correctas redirige al panel."""
     respuesta = client.post(
         reverse("seguridad:iniciar_sesion"),
-        {"username": "paula@befrec.co", "password": "ClaveSegura123"},
+        {"username": "paula@ejemplo.co", "password": "ClaveSegura123"},
     )
     assert respuesta.status_code == 302
     assert respuesta.url == reverse("seguridad:panel")

@@ -9,8 +9,7 @@
     <header class="pw-cabecera">
         <nav class="pw-nav pw-ancho" aria-label="Principal">
             <a class="pw-logo" href="{% url 'seguridad:inicio' %}" aria-label="Contanika, inicio">
-                <span class="pw-logo-icono"><i class="bi bi-grid-3x3-gap-fill"></i></span>
-                <span class="pw-logo-nombre">Conta<span>nika</span></span>
+                <img class="pw-logo-img" src="{% static 'img/marca/contanika-logo-oscuro.svg' %}" alt="Contanika" width="180" height="28">
             </a>
             <div class="pw-nav-enlaces">
                 <a href="#modulos">Módulos</a>
@@ -54,7 +53,7 @@
             <ul class="pw-cifras">
                 <li><strong>10</strong><span>módulos conectados entre sí</span></li>
                 <li><strong>3</strong><span>roles con permisos propios</span></li>
-                <li><strong>440</strong><span>fechas de la DIAN para 2026</span></li>
+                <li><strong>704</strong><span>fechas de la DIAN para 2026</span></li>
                 <li><strong>PDF y Excel</strong><span>en documentos y reportes</span></li>
             </ul>
         </div>
@@ -223,7 +222,7 @@
                 <ul class="pw-seguridad">
                     <li><i class="bi bi-key-fill"></i><h3>Credenciales cifradas</h3><p>Las claves de acceso de los clientes se guardan cifradas.</p></li>
                     <li><i class="bi bi-shield-lock-fill"></i><h3>Bloqueo por intentos</h3><p>La cuenta se bloquea tras varios intentos fallidos de ingreso.</p></li>
-                    <li><i class="bi bi-journal-check"></i><h3>Bitácora que no se borra</h3><p>Las anotaciones del expediente se archivan, nunca se eliminan.</p></li>
+                    <li><i class="bi bi-journal-check"></i><h3>Bitácora con registro</h3><p>Archivar, corregir o eliminar una anotación queda registrado: quién y cuándo.</p></li>
                     <li><i class="bi bi-file-earmark-lock-fill"></i><h3>Archivos con permiso</h3><p>Cada documento lo descarga solo quien puede verlo.</p></li>
                 </ul>
             </div>
@@ -252,8 +251,7 @@
     <footer class="pw-pie">
         <div class="pw-ancho">
             <a class="pw-logo" href="{% url 'seguridad:inicio' %}" aria-label="Contanika, inicio">
-                <span class="pw-logo-icono"><i class="bi bi-grid-3x3-gap-fill"></i></span>
-                <span class="pw-logo-nombre">Conta<span>nika</span></span>
+                <img class="pw-logo-img" src="{% static 'img/marca/contanika-logo-oscuro.svg' %}" alt="Contanika" width="180" height="28">
             </a>
             <p>Gestión integral del despacho contable.</p>
         </div>

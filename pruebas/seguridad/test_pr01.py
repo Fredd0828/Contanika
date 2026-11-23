@@ -157,7 +157,7 @@ def test_la_foto_la_ve_su_dueno_y_el_administrador_pero_no_otro_usuario(
 
 def test_el_membrete_lo_ve_cualquier_usuario_con_sesion(client, usuario_junior, settings, tmp_path):
     settings.MEDIA_ROOT = tmp_path
-    despacho = ConfiguracionDespacho.objects.create(nombre_despacho="Befrec", membrete=_png("membrete.png"))
+    despacho = ConfiguracionDespacho.objects.create(nombre_despacho="Ejemplo", membrete=_png("membrete.png"))
     client.force_login(usuario_junior)
     assert client.get(_url_media(despacho.membrete.name)).status_code == 200
 

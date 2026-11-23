@@ -1,6 +1,6 @@
 {# Encabezado común de las pantallas públicas de acceso (inicio de sesión, recuperar y crear contraseña). #}
+{% load static %}
 <div class="login-logo">
-    <div class="login-logo-icon"><i class="bi bi-grid-3x3-gap-fill"></i></div>
-    <div class="login-name"><span class="w">Conta</span><span class="o">nika</span></div>
+    <img class="login-logo-img" src="{% static 'img/marca/contanika-logo-claro.svg' %}" alt="Contanika" width="190" height="30">
 </div>
 <div class="login-sub">{{ subtitulo }}</div>

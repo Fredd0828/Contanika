@@ -18,7 +18,7 @@ from ..conftest import CLAVE_PRUEBAS
 pytestmark = pytest.mark.django_db
 
 
-def _formulario_crear(rol, correo="nuevo@befrec.co", **extra):
+def _formulario_crear(rol, correo="nuevo@ejemplo.co", **extra):
     datos = {
         "nombre": "Nuevo Integrante",
         "correo": correo,
@@ -42,7 +42,7 @@ def test_no_puede_quedar_sin_administrador_activo(usuario_administrador, rol_sen
 
 
 def test_segundo_administrador_exige_confirmacion(usuario_administrador, rol_administrador):
-    nuevo = Usuario(nombre="Otro", correo="otro@befrec.co", rol=rol_administrador)
+    nuevo = Usuario(nombre="Otro", correo="otro@ejemplo.co", rol=rol_administrador)
     with pytest.raises(servicios.ConfirmacionRequerida, match="Paula Andrea Blanco"):
         servicios.validar_administradores(nuevo, rol_administrador, Usuario.ACTIVO)
     servicios.validar_administradores(nuevo, rol_administrador, Usuario.ACTIVO, confirmado=True)
@@ -56,16 +56,16 @@ def test_segundo_administrador_exige_confirmacion(usuario_administrador, rol_adm
 def test_crear_usuario_envia_enlace_y_no_una_clave(usuario_administrador, rol_junior, settings):
     settings.URL_SITIO = "https://contanika.ejemplo.co/"
     usuario, enviado, enlace = servicios.crear_usuario(
-        _formulario_crear(rol_junior, correo="NUEVO@Befrec.co")
+        _formulario_crear(rol_junior, correo="NUEVO@Ejemplo.co")
     )
     assert enviado is True
-    assert usuario.correo == "nuevo@befrec.co"
+    assert usuario.correo == "nuevo@ejemplo.co"
     assert usuario.estado == Usuario.ACTIVO
     assert not usuario.has_usable_password()
     assert enlace.startswith("https://contanika.ejemplo.co/crear-contrasena/")
     assert len(mail.outbox) == 1
     correo = mail.outbox[0]
-    assert correo.to == ["nuevo@befrec.co"]
+    assert correo.to == ["nuevo@ejemplo.co"]
     assert correo.subject == "Bienvenido a Contanika"
     assert enlace in correo.body
     assert "Contador Junior" in correo.body
@@ -89,7 +89,7 @@ def test_crear_usuario_aunque_falle_el_correo_devuelve_el_enlace(
 def test_crear_segundo_administrador_sin_confirmar_no_guarda(usuario_administrador, rol_administrador):
     with pytest.raises(servicios.ConfirmacionRequerida):
         servicios.crear_usuario(_formulario_crear(rol_administrador))
-    assert not Usuario.objects.filter(correo="nuevo@befrec.co").exists()
+    assert not Usuario.objects.filter(correo="nuevo@ejemplo.co").exists()
 
 
 def test_formulario_de_crear_no_pide_contrasena(rol_junior):
@@ -144,7 +144,7 @@ def test_no_puede_inactivarse_a_si_mismo(usuario_administrador):
 
 def test_activar_otro_administrador_exige_confirmacion(usuario_administrador, rol_administrador):
     otro = Usuario.objects.create_user(
-        correo="otro@befrec.co", nombre="Otro Admin", password=CLAVE_PRUEBAS, rol=rol_administrador
+        correo="otro@ejemplo.co", nombre="Otro Admin", password=CLAVE_PRUEBAS, rol=rol_administrador
     )
     otro.estado = Usuario.INACTIVO
     otro.save()
