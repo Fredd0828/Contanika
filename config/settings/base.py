@@ -16,7 +16,7 @@ from decouple import Csv, config
 RUTA_BASE = Path(__file__).resolve().parent.parent.parent
 
 # Versión liberada: se actualiza junto con la etiqueta de Git y la informa `/version/`.
-VERSION_APLICACION = "1.0.0"
+VERSION_APLICACION = "1.1.0"
 
 SECRET_KEY = config("SECRET_KEY", default="clave-solo-para-desarrollo-local")
 DEBUG = config("DEBUG", default=False, cast=bool)

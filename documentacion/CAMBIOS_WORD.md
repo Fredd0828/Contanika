@@ -1,23 +1,29 @@
 # Cambios por llevar al documento Word — Contanika
 
 Lista de lo que el sistema construido ya no coincide con `Contanika_Fases1y2_v11.docx`.
-Corte: 2 de noviembre de 2026. Marque cada punto al pasarlo al Word.
+Corte: 2 de noviembre de 2026, con lo agregado hasta el 23 de noviembre.
+
+**Llevado al Word el 23-nov-2026** en `Contanika_Fases1y2_v12.docx` (fuera del repositorio):
+datos corregidos en su lugar, nota «Cambio en la versión 12» al final de cada historia que
+cambió, numeral 2.6 (disparadores) y Anexo C (registro de cambios). Solo quedan las capturas
+de la sección 6.
 
 ## 1. Stack y requisitos no funcionales
 
-- [ ] **D1 y RQNF002:** donde dice «Django 4.2 LTS» debe decir «Django 5.2 LTS». Motivo: la serie 4.2
+- [x] **D1 y RQNF002:** donde dice «Django 4.2 LTS» debe decir «Django 5.2 LTS». Motivo: la serie 4.2
   terminó su soporte en abril de 2026 y `pip-audit` reportó 7 vulnerabilidades sin parche; la 5.2 tiene
   soporte de seguridad hasta abril de 2028.
-- [ ] **PostgreSQL:** el entorno local corre PostgreSQL 16. Revisar la versión que cita el Word y dejar
+- [x] **PostgreSQL:** el entorno local corre PostgreSQL 16. Revisar la versión que cita el Word y dejar
   «PostgreSQL 16 local / Supabase en producción».
 
 ## 2. Diccionario de datos (numeral 2.5)
 
-El Word documenta 36 tablas; el sistema tiene **42**.
+El Word documenta 36 tablas; el sistema tiene **44** (se suman `abono_eliminado` y
+`accion_anotacion`, del 23-nov-2026).
 
 ### 2.1 Tablas nuevas
 
-- [ ] **`obligacion_tributaria`** (Módulo 1): catálogo de obligaciones o vencimientos que pueden
+- [x] **`obligacion_tributaria`** (Módulo 1): catálogo de obligaciones o vencimientos que pueden
   aplicarle a un cliente (10 sembradas).
 
   | Columna | Tipo | Nulo | Clave |
@@ -26,7 +32,7 @@ El Word documenta 36 tablas; el sistema tiene **42**.
   | nombre | varchar(60) | No | |
   | ambito | varchar(20) | No | |
 
-- [ ] **`cliente_obligacion`** (Módulo 1): qué obligaciones presenta cada cliente; con ellas se calculan
+- [x] **`cliente_obligacion`** (Módulo 1): qué obligaciones presenta cada cliente; con ellas se calculan
   sus vencimientos.
 
   | Columna | Tipo | Nulo | Clave |
@@ -35,7 +41,7 @@ El Word documenta 36 tablas; el sistema tiene **42**.
   | id_cliente | integer | No | FK → cliente |
   | id_obligacion | integer | No | FK → obligacion_tributaria |
 
-- [ ] **`honorario_servicio`** (Módulo 6, HU044): monto por tipo de servicio cuando el honorario es
+- [x] **`honorario_servicio`** (Módulo 6, HU044): monto por tipo de servicio cuando el honorario es
   «Por servicio»; `honorario.monto` pasa a ser la suma.
 
   | Columna | Tipo | Nulo | Clave |
@@ -45,7 +51,7 @@ El Word documenta 36 tablas; el sistema tiene **42**.
   | id_tipo_servicio | integer | No | FK → tipo_servicio |
   | monto | numeric(12,2) | No | |
 
-- [ ] **`configuracion_cobro`** (Módulo 6, ampliación de alcance): una sola fila con los parámetros del
+- [x] **`configuracion_cobro`** (Módulo 6, ampliación de alcance): una sola fila con los parámetros del
   cobro mensual y los recordatorios automáticos.
 
   | Columna | Tipo | Nulo | Clave |
@@ -63,7 +69,7 @@ El Word documenta 36 tablas; el sistema tiene **42**.
   | canal_recordatorio | varchar(10) | No | |
   | ultima_ejecucion | timestamp con zona | Sí | |
 
-- [ ] **`envio_programado`** (Módulo 6, ampliación de alcance): cada envío de una cuenta de cobro o de
+- [x] **`envio_programado`** (Módulo 6, ampliación de alcance): cada envío de una cuenta de cobro o de
   un recordatorio, inmediato o programado, con su resultado.
 
   | Columna | Tipo | Nulo | Clave |
@@ -79,7 +85,7 @@ El Word documenta 36 tablas; el sistema tiene **42**.
   | id_comunicacion | integer | Sí | FK → comunicacion |
   | detalle_error | varchar(255) | No | |
 
-- [ ] **`descarga_reporte`** (Módulo 10, HU028-5): quién descargó cada reporte, cuándo, en qué formato
+- [x] **`descarga_reporte`** (Módulo 10, HU028-5): quién descargó cada reporte, cuándo, en qué formato
   y con qué filtros.
 
   | Columna | Tipo | Nulo | Clave |
@@ -93,30 +99,30 @@ El Word documenta 36 tablas; el sistema tiene **42**.
 
 ### 2.2 Columnas nuevas o que cambiaron
 
-- [ ] **`cliente`:** restricción `unico_cliente_nit`: el NIT o cédula es único también en la base de
+- [x] **`cliente`:** restricción `unico_cliente_nit`: el NIT o cédula es único también en la base de
   datos (migración `clientes 0007`).
-- [ ] **`usuario`:** tres columnas estándar de Django (`is_staff`, `is_superuser`, `last_login`), por
+- [x] **`usuario`:** tres columnas estándar de Django (`is_staff`, `is_superuser`, `last_login`), por
   usar un modelo de usuario propio sobre `AbstractBaseUser` (decisión T1). `foto_url` pasa a `foto`
   (archivo de imagen); `firma` también es un archivo de imagen.
-- [ ] **`anotacion`:** columna nueva `fecha` (date, editable, por defecto hoy): fecha del hecho anotado.
+- [x] **`anotacion`:** columna nueva `fecha` (date, editable, por defecto hoy): fecha del hecho anotado.
   `fecha_hora` sigue siendo el registro exacto y automático.
-- [ ] **`comunicacion`:** `canal` es de selección abierta (acepta valores nuevos); `fecha_hora` deja de
+- [x] **`comunicacion`:** `canal` es de selección abierta (acepta valores nuevos); `fecha_hora` deja de
   ser automática para que el registro manual indique cuándo ocurrió el contacto.
-- [ ] **`honorario`:** columnas nuevas `id_usuario_actualizacion` y `fecha_actualizacion` (HU044,
+- [x] **`honorario`:** columnas nuevas `id_usuario_actualizacion` y `fecha_actualizacion` (HU044,
   criterio 4).
-- [ ] **`cuenta_cobro`:** `archivo_url` pasa a `archivo` (PDF guardado); columnas nuevas
+- [x] **`cuenta_cobro`:** `archivo_url` pasa a `archivo` (PDF guardado); columnas nuevas
   `fecha_inicio_periodo` y `fecha_fin_periodo`.
-- [ ] **`configuracion_alerta`:** columna nueva `fecha_envio` (date): día en que se envió la alerta,
+- [x] **`configuracion_alerta`:** columna nueva `fecha_envio` (date): día en que se envió la alerta,
   para no repetirla (HU040).
-- [ ] **`adjunto`:** `archivo_url` pasa a `archivo` (archivo subido).
-- [ ] **`configuracion_despacho`:** `membrete_url` pasa a `membrete` (imagen subida).
-- [ ] **`documento`:** `archivo` es el PDF generado y guardado.
+- [x] **`adjunto`:** `archivo_url` pasa a `archivo` (archivo subido).
+- [x] **`configuracion_despacho`:** `membrete_url` pasa a `membrete` (imagen subida).
+- [x] **`documento`:** `archivo` es el PDF generado y guardado.
 
 Los tipos exactos de todas las columnas están en `scripts/bd/01_esquema_contanika.sql`.
 
 ### 2.3 Disparadores
 
-- [ ] Documentar los tres disparadores de la tabla `abono` (exigencia de la guía SENA: al menos uno):
+- [x] Documentar los tres disparadores de la tabla `abono` (exigencia de la guía SENA: al menos uno):
   - `trg_abono_calcular_saldo` (BEFORE INSERT): bloquea la cuenta, fija `saldo_anterior` y
     `saldo_resultante` y rechaza montos menores o iguales a cero o mayores que el saldo.
   - `trg_abono_actualizar_estado` (AFTER INSERT): deja la cuenta en Abonada, Pagada o Vencida.
@@ -124,55 +130,55 @@ Los tipos exactos de todas las columnas están en `scripts/bd/01_esquema_contani
 
 ## 3. Alcance
 
-- [ ] **Módulo 6, ampliación (25-sep-2026):** además de lo especificado incluye programación de envíos,
+- [x] **Módulo 6, ampliación (25-sep-2026):** además de lo especificado incluye programación de envíos,
   cobro mensual automático y recordatorios automáticos de pago, con envío masivo y bandeja de WhatsApp
   pendientes.
-- [ ] **Decisión T2 (WhatsApp):** correo por SMTP y WhatsApp por enlace `wa.me` con registro en
+- [x] **Decisión T2 (WhatsApp):** correo por SMTP y WhatsApp por enlace `wa.me` con registro en
   Comunicaciones. La API de WhatsApp Business queda como mejora futura.
-- [ ] **Decisión T3 (alertas):** comandos `procesar_cobros` (cada 15 minutos) y `procesar_alertas`
+- [x] **Decisión T3 (alertas):** comandos `procesar_cobros` (cada 15 minutos) y `procesar_alertas`
   (cada hora) ejecutados por cron.
 
 ## 4. Historias de usuario que cambiaron por decisión
 
-- [ ] **Contador Junior (1-oct-2026):** consulta todos los clientes y los crea o edita, sin reasignar
+- [x] **Contador Junior (1-oct-2026):** consulta todos los clientes y los crea o edita, sin reasignar
   responsable ni cambiar el estado, sin inactivar ni importar. Lee hallazgos, documentos, expediente y
   comunicaciones de todos los clientes, pero solo escribe en los asignados. Credenciales, finanzas y
   reportes: solo de sus clientes. Afecta las HU de los módulos 1, 2, 3, 4, 5, 7 y 9 que lo limitaban a
   sus clientes asignados.
-- [ ] **Visibilidad para todo el equipo (7-oct-2026):** clientes, vencimientos y tareas los ven
+- [x] **Visibilidad para todo el equipo (7-oct-2026):** clientes, vencimientos y tareas los ven
   completos los tres roles, en los módulos y en sus reportes (modifica HU029-1 y HU051-4). Lo que cada
   rol puede modificar no cambia. El Administrador activa o desactiva por rol los módulos, el panel
   principal y cada reporte.
-- [ ] **HU015 (hallazgos):** el Contador Junior no solo consulta: registra y gestiona los hallazgos de
+- [x] **HU015 (hallazgos):** el Contador Junior no solo consulta: registra y gestiona los hallazgos de
   sus clientes asignados; no elimina.
-- [ ] **HU026 (expediente):** bitácora inmutable. No hay edición ni eliminación; el Administrador
+- [x] **HU026 (expediente):** bitácora inmutable. No hay edición ni eliminación; el Administrador
   archiva o restaura, y las archivadas se consultan con un filtro.
-- [ ] **HU019 a HU021 (comunicaciones):** «Automática» es la que registra el sistema al enviar un correo
+- [x] **HU019 a HU021 (comunicaciones):** «Automática» es la que registra el sistema al enviar un correo
   o WhatsApp, aunque lo dispare una persona; «Manual» es el contacto anotado a mano.
-- [ ] **HU022 (usuarios):** siempre queda al menos un Administrador activo; crear otro exige
+- [x] **HU022 (usuarios):** siempre queda al menos un Administrador activo; crear otro exige
   confirmación; un usuario solo se elimina si no tiene historial, de lo contrario se inactiva. El
   usuario nuevo recibe un correo con un enlace de un solo uso (vence a los 3 días) para crear su
   propia contraseña: el Administrador no la escribe ni la conoce. El Administrador puede reenviar el
   enlace, y cualquier usuario puede pedir uno nuevo con «¿Olvidó su contraseña?» (16-nov-2026).
-- [ ] **HU028 (reportes):** el reporte de credenciales sigue en el Módulo 1, solo en pantalla y sin
+- [x] **HU028 (reportes):** el reporte de credenciales sigue en el Módulo 1, solo en pantalla y sin
   descarga; hay uno por cliente y uno consolidado.
-- [ ] **HU040 (alertas):** correo automático al responsable, notificación interna en la campana de la
+- [x] **HU040 (alertas):** correo automático al responsable, notificación interna en la campana de la
   barra superior y WhatsApp como enlace que una persona envía.
-- [ ] **Módulo 3 (notificaciones de tareas):** se calculan del historial de cambios de los últimos
+- [x] **Módulo 3 (notificaciones de tareas):** se calculan del historial de cambios de los últimos
   7 días; no hay tabla de notificaciones ni estado leído/no leído.
-- [ ] **HU053 (ayuda):** además de la guía de módulos, preguntas frecuentes y contacto, incluye guías
+- [x] **HU053 (ayuda):** además de la guía de módulos, preguntas frecuentes y contacto, incluye guías
   paso a paso de cada proceso, visibles según el rol.
-- [ ] **Módulo 4:** la séptima plantilla sigue sin definir; el Administrador la crea desde «Gestión de
+- [x] **Módulo 4:** la séptima plantilla sigue sin definir; el Administrador la crea desde «Gestión de
   plantillas».
-- [ ] **HU052 (tareas en calendario), fuera de alcance (2-nov-2026):** no hay vista de calendario en el
+- [x] **HU052 (tareas en calendario), fuera de alcance (2-nov-2026):** no hay vista de calendario en el
   módulo de tareas. Una tarea con «Mostrar en calendario» aparece en el calendario tributario.
-- [ ] **HU007, criterio 4 (adjuntos en tareas), fuera de alcance (2-nov-2026):** las tareas no llevan
+- [x] **HU007, criterio 4 (adjuntos en tareas), fuera de alcance (2-nov-2026):** las tareas no llevan
   archivos; los soportes del cliente van en el expediente o en los hallazgos.
-- [ ] **HU033 (credenciales en Excel):** no hay descarga; el reporte por cliente y el consolidado son
+- [x] **HU033 (credenciales en Excel):** no hay descarga; el reporte por cliente y el consolidado son
   solo en pantalla, igual que en HU028.
-- [ ] **HU004, criterio 4 (fecha anterior a hoy):** no se valida, porque ninguna fecha queda bloqueada
+- [x] **HU004, criterio 4 (fecha anterior a hoy):** no se valida, porque ninguna fecha queda bloqueada
   (regla del usuario): se admiten vencimientos con fecha pasada.
-- [ ] **Carga del calendario DIAN (16-nov-2026):** la plantilla de Excel tiene la forma del PDF de la DIAN
+- [x] **Carga del calendario DIAN (16-nov-2026):** la plantilla de Excel tiene la forma del PDF de la DIAN
   (fila por obligación y período; mes, año y día por último dígito del NIT; «Todos los NIT»; hoja aparte
   por dos dígitos). Se sube cada año desde Calendario → Tabla DIAN. El catálogo de obligaciones pasa de
   10 a 27 (todo el PDF 2026: consumo, gasolina y ACPM, carbono, patrimonio, precios de transferencia,
@@ -180,11 +186,22 @@ Los tipos exactos de todas las columnas están en `scripts/bd/01_esquema_contani
   RUB, país por país y exógena de grandes contribuyentes). `tabla_referencia_dian.grupo_nit` admite
   «TODOS» (fecha única para cualquier NIT).
 
+### 2.4 Agregado el 23 de noviembre de 2026
+
+- [x] **`abono_eliminado`** (Módulo 6): copia del pago eliminado, quién, cuándo y por qué.
+- [x] **`accion_anotacion`** (Módulo 9): registro de acciones del expediente.
+- [x] **`campo_plantilla.tipo_dato`**, **`configuracion_despacho.dias_aviso_vencimientos`**;
+  `nombre_despacho` opcional.
+- [x] Cuarto disparador `trg_abono_estado_tras_eliminar`; `trg_abono_inmutable` permite borrar
+  solo el último abono, autorizado por la aplicación.
+- [x] HU026: el Administrador corrige o elimina una anotación archivada, con registro.
+- [x] Bloqueo por intentos fallidos de 15 minutos (antes 1 hora).
+
 ## 5. Entregables de la Fase 3
 
-- [ ] **3.1 Código de la base de datos:** `scripts/bd/01_esquema_contanika.sql` (42 tablas) y
+- [x] **3.1 Código de la base de datos:** `scripts/bd/01_esquema_contanika.sql` (44 tablas) y
   `scripts/bd/02_datos_iniciales.sql`.
-- [ ] **3.3 Mapa de navegación:** `documentacion/MAPA_NAVEGACION.md` (se genera con
+- [x] **3.3 Mapa de navegación:** `documentacion/MAPA_NAVEGACION.md` (se genera con
   `python gestionar.py generar_mapa_navegacion`). Los diagramas están en Mermaid: para pegarlos en el
   Word, ábralos en un visor de Mermaid y expórtelos como imagen.
 

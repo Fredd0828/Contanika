@@ -2715,3 +2715,60 @@ Suite completa en verde. Revisado en el navegador: inicio de sesión
 ### En el servidor
 No hace falta tocar el `.env`: la línea vieja (`AXES_TIEMPO_BLOQUEO_HORAS=1`)
 se ignora y rige el valor por defecto, 15 minutos.
+
+## Lunes 23 de noviembre de 2026 — Versión 1.1.0
+
+### Notas de la versión
+`VERSION_APLICACION` pasa a `1.1.0` y se publica la etiqueta `v1.1.0`. Reúne
+lo fusionado desde `v1.0.0` (2-nov-2026), PR #21 a #47:
+- **Acceso:** el usuario nuevo crea su contraseña con un enlace de un solo
+  uso (3 días); «¿Olvidó su contraseña?»; el Administrador reenvía el acceso
+  (#27). Instalación por despacho con `cargar_datos_iniciales
+  --nombre-despacho` (#27).
+- **PDF:** letras Montserrat y Open Sans, encabezado con logo y nombre, sello
+  PAGADA, fecha con el mes en minúscula y pie con nombre y NIT; descripción
+  del documento antes de «Se expide» y firma al pie (#28, #31, #41).
+- **Calendario DIAN:** plantilla de Excel con la forma del PDF oficial, 704
+  fechas de 2026 y 27 obligaciones (#33, #34). Anotaciones del calendario en
+  ventana, con editar y eliminar (#44).
+- **Asistente de consultas** con 8 preguntas guiadas, sin IA (#30).
+- **Despliegue:** instalación en un VPS en un paso (`despliegue/`), con
+  Nginx, HTTPS, systemd, cron y respaldos; django-axes con la IP real (#32).
+  En producción en https://contanika.tech desde el 16-nov-2026.
+- **Pantallas:** versión móvil a pantalla completa, modo oscuro, botón «Aa»
+  de letra, tablas deslizables en el teléfono, donas en el panel y los
+  reportes, y logo nuevo en todas las pantallas (#29, #36, #41, #42, #44, #45).
+- **Reglas que cambian:** el Administrador corrige o elimina una anotación
+  archivada del expediente, con «Registro de acciones»; elimina el último
+  abono de una cuenta indicando el motivo; los campos de las plantillas de
+  documentos tienen tipo de dato (#44).
+- **Seguridad:** el bloqueo por intentos fallidos pasa de 1 hora a 15 minutos
+  (siguen siendo 5 intentos) (#47). Guía para restaurar un respaldo sobre
+  una base vacía, sin `pg_restore --clean` (#46).
+- **Calidad:** Documentos y Tareas al 100 % de ramas (#26); pruebas en
+  paralelo con pytest-xdist (#43); dependencias al día (#21–#24, #37–#40).
+
+### Resultado
+Medido sobre `main` con el #47 (30e42b9) más el número de versión: 1605
+pruebas en verde, cobertura total 95 % (líneas 96,9 %); ruff, `check` y
+migraciones sin hallazgos.
+
+## Lunes 23 de noviembre de 2026 — Documentación al día con la versión 1.1.0
+
+### Qué se hizo
+- `scripts/bd/01_esquema_contanika.sql` y `02_datos_iniciales.sql` regenerados
+  desde una base migrada con este código (44 tablas). Verificado en una base
+  vacía: 01 + 02 dan las mismas 279 columnas, 138 restricciones, 4
+  disparadores y los mismos catálogos que la base migrada.
+- Documentos SENA (fuera del repositorio, en `documentos_documentacion/Contanika/`):
+  Manual Técnico, Manual de Implantación y Formato de Pruebas en su versión
+  1.1, con la producción en contanika.tech, la medición nueva (1605 pruebas,
+  96,9 % de líneas y 88,0 % de ramas), el ensayo 4 de actualización y
+  reversión, y los defectos DEF-009 a DEF-014 con sus no conformidades.
+  Evidencias renovadas en la carpeta `Evidencias`.
+- `Contanika_Fases1y2_v12.docx` con lo de `documentacion/CAMBIOS_WORD.md`
+  (marcado como llevado al Word).
+
+### Pendientes
+- Capturas de los módulos 6 a 10 para el Word del proyecto.
+- Revisión entre pares, firmas y fecha de entrega (del usuario).
