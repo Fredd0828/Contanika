@@ -98,10 +98,11 @@ class ClienteForm(ModeloFormularioBase):
             )
 
     def clean_nit_cedula(self):
-        """Valida que el NIT tenga máximo 10 dígitos y no esté duplicado."""
+        """
+        Valida que el NIT tenga máximo 10 dígitos y no esté duplicado. Que sean
+        solo dígitos ya lo valida el formulario común (`CAMPOS_SOLO_DIGITOS`).
+        """
         nit = self.cleaned_data["nit_cedula"].strip()
-        if not nit.isdigit():
-            raise forms.ValidationError("El número de documento solo debe contener dígitos.")
         if len(nit) > 10:
             raise forms.ValidationError("El número de documento no puede tener más de 10 dígitos.")
         existentes = Cliente.objects.filter(nit_cedula__iexact=nit)

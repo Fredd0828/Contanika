@@ -295,6 +295,29 @@
         marcar();
     })();
 
+    // Campos de solo números (data-solo-numeros, lo pone el formulario común):
+    // al escribir o pegar se borra lo que no sea número; el NIT admite un
+    // guion para el dígito de verificación. En los campos numéricos (montos,
+    // días) no se deja escribir «e», «+» ni «-». El servidor valida igual.
+    document.addEventListener("input", function (evento) {
+        var campo = evento.target;
+        var tipo = campo.getAttribute && campo.getAttribute("data-solo-numeros");
+        if (!tipo) { return; }
+        var antes = campo.value;
+        var limpio = tipo === "nit"
+            ? antes.replace(/[^0-9-]/g, "").replace(/^-+/, "").replace(/-(?=.*-)/g, "")
+            : antes.replace(/[^0-9]/g, "");
+        if (limpio === antes) { return; }
+        var posicion = Math.max(0, (campo.selectionStart || limpio.length) - (antes.length - limpio.length));
+        campo.value = limpio;
+        try { campo.setSelectionRange(posicion, posicion); } catch (error) { /* campo sin selección */ }
+    });
+    document.addEventListener("keydown", function (evento) {
+        if (evento.target.type === "number" && ["e", "E", "+", "-"].indexOf(evento.key) !== -1) {
+            evento.preventDefault();
+        }
+    });
+
     // Tablas en teléfono: siguen siendo tablas y se deslizan de lado, con la
     // primera columna fija (decisión del usuario, 22-nov-2026; antes cada fila
     // se volvía una tarjeta y las listas quedaban muy largas). Cada tabla va

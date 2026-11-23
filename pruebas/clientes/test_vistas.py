@@ -223,7 +223,8 @@ def test_rechaza_nit_con_letras(client, usuario_senior):
         _datos_cliente(nit_cedula="123ABC456"),
     )
     assert respuesta.status_code == 200
-    assert "solo debe contener dígitos" in respuesta.content.decode()
+    # Mensaje común de los campos de solo números (23-nov-2026).
+    assert "Escriba solo números" in respuesta.content.decode()
 
 
 def test_inactivar_conserva_el_cliente(client, usuario_administrador, cliente):

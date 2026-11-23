@@ -2581,3 +2581,34 @@ con descripción y descargar el PDF.
 ### Pendientes
 - En el servidor: revisar que el cron de `contanika` esté instalado
   (`crontab -u contanika -l`) y el registro `registros/cron_cobros.log`.
+
+## Lunes 23 de noviembre de 2026 — Campos de solo números y texto que se salía de la tabla
+
+### Qué se hizo
+- **Texto que se montaba en otra columna (teléfono):** una descripción sin
+  espacios («edddd…») no se podía partir y se salía de su celda de 240 px.
+  Ahora `.tbl-deslizable td` lleva `overflow-wrap: anywhere`. Revisado con un
+  guion que mide cada celda (ancho del contenido contra ancho de la celda) en
+  Documentos, Descargas, reporte de Tareas, Clientes, Expediente, Honorarios,
+  Vencimientos y detalle de tarea, a 390, 1024 y 1366 px y con letra normal y
+  «Muy grande»: ninguna celda se desborda.
+- **Campos de solo números:** el formulario común reconoce por su nombre
+  `nit_cedula`, `telefono`, `identificacion` y `numero_cuenta` (solo dígitos) y
+  `nit_despacho` (dígitos y un guion para el dígito de verificación). Teclado
+  numérico en el teléfono (`inputmode`), filtro al escribir o pegar
+  (`data-solo-numeros`) y validación en el servidor con el mismo mensaje.
+  Cubre cliente, usuarios (crear/editar), Mi perfil, Mi firma, Datos del
+  despacho y cuentas bancarias. En los campos numéricos (montos, días) ya no
+  se puede escribir «e», «+» ni «-». La tarjeta profesional no entra: lleva
+  letras («123456-T»). Los datos guardados en la base local cumplen la regla.
+
+### Resultado
+Suite completa 1520 en verde. Pruebas nuevas en
+`pruebas/comunes/test_formularios.py` (36). Probado en el
+navegador: «9a0-0.1 2-3x-4» queda «9001234» (en el NIT del despacho,
+«900123-4»).
+
+### Pendientes
+- Los campos de las plantillas de documentos (ingresos brutos, patrimonio…)
+  son texto libre: no tienen tipo «número». Preguntar al usuario si los quiere
+  numéricos.
