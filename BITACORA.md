@@ -2700,3 +2700,18 @@ escritorio, letra «Muy grande» y teléfono.
 ### Resultado
 Suite completa en verde. Revisado en el navegador: inicio de sesión
 (escritorio y teléfono), recuperar contraseña y página pública.
+
+## Lunes 23 de noviembre de 2026 — Bloqueo por intentos: 15 minutos
+
+### Qué se hizo
+- Decisión del usuario: 5 intentos fallidos bloquean el inicio de sesión
+  15 minutos (antes 1 hora). `AXES_COOLOFF_TIME` se mide ahora en minutos con
+  la variable `AXES_TIEMPO_BLOQUEO_MINUTOS` (por defecto 15); la anterior,
+  `AXES_TIEMPO_BLOQUEO_HORAS`, ya no se lee.
+- `.env.example`, `instalar_vps.sh`, la guía de despliegue, la matriz de
+  seguridad y `CREDENCIALES_PRUEBA.md` dicen 15 minutos. Prueba nueva en
+  `pruebas/seguridad/test_seguridad_transversal.py`.
+
+### En el servidor
+No hace falta tocar el `.env`: la línea vieja (`AXES_TIEMPO_BLOQUEO_HORAS=1`)
+se ignora y rige el valor por defecto, 15 minutos.

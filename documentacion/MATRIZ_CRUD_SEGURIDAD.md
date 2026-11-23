@@ -151,7 +151,7 @@ de navegación: una ruta nueva queda cubierta sin escribir su prueba.
 | Ver finanzas de clientes ajenos | Selectores de finanzas restringidos a clientes asignados | `pruebas/finanzas/test_selectores.py`, `test_vistas.py` |
 | Contraseñas de usuarios | Hash de Django y validadores de contraseña; nunca en texto plano | `pruebas/seguridad/test_modelos.py`, `test_equipo_servicios.py` |
 | Credenciales de portales de clientes | Cifrado Fernet y vista enmascarada | `pruebas/clientes/test_credenciales.py` |
-| Fuerza bruta en el inicio de sesión | django-axes: bloqueo tras 5 intentos fallidos, durante 1 hora | `test_seguridad_transversal.py` |
+| Fuerza bruta en el inicio de sesión | django-axes: bloqueo tras 5 intentos fallidos, durante 15 minutos | `test_seguridad_transversal.py` |
 | XSS | Escape automático de las plantillas; datos de gráficos con `json_script` | `test_vistas.py` de calendario, tareas, documentos, expediente y reportes; `test_ayuda.py` |
 | Inyección SQL | Solo ORM, sin SQL concatenado | `test_vistas.py` de expediente y comunicaciones |
 | Archivos subidos | Validación de formato y tamaño (máximo 10 MB) | `pruebas/hallazgos`, `pruebas/expediente` |

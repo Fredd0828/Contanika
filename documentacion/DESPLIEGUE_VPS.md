@@ -136,4 +136,4 @@ scp "root@203.0.113.10:/var/backups/contanika/*" .\respaldos-contanika\
 | La página muestra «502 Bad Gateway» | `journalctl -u contanika -n 50` muestra el error de la aplicación. |
 | No llegan los correos | Revise `CORREO_*` en `/srv/contanika/codigo/.env` y reinicie con `systemctl restart contanika`. |
 | Quiere ver los errores de la aplicación | `tail -n 50 /srv/contanika/codigo/registros/*.log` |
-| Se bloqueó el inicio de sesión por intentos | Espere una hora, o como root: `cd /srv/contanika/codigo && sudo -u contanika .venv/bin/python gestionar.py axes_reset` |
+| Se bloqueó el inicio de sesión por intentos | Espere 15 minutos, o como root: `cd /srv/contanika/codigo && sudo -u contanika .venv/bin/python gestionar.py axes_reset` |

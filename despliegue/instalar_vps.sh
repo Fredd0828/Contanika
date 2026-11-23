@@ -197,7 +197,7 @@ CORREO_REMITENTE=Contanika <$CORREO_USUARIO>
 
 SESION_DURACION_HORAS=8
 AXES_INTENTOS_MAXIMOS=5
-AXES_TIEMPO_BLOQUEO_HORAS=1
+AXES_TIEMPO_BLOQUEO_MINUTOS=15
 EOF
     cat > "$SECRETOS" <<EOF
 # Solo para despliegue/actualizar.sh: el dueño de las tablas aplica las migraciones.
