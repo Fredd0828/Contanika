@@ -1,10 +1,11 @@
 """
 Modelos del módulo 9: expediente y bitácora por cliente.
 
-La bitácora es cronológica e inmutable: las anotaciones no se editan ni se
-eliminan, solo se marcan como archivadas por el Administrador, de modo que el
-historial de gestión de cada cliente quede completo desde su ingreso al
-despacho.
+La bitácora es cronológica: una anotación vigente no se edita ni se elimina.
+El Administrador puede archivarla y, ya archivada, corregirla o eliminarla
+(decisión del usuario, 23-nov-2026). Cada una de esas acciones queda en el
+registro de acciones del expediente (`AccionAnotacion`), que no se borra
+aunque la anotación sí.
 """
 
 from django.db import models
@@ -73,9 +74,58 @@ class Anotacion(models.Model):
 
     def delete(self, *args, **kwargs):
         """
-        Impide eliminar anotaciones de la bitácora.
+        Impide borrar una anotación por accidente.
 
         Si algo intenta borrar una anotación, el sistema la archiva en su
-        lugar para no perder la trazabilidad del expediente.
+        lugar. El borrado real solo lo hace `servicios.eliminar_anotacion`,
+        sobre una anotación ya archivada y dejando constancia en el registro.
         """
         self.archivar()
+
+
+class AccionAnotacion(models.Model):
+    """
+    Lo que el Administrador hizo con una anotación del expediente: archivarla,
+    restaurarla, corregirla o eliminarla. Queda aunque la anotación se borre.
+    """
+
+    ARCHIVO = "Archivó"
+    RESTAURO = "Restauró"
+    EDITO = "Editó"
+    ELIMINO = "Eliminó"
+    OPCIONES_ACCION = [(ARCHIVO, ARCHIVO), (RESTAURO, RESTAURO), (EDITO, EDITO), (ELIMINO, ELIMINO)]
+
+    id_accion = models.AutoField(primary_key=True)
+    anotacion = models.ForeignKey(
+        Anotacion,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        db_column="id_anotacion",
+        related_name="acciones",
+    )
+    cliente = models.ForeignKey(
+        "clientes.Cliente",
+        on_delete=models.CASCADE,
+        db_column="id_cliente",
+        related_name="acciones_expediente",
+    )
+    usuario = models.ForeignKey(
+        "seguridad.Usuario",
+        on_delete=models.PROTECT,
+        db_column="id_usuario",
+        related_name="acciones_expediente",
+    )
+    accion = models.CharField(max_length=20, choices=OPCIONES_ACCION)
+    fecha_hora = models.DateTimeField(auto_now_add=True)
+    # Qué anotación era (tipo, fecha y contenido) y, al editar, qué cambió.
+    detalle = models.TextField(blank=True)
+
+    class Meta:
+        db_table = "accion_anotacion"
+        verbose_name = "acción sobre una anotación"
+        verbose_name_plural = "acciones sobre anotaciones"
+        ordering = ["-fecha_hora", "-id_accion"]
+
+    def __str__(self):
+        return f"{self.usuario} {self.accion.lower()} una anotación de {self.cliente}"

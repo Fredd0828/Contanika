@@ -317,6 +317,52 @@ class Abono(models.Model):
         return f"Abono ${self.monto} a cuenta {self.cuenta_cobro_id}"
 
 
+class AbonoEliminado(models.Model):
+    """
+    Constancia de un pago o abono que el Administrador eliminó porque quedó
+    mal (23-nov-2026). Guarda una copia del abono, quién lo eliminó, cuándo y
+    por qué; se conserva aunque después se elimine la cuenta de cobro.
+    """
+
+    id_abono_eliminado = models.AutoField(primary_key=True)
+    cuenta_cobro = models.ForeignKey(
+        CuentaCobro,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        db_column="id_cuenta_cobro",
+        related_name="abonos_eliminados",
+    )
+    numero_cuenta = models.PositiveIntegerField()
+    cliente = models.ForeignKey(
+        "clientes.Cliente",
+        on_delete=models.CASCADE,
+        db_column="id_cliente",
+        related_name="abonos_eliminados",
+    )
+    fecha_abono = models.DateField()
+    monto = models.DecimalField(max_digits=12, decimal_places=2)
+    metodo_pago = models.CharField(max_length=40, blank=True)
+    registrado_por = models.CharField(max_length=150)
+    eliminado_por = models.ForeignKey(
+        "seguridad.Usuario",
+        on_delete=models.PROTECT,
+        db_column="id_usuario_elimino",
+        related_name="abonos_eliminados",
+    )
+    fecha_eliminacion = models.DateTimeField(auto_now_add=True)
+    motivo = models.TextField()
+
+    class Meta:
+        db_table = "abono_eliminado"
+        verbose_name = "abono eliminado"
+        verbose_name_plural = "abonos eliminados"
+        ordering = ["-fecha_eliminacion", "-id_abono_eliminado"]
+
+    def __str__(self):
+        return f"Abono eliminado ${self.monto} de la cuenta {self.numero_cuenta}"
+
+
 # ---------------------------------------------------------------------------
 # Envíos y programación (ampliación de alcance del Módulo 6)
 # ---------------------------------------------------------------------------

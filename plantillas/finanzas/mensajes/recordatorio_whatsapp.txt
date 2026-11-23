@@ -1,4 +1,4 @@
-{% autoescape off %}Hola, {{ cliente.nombre_razon_social }}. {% if en_mora %}Le recordamos que la cuenta de cobro No. {{ cuenta.pk }} de {{ nombre_despacho }} venció el {{ fecha_vencimiento }} y tiene un saldo pendiente de {{ saldo_pendiente }}.{% else %}Le recordamos que la cuenta de cobro No. {{ cuenta.pk }} de {{ nombre_despacho }}, con saldo pendiente de {{ saldo_pendiente }}, vence el {{ fecha_vencimiento }}.{% endif %}
+{% autoescape off %}Hola, {{ cliente.nombre_razon_social }}. {% if en_mora %}Le recordamos que la cuenta de cobro No. {{ cuenta.pk }}{% if nombre_despacho %} de {{ nombre_despacho }}{% endif %} venció el {{ fecha_vencimiento }} y tiene un saldo pendiente de {{ saldo_pendiente }}.{% else %}Le recordamos que la cuenta de cobro No. {{ cuenta.pk }}{% if nombre_despacho %} de {{ nombre_despacho }}{% endif %}, con saldo pendiente de {{ saldo_pendiente }}, vence el {{ fecha_vencimiento }}.{% endif %}
 {% if cuenta_bancaria %}
 Pago: {{ cuenta_bancaria.banco }}, cuenta {{ cuenta_bancaria.tipo_cuenta|lower }} No. {{ cuenta_bancaria.numero_cuenta }} a nombre de {{ cuenta_bancaria.titular }}.
 {% endif %}

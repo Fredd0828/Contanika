@@ -196,6 +196,15 @@ def seccion_tareas(usuario, hoy):
 
     return {
         "por_estado": por_estado,
+        # Gráfica de círculo de las tareas por estado (23-nov-2026).
+        "dona": {
+            "etiquetas": [fila["estado"] for fila in por_estado],
+            "valores": [fila["cantidad"] for fila in por_estado],
+            "colores": ["--teal-claro", "--teal", "--orange", "--green"],
+            "formato": "numero",
+            "centro": "tareas",
+            "leyenda": False,
+        },
         "total": total,
         "activas": total - terminadas,
         "atrasadas": activas.filter(fecha_vencimiento__lt=hoy).count(),

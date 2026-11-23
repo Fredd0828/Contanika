@@ -46,11 +46,44 @@ class Grafico:
 
 
 @dataclass
+class Circulo:
+    """
+    Gráfica de círculo (dona) de la pantalla del reporte (23-nov-2026): cómo
+    se reparte un total. `formato` es "numero" (cantidades) o "pesos".
+    """
+
+    titulo: str
+    partes: list  # [(etiqueta, valor)]
+    formato: str = "numero"
+    centro: str = ""
+    colores: list = field(default_factory=list)
+
+    @property
+    def tiene_datos(self):
+        return any(valor for _, valor in self.partes)
+
+
+def contar_por(filas, indice, orden=()):
+    """
+    Cuántas filas hay de cada valor de una columna, para un `Circulo`. Los
+    valores de `orden` van primero y en ese orden; los demás, de mayor a menor.
+    Los que no tienen filas no se muestran.
+    """
+    conteo = {}
+    for fila in filas:
+        etiqueta = fila[indice] or "Sin dato"
+        conteo[etiqueta] = conteo.get(etiqueta, 0) + 1
+    primero = [(etiqueta, conteo.pop(etiqueta)) for etiqueta in orden if etiqueta in conteo]
+    return primero + sorted(conteo.items(), key=lambda par: (-par[1], par[0]))
+
+
+@dataclass
 class ResultadoReporte:
     secciones: list
     resumen: list = field(default_factory=list)  # [(etiqueta, valor ya formateado)]
     grafico: Grafico | None = None
     notas: list = field(default_factory=list)
+    circulos: list = field(default_factory=list)  # [Circulo], solo en pantalla
 
     @property
     def total_filas(self):

@@ -1,17 +1,32 @@
 {% extends "base.html" %}
-{% load finanzas_tags %}
+{% load finanzas_tags static %}
 
 {% block titulo %}Panel principal{% endblock %}
 
 {% block contenido %}
 <div class="pp-tablero">
 {# Qué es Contanika, en una frase: lo primero que se lee al entrar. #}
-<p class="pp-proposito">
-    <span class="pp-proposito-icono" aria-hidden="true"><i class="bi bi-grid-3x3-gap-fill"></i></span>
-    <span><strong>Contanika</strong> reúne en un solo lugar los clientes, el calendario tributario, las tareas, los
+{# Se puede cerrar con la X; queda cerrado en este navegador (23-nov-2026). #}
+<p class="pp-proposito" id="ppProposito">
+    <img class="pp-proposito-simbolo" src="{% static 'img/marca/contanika-simbolo-claro.svg' %}" alt="" width="36" height="36">
+    <span class="pp-proposito-texto"><strong>Contanika</strong> reúne en un solo lugar los clientes, el calendario tributario, las tareas, los
         documentos y la cartera del despacho, para que ninguna obligación se venza y todo el equipo trabaje con la
         misma información.</span>
+    <button type="button" class="pp-proposito-cerrar" id="cerrarProposito" aria-label="Cerrar este mensaje" title="Cerrar este mensaje">
+        <i class="bi bi-x-lg"></i>
+    </button>
 </p>
+<script>
+(function () {
+    var mensaje = document.getElementById("ppProposito");
+    var CLAVE = "contanika.proposito.cerrado";
+    try { if (localStorage.getItem(CLAVE) === "1") { mensaje.hidden = true; } } catch (error) { /* sin almacenamiento */ }
+    document.getElementById("cerrarProposito").addEventListener("click", function () {
+        mensaje.hidden = true;
+        try { localStorage.setItem(CLAVE, "1"); } catch (error) { /* sin almacenamiento */ }
+    });
+})();
+</script>
 {% if tablero.indicadores %}
 {# Resumen: el único bloque oscuro del tablero. El estado de cada cifra va en el punto de su detalle. #}
 <section class="pp-resumen" aria-label="Resumen del despacho">
@@ -155,15 +170,22 @@
 
         <div class="sec-lbl">Tareas por estado</div>
         {% if seccion.total %}
-        <div class="pp-barras">
-            {% for fila in seccion.por_estado %}
-            <div class="pp-barra">
-                <span class="pp-barra-etq">{{ fila.estado }}</span>
-                <span class="pp-barra-pista"><span class="pp-barra-relleno{% if fila.terminado %} pp-relleno-verde{% endif %}" style="width:{{ fila.ancho }}%"></span></span>
-                <span class="pp-barra-num">{{ fila.cantidad }}</span>
+        {# Círculo con el total al centro y, al lado, las cifras exactas (23-nov-2026). #}
+        <div class="pp-dona-fila">
+            <div class="pp-dona">
+                <canvas data-dona="datos-dona-tareas" role="img" aria-label="Tareas por estado: {% for fila in seccion.por_estado %}{{ fila.estado }} {{ fila.cantidad }}{% if not forloop.last %}, {% endif %}{% endfor %}"></canvas>
             </div>
-            {% endfor %}
+            <div class="pp-barras">
+                {% for fila in seccion.por_estado %}
+                <div class="pp-barra">
+                    <span class="pp-barra-etq"><span class="pp-dona-punto pp-dona-punto-{{ forloop.counter }}"></span>{{ fila.estado }}</span>
+                    <span class="pp-barra-pista"><span class="pp-barra-relleno{% if fila.terminado %} pp-relleno-verde{% endif %}" style="width:{{ fila.ancho }}%"></span></span>
+                    <span class="pp-barra-num">{{ fila.cantidad }}</span>
+                </div>
+                {% endfor %}
+            </div>
         </div>
+        {{ seccion.dona|json_script:"datos-dona-tareas" }}
 
         <div class="sec-lbl mt-3">Avance del tablero</div>
         <div class="pp-medidor-fila">
@@ -388,8 +410,9 @@
 {% if tablero.vencimientos.hay_semanas %}{{ tablero.vencimientos.grafico|json_script:"datos-vencimientos" }}{% endif %}
 {% if tablero.finanzas.hay_meses %}{{ tablero.finanzas.grafico|json_script:"datos-finanzas" }}{% endif %}
 
-{% if tablero.vencimientos.hay_semanas or tablero.finanzas.hay_meses %}
+{% if tablero.vencimientos.hay_semanas or tablero.finanzas.hay_meses or tablero.tareas.total %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" integrity="sha384-9nhczxUqK87bcKHh20fSQcTGD4qq5GhayNYSYWqwBkINBhOfQLg/P5HG5lF1urn4" crossorigin="anonymous"></script>
+<script src="{% static 'js/circulos.js' %}"></script>
 <script>
 (function () {
     // Sin la librería (sin conexión), los datos siguen disponibles en «Ver los datos en tabla».

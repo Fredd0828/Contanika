@@ -76,6 +76,19 @@ class AnotacionForm(ModeloFormularioBase):
         return archivos
 
 
+class EditarAnotacionForm(ModeloFormularioBase):
+    """Corrección de una anotación archivada: tipo, fecha y contenido (el cliente y el autor no cambian)."""
+
+    class Meta:
+        model = Anotacion
+        fields = ["tipo_anotacion", "fecha", "contenido"]
+        widgets = AnotacionForm.Meta.widgets
+        labels = AnotacionForm.Meta.labels
+
+    def clean_tipo_anotacion(self):
+        return self.cleaned_data["tipo_anotacion"].strip()
+
+
 class FiltroAnotacionesForm(FormularioBase):
     """Filtros desplegables del expediente: cliente, tipo y rango de fechas."""
 

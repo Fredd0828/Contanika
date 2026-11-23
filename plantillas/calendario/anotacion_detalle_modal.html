@@ -1,0 +1,22 @@
+<div class="modal-header">
+    <h5 class="modal-title"><i class="bi bi-sticky"></i> Anotación del calendario</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+</div>
+<div class="modal-body">
+    {% include "calendario/_anotacion_detalle_cuerpo.html" %}
+</div>
+<div class="modal-footer">
+    {% if puede_modificar %}
+    <form method="post" action="{% url 'calendario:eliminar_anotacion' anotacion.pk %}" class="me-auto"
+          onsubmit="return confirm('¿Eliminar esta anotación del calendario? No se puede deshacer.')">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline-danger"><i class="bi bi-trash"></i> Eliminar</button>
+    </form>
+    {% endif %}
+    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
+    {% if puede_modificar %}
+    <button type="button" class="btn btn-primary" data-cargar-en-modal="{% url 'calendario:editar_anotacion' anotacion.pk %}">
+        <i class="bi bi-pencil"></i> Editar
+    </button>
+    {% endif %}
+</div>

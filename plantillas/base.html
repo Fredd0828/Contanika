@@ -44,10 +44,11 @@
 {% if user.is_authenticated %}
 <aside id="sidebar">
     <div class="s-logo">
-        <div class="s-logo-wrap">
-            <div class="s-logo-icon"><i class="bi bi-grid-3x3-gap-fill"></i></div>
-            <div class="s-name"><span class="w">Conta</span><span class="o">nika</span></div>
-        </div>
+        {# Logo de la marca (23-nov-2026): versión para fondo oscuro; con el menú plegado, solo el símbolo. #}
+        <a class="s-logo-wrap" href="{% url 'seguridad:panel' %}" title="Contanika: ir al panel">
+            <img class="s-logo-completo" src="{% static 'img/marca/contanika-logo-oscuro.svg' %}" alt="Contanika" width="168" height="26">
+            <img class="s-logo-simbolo" src="{% static 'img/marca/contanika-simbolo-oscuro.svg' %}" alt="Contanika" width="34" height="34">
+        </a>
     </div>
     <div class="s-menu">
         {% for seccion in menu_lateral %}
@@ -297,18 +298,40 @@
 
     // Campos de solo números (data-solo-numeros, lo pone el formulario común):
     // al escribir o pegar se borra lo que no sea número; el NIT admite un
-    // guion para el dígito de verificación. En los campos numéricos (montos,
-    // días) no se deja escribir «e», «+» ni «-». El servidor valida igual.
+    // guion para el dígito de verificación. «pesos» pone los puntos de miles
+    // mientras se escribe y admite una coma con dos decimales; «decimal»
+    // (porcentajes) admite una coma. En los campos numéricos (montos, días)
+    // no se deja escribir «e», «+» ni «-». El servidor valida igual.
+    function limpiarNumero(tipo, texto) {
+        if (tipo === "nit") {
+            return texto.replace(/[^0-9-]/g, "").replace(/^-+/, "").replace(/-(?=.*-)/g, "");
+        }
+        if (tipo !== "pesos" && tipo !== "decimal") { return texto.replace(/[^0-9]/g, ""); }
+        // En pesos el punto es de miles; en un porcentaje, el punto vale como coma.
+        var base = tipo === "pesos" ? texto.replace(/[^0-9,]/g, "") : texto.replace(/\./g, ",").replace(/[^0-9,]/g, "");
+        var coma = base.indexOf(",");
+        var entero = coma === -1 ? base : base.slice(0, coma);
+        var decimales = coma === -1 ? "" : "," + base.slice(coma + 1).replace(/,/g, "").slice(0, 2);
+        if (tipo === "pesos") {
+            entero = entero.replace(/^0+(?=\d)/, "").replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        }
+        return entero + decimales;
+    }
     document.addEventListener("input", function (evento) {
         var campo = evento.target;
         var tipo = campo.getAttribute && campo.getAttribute("data-solo-numeros");
         if (!tipo) { return; }
         var antes = campo.value;
-        var limpio = tipo === "nit"
-            ? antes.replace(/[^0-9-]/g, "").replace(/^-+/, "").replace(/-(?=.*-)/g, "")
-            : antes.replace(/[^0-9]/g, "");
+        var limpio = limpiarNumero(tipo, antes);
         if (limpio === antes) { return; }
-        var posicion = Math.max(0, (campo.selectionStart || limpio.length) - (antes.length - limpio.length));
+        // El cursor queda después de los mismos dígitos (y coma) que tenía delante.
+        var cursor = campo.selectionStart === null ? antes.length : campo.selectionStart;
+        // En un porcentaje el punto escrito se vuelve coma, así que también cuenta.
+        var utiles = antes.slice(0, cursor).replace(tipo === "decimal" ? /[^0-9,.]/g : /[^0-9,-]/g, "").length;
+        var posicion = 0;
+        for (var contados = 0; posicion < limpio.length && contados < utiles; posicion++) {
+            if (/[0-9,-]/.test(limpio.charAt(posicion))) { contados++; }
+        }
         campo.value = limpio;
         try { campo.setSelectionRange(posicion, posicion); } catch (error) { /* campo sin selección */ }
     });
@@ -317,6 +340,44 @@
             evento.preventDefault();
         }
     });
+
+    // Correos: al salir del campo (y al enviar el formulario) se avisa si no
+    // tiene la forma nombre@dominio.com. El servidor lo rechaza igual.
+    var PATRON_CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+    function revisarCorreo(campo) {
+        var valor = campo.value.trim();
+        var malo = valor !== "" && !PATRON_CORREO.test(valor);
+        var aviso = campo.parentNode.querySelector(".aviso-correo");
+        campo.classList.toggle("is-invalid", malo);
+        if (malo && !aviso) {
+            aviso = document.createElement("div");
+            aviso.className = "invalid-feedback aviso-correo";
+            aviso.textContent = "Escriba un correo válido, con @ y dominio (por ejemplo nombre@empresa.com).";
+            campo.insertAdjacentElement("afterend", aviso);
+        } else if (!malo && aviso) {
+            aviso.remove();
+        }
+        return !malo;
+    }
+    document.addEventListener("focusout", function (evento) {
+        if (evento.target.type === "email") { revisarCorreo(evento.target); }
+    });
+    document.addEventListener("input", function (evento) {
+        // Mientras corrige, el aviso se quita en cuanto el correo queda bien.
+        if (evento.target.type === "email" && evento.target.classList.contains("is-invalid")) {
+            revisarCorreo(evento.target);
+        }
+    });
+    document.addEventListener("submit", function (evento) {
+        var malos = Array.prototype.filter.call(
+            evento.target.querySelectorAll('input[type="email"]'),
+            function (campo) { return !revisarCorreo(campo); }
+        );
+        if (malos.length) {
+            evento.preventDefault();
+            malos[0].focus();
+        }
+    }, true);
 
     // Tablas en teléfono: siguen siendo tablas y se deslizan de lado, con la
     // primera columna fija (decisión del usuario, 22-nov-2026; antes cada fila

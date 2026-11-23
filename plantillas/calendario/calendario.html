@@ -105,9 +105,9 @@
                         {{ evento|titulo_evento|truncatechars:28 }}
                     </a>
                     {% else %}
-                    <span class="cal-ev {{ evento|clase_evento }}" title="{{ evento.objeto.contenido }}">
+                    <a href="{{ evento|url_evento }}" class="cal-ev {{ evento|clase_evento }} js-anotacion-cal" title="{{ evento.objeto.contenido }}">
                         <i class="bi bi-sticky"></i> {{ evento|titulo_evento|truncatechars:25 }}
-                    </span>
+                    </a>
                     {% endif %}
                 {% endfor %}
             </div>
@@ -126,9 +126,9 @@
                     {{ evento|titulo_evento|truncatechars:40 }}
                 </a>
                 {% else %}
-                <span class="cal-ev {{ evento|clase_evento }}" title="{{ evento.objeto.contenido }}">
+                <a href="{{ evento|url_evento }}" class="cal-ev {{ evento|clase_evento }} js-anotacion-cal" title="{{ evento.objeto.contenido }}">
                     <i class="bi bi-sticky"></i> {{ evento|titulo_evento|truncatechars:37 }}
-                </span>
+                </a>
                 {% endif %}
             {% empty %}
                 <span class="cal-vacio">Sin eventos</span>
@@ -147,9 +147,9 @@
                 {{ evento|titulo_evento }}
             </a>
             {% else %}
-            <span class="cal-ev cal-ev-grande {{ evento|clase_evento }}">
+            <a href="{{ evento|url_evento }}" class="cal-ev cal-ev-grande {{ evento|clase_evento }} js-anotacion-cal">
                 <i class="bi bi-sticky"></i> {{ evento.objeto.contenido }}
-            </span>
+            </a>
             {% endif %}
         {% empty %}
             <p class="text-muted mt-3">No hay vencimientos ni anotaciones para este día.</p>
@@ -166,4 +166,48 @@
         <span class="cal-ev ev-anotacion"><i class="bi bi-sticky"></i> Anotación</span>
     </div>
 </div>
+
+{# Al hacer clic en una anotación se abre aquí; desde el modal se edita o se elimina (23-nov-2026). #}
+<div class="modal fade" id="modalAnotacionCal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content"></div>
+    </div>
+</div>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const elemento = document.getElementById("modalAnotacionCal");
+    if (!elemento || !window.bootstrap) return;
+    const modal = bootstrap.Modal.getOrCreateInstance(elemento);
+    const contenido = elemento.querySelector(".modal-content");
+
+    function cargar(url) {
+        contenido.innerHTML = '<div class="modal-body text-center"><div class="spinner-border text-teal" role="status"></div><p class="mt-2 text-muted">Cargando...</p></div>';
+        fetch(url, { headers: { "X-Requested-With": "XMLHttpRequest" } })
+            .then(function (respuesta) {
+                if (!respuesta.ok) throw new Error("No se pudo cargar");
+                return respuesta.text();
+            })
+            .then(function (html) { contenido.innerHTML = html; })
+            .catch(function () {
+                contenido.innerHTML = '<div class="modal-header"><h5 class="modal-title">Anotación</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button></div><div class="modal-body"><div class="alert alert-danger mb-0">No se pudo abrir la anotación. Intente de nuevo.</div></div>';
+            });
+    }
+
+    // Sin JavaScript, el enlace abre la página de la anotación.
+    document.addEventListener("click", function (evento) {
+        const enlace = evento.target.closest(".js-anotacion-cal");
+        if (enlace) {
+            evento.preventDefault();
+            cargar(enlace.href);
+            modal.show();
+            return;
+        }
+        const boton = evento.target.closest("[data-cargar-en-modal]");
+        if (boton && elemento.contains(boton)) {
+            cargar(boton.dataset.cargarEnModal);
+        }
+    });
+    elemento.addEventListener("hidden.bs.modal", function () { contenido.innerHTML = ""; });
+});
+</script>
 {% endblock %}

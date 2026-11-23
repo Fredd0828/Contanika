@@ -1,4 +1,4 @@
-{% autoescape off %}Hola, {{ cliente.nombre_razon_social }}. Le compartimos la cuenta de cobro No. {{ cuenta.pk }} de {{ nombre_despacho }} por {{ valor_total }} ({{ cuenta.periodo_facturado|lower }}), con fecha límite de pago {{ fecha_vencimiento }}.
+{% autoescape off %}Hola, {{ cliente.nombre_razon_social }}. Le compartimos la cuenta de cobro No. {{ cuenta.pk }}{% if nombre_despacho %} de {{ nombre_despacho }}{% endif %} por {{ valor_total }} ({{ cuenta.periodo_facturado|lower }}), con fecha límite de pago {{ fecha_vencimiento }}.
 {% if cuenta_bancaria %}
 Pago: {{ cuenta_bancaria.banco }}, cuenta {{ cuenta_bancaria.tipo_cuenta|lower }} No. {{ cuenta_bancaria.numero_cuenta }} a nombre de {{ cuenta_bancaria.titular }}.
 {% endif %}

@@ -1,0 +1,36 @@
+{# Campos de una anotación del calendario: en la página de crear o editar y en el modal de editar. #}
+{% csrf_token %}
+{% if formulario.non_field_errors %}
+<div class="alert alert-danger">{{ formulario.non_field_errors }}</div>
+{% endif %}
+<div class="row g-3">
+    <div class="col-md-4">
+        <label class="form-label" for="{{ formulario.fecha.id_for_label }}">{{ formulario.fecha.label }}</label>
+        {{ formulario.fecha }}
+        {{ formulario.fecha.errors }}
+    </div>
+    <div class="col-md-8">
+        <label class="form-label" for="{{ formulario.visibilidad.id_for_label }}">{{ formulario.visibilidad.label }}</label>
+        {{ formulario.visibilidad }}
+        {{ formulario.visibilidad.errors }}
+    </div>
+    <div class="col-12">
+        <label class="form-label" for="{{ formulario.contenido.id_for_label }}">{{ formulario.contenido.label }}</label>
+        {{ formulario.contenido }}
+        {{ formulario.contenido.errors }}
+    </div>
+    <div class="col-12">
+        <label class="form-label">{{ formulario.destinatarios.label }}</label>
+        <div class="form-text mb-1">{{ formulario.destinatarios.help_text }}</div>
+        {# Cada compañero como casilla de Bootstrap: el widget por defecto se encogía y tapaba los botones. #}
+        <div class="d-flex flex-wrap gap-3">
+            {% for opcion in formulario.destinatarios %}
+            <div class="form-check mb-0">
+                {{ opcion.tag }}
+                <label class="form-check-label" for="{{ opcion.id_for_label }}">{{ opcion.choice_label }}</label>
+            </div>
+            {% endfor %}
+        </div>
+        {{ formulario.destinatarios.errors }}
+    </div>
+</div>

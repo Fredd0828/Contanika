@@ -40,6 +40,20 @@ class CampoPlantilla(models.Model):
     REPETIBLE = "Repetible"
     OPCIONES_TIPO_CAMPO = [(SIMPLE, SIMPLE), (REPETIBLE, REPETIBLE)]
 
+    # Qué se escribe en el campo al generar el documento (23-nov-2026): un
+    # valor en pesos, un número (identificación) o un porcentaje solo
+    # aceptan números; el texto, cualquier cosa.
+    TEXTO = "Texto"
+    PESOS = "Valor en pesos"
+    NUMERO = "Número"
+    PORCENTAJE = "Porcentaje"
+    OPCIONES_TIPO_DATO = [
+        (TEXTO, TEXTO),
+        (PESOS, PESOS),
+        (NUMERO, "Número (sin puntos)"),
+        (PORCENTAJE, PORCENTAJE),
+    ]
+
     id_campo = models.AutoField(primary_key=True)
     plantilla = models.ForeignKey(
         Plantilla,
@@ -49,6 +63,7 @@ class CampoPlantilla(models.Model):
     )
     nombre_campo = models.CharField(max_length=80)
     tipo_campo = models.CharField(max_length=20, choices=OPCIONES_TIPO_CAMPO, default=SIMPLE)
+    tipo_dato = models.CharField("tipo de dato", max_length=20, choices=OPCIONES_TIPO_DATO, default=TEXTO)
     es_repetible = models.BooleanField(default=False)
 
     class Meta:
@@ -62,6 +77,39 @@ class CampoPlantilla(models.Model):
 
     def __str__(self):
         return f"{self.nombre_campo} ({self.tipo_campo})"
+
+    @classmethod
+    def tipo_dato_sugerido(cls, nombre_campo):
+        """
+        Tipo de dato que corresponde, por su nombre, a los campos de las
+        plantillas base («Valor del patrimonio» → pesos, «Identificación del
+        asalariado» → número, «Porcentaje de participación» → porcentaje).
+        """
+        nombre = nombre_campo.strip().lower()
+        if "porcentaje" in nombre:
+            return cls.PORCENTAJE
+        if nombre.startswith(
+            ("identificación", "identificacion", "cédula", "cedula", "número de identificación")
+        ):
+            return cls.NUMERO
+        if nombre.startswith(PREFIJOS_PESOS):
+            return cls.PESOS
+        return cls.TEXTO
+
+
+# Nombres de campo que son un valor en pesos (ver `CampoPlantilla.tipo_dato_sugerido`).
+PREFIJOS_PESOS = (
+    "valor",
+    "total",
+    "monto",
+    "ingreso",
+    "patrimonio",
+    "consignaciones",
+    "activo",
+    "pasivo",
+    "saldo",
+    "salario",
+)
 
 
 class Documento(models.Model):

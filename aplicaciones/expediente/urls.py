@@ -15,6 +15,8 @@ urlpatterns = [
         vistas.ArchivarAnotacionView.as_view(restaurar=True),
         name="restaurar",
     ),
+    path("expediente/<int:pk>/editar/", vistas.EditarAnotacionView.as_view(), name="editar"),
+    path("expediente/<int:pk>/eliminar/", vistas.EliminarAnotacionView.as_view(), name="eliminar"),
     path(
         "expediente/adjuntos/<int:pk>/descargar/",
         vistas.DescargarAdjuntoAnotacionView.as_view(),

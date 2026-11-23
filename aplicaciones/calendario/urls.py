@@ -74,6 +74,16 @@ urlpatterns = [
         name="crear_anotacion",
     ),
     path(
+        "calendario/anotaciones/<int:pk>/",
+        vistas.DetalleAnotacionView.as_view(),
+        name="detalle_anotacion",
+    ),
+    path(
+        "calendario/anotaciones/<int:pk>/editar/",
+        vistas.EditarAnotacionView.as_view(),
+        name="editar_anotacion",
+    ),
+    path(
         "calendario/anotaciones/<int:pk>/eliminar/",
         vistas.EliminarAnotacionView.as_view(),
         name="eliminar_anotacion",

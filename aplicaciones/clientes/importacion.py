@@ -10,6 +10,8 @@ número y motivo, y las válidas se importan aunque otras fallen.
 from io import BytesIO
 
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
 from django.db import transaction
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Alignment, Font, PatternFill
@@ -162,6 +164,17 @@ def _leer_fila(valores, mapa, numero_fila):
     responsable_iva = dato("responsable_iva").lower()
     if responsable_iva not in VALORES_VERDADEROS | VALORES_FALSOS:
         raise ValueError("El campo Responsable de IVA debe ser Sí o No.")
+
+    # Teléfono y correo con la misma regla del formulario (23-nov-2026).
+    if dato("telefono") and not dato("telefono").isdigit():
+        raise ValueError("El teléfono solo debe contener números, sin espacios, puntos ni guiones.")
+    if dato("correo_cliente"):
+        try:
+            validate_email(dato("correo_cliente"))
+        except ValidationError as error:
+            raise ValueError(
+                "El correo del cliente no es válido: debe tener la forma nombre@dominio.com."
+            ) from error
 
     correo_responsable = dato("responsable_correo")
     responsable = None

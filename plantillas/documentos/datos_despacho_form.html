@@ -3,6 +3,7 @@
 {% block titulo %}Datos del despacho{% endblock %}
 
 {% block contenido %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css" integrity="sha384-6LFfkTKLRlzFtgx8xsWyBdKGpcMMQTkv+dB7rAbugeJAu1Ym2q1Aji1cjHBG12Xh" crossorigin="anonymous">
 <div class="panel">
     <div class="ph mb-0">
         <div class="ph-title" style="font-size:18px"><i class="bi bi-building"></i> Datos del despacho</div>
@@ -12,14 +13,31 @@
 
 <div class="panel">
     <p class="text-muted">
-        Estos datos se imprimen en los documentos generados. Si carga la imagen del
-        membrete, esta reemplaza el nombre y la ciudad del despacho en el encabezado
-        de cada PDF.
+        Estos datos se imprimen en el encabezado de los documentos y de las cuentas de cobro.
+        El nombre es opcional: si carga el logo y deja el nombre vacío, el encabezado muestra solo el logo.
     </p>
-    {% if formulario.instance.membrete %}
-    <img src="{{ formulario.instance.membrete.url }}" alt="Membrete actual" style="max-height:90px;max-width:100%" class="mb-3 d-block">
-    {% endif %}
-    <form method="post" enctype="multipart/form-data">
+
+    {# Medidas recomendadas: el logo se imprime en 3,4 × 1,7 cm junto al nombre, o en 6,6 × 2,2 cm si va solo. #}
+    <div class="logo-guia mb-3">
+        <div class="logo-guia-vista">
+            <img id="vistaLogo" alt="Logo del despacho"
+                 {% if formulario.instance.membrete %}src="{{ formulario.instance.membrete.url }}"{% else %}hidden{% endif %}>
+            <span id="vistaLogoVacia" class="text-muted small"{% if formulario.instance.membrete %} hidden{% endif %}>Sin logo cargado</span>
+        </div>
+        <div class="small">
+            <div><strong>Medidas del logo:</strong> <span id="medidasLogo">{% if formulario.instance.membrete %}calculando…{% else %}—{% endif %}</span></div>
+            <div class="text-muted mt-1">
+                Para que se vea nítido:
+                <ul class="mb-0 ps-3">
+                    <li>Junto al nombre del despacho: proporción 2:1, por ejemplo <strong>800 × 400 px</strong>.</li>
+                    <li>Solo el logo, sin nombre: proporción 3:1, por ejemplo <strong>1200 × 400 px</strong>.</li>
+                </ul>
+                Use fondo blanco o transparente (PNG) y recorte los bordes vacíos.
+            </div>
+        </div>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" id="formDespacho">
         {% csrf_token %}
         <div class="row g-3">
             {% for campo in formulario %}
@@ -31,9 +49,162 @@
             </div>
             {% endfor %}
         </div>
-        <div class="d-flex gap-2 mt-4">
+        <div class="d-flex flex-wrap justify-content-end gap-2 mt-4">
+            <a class="ph-link" href="{% url 'documentos:historico' %}">Cancelar</a>
             <button type="submit" class="ph-btn"><i class="bi bi-save"></i> Guardar</button>
         </div>
     </form>
 </div>
+
+{# Recorte del logo antes de subirlo (23-nov-2026). #}
+<div class="modal fade" id="modalRecorte" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-crop"></i> Recortar el logo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                    <span class="small text-muted">Proporción:</span>
+                    <div class="btn-group btn-group-sm" role="group" aria-label="Proporción del recorte">
+                        <button type="button" class="btn btn-outline-primary active" data-proporcion="NaN">Libre</button>
+                        <button type="button" class="btn btn-outline-primary" data-proporcion="2">2:1 con nombre</button>
+                        <button type="button" class="btn btn-outline-primary" data-proporcion="3">3:1 solo logo</button>
+                        <button type="button" class="btn btn-outline-primary" data-proporcion="1">1:1</button>
+                    </div>
+                </div>
+                <div class="recorte-lienzo"><img id="imagenRecorte" alt="Imagen a recortar"></div>
+                <div class="small mt-2">
+                    Original: <strong id="medidaOriginal">—</strong> · Recorte: <strong id="medidaRecorte">—</strong>
+                    <span id="avisoRecorte" class="text-danger ms-1"></span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" id="usarSinRecortar">Usar sin recortar</button>
+                <button type="button" class="btn btn-primary" id="usarRecorte"><i class="bi bi-check2"></i> Usar recorte</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.js" integrity="sha384-jrOgQzBlDeUNdmQn3rUt/PZD+pdcRBdWd/HWRqRo+n2OR2QtGyjSaJC0GiCeH+ir" crossorigin="anonymous"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const entrada = document.getElementById("{{ formulario.membrete.id_for_label }}");
+    const vista = document.getElementById("vistaLogo");
+    const vistaVacia = document.getElementById("vistaLogoVacia");
+    const medidas = document.getElementById("medidasLogo");
+    const elementoModal = document.getElementById("modalRecorte");
+    const imagen = document.getElementById("imagenRecorte");
+    const medidaOriginal = document.getElementById("medidaOriginal");
+    const medidaRecorte = document.getElementById("medidaRecorte");
+    const aviso = document.getElementById("avisoRecorte");
+    if (!entrada || !elementoModal || !window.bootstrap) return;
+    const modal = bootstrap.Modal.getOrCreateInstance(elementoModal);
+    // El lado mayor del logo se limita a 2000 px: más no se nota en el PDF y pesa más.
+    const LADO_MAXIMO = 2000;
+    let recortador = null;
+    let archivoOriginal = null;
+    let urlTemporal = null;
+    let aplicado = false;
+
+    function textoMedidas(ancho, alto) {
+        const proporcion = alto ? (ancho / alto).toFixed(1).replace(".", ",") : "—";
+        return ancho + " × " + alto + " px (proporción " + proporcion + ":1)";
+    }
+    function mostrarMedidasDe(img) {
+        if (img.naturalWidth) { medidas.textContent = textoMedidas(img.naturalWidth, img.naturalHeight); }
+    }
+    if (!vista.hidden) {
+        if (vista.complete) { mostrarMedidasDe(vista); } else { vista.addEventListener("load", function () { mostrarMedidasDe(vista); }, { once: true }); }
+    }
+
+    function ponerEnEntrada(archivo) {
+        const transferencia = new DataTransfer();
+        transferencia.items.add(archivo);
+        entrada.files = transferencia.files;
+        const url = URL.createObjectURL(archivo);
+        vista.onload = function () { mostrarMedidasDe(vista); };
+        vista.src = url;
+        vista.hidden = false;
+        vistaVacia.hidden = true;
+    }
+
+    entrada.addEventListener("change", function () {
+        const archivo = entrada.files && entrada.files[0];
+        if (!archivo || !/^image\/(png|jpeg)$/.test(archivo.type) || !window.Cropper) {
+            // Sin la librería (sin conexión) o con otro formato, el archivo se sube tal cual.
+            if (archivo && /^image\//.test(archivo.type)) { ponerEnEntrada(archivo); }
+            return;
+        }
+        archivoOriginal = archivo;
+        aplicado = false;
+        if (urlTemporal) { URL.revokeObjectURL(urlTemporal); }
+        urlTemporal = URL.createObjectURL(archivo);
+        imagen.src = urlTemporal;
+        modal.show();
+    });
+
+    elementoModal.addEventListener("shown.bs.modal", function () {
+        if (recortador) { recortador.destroy(); }
+        recortador = new Cropper(imagen, {
+            viewMode: 1,
+            autoCropArea: 1,
+            background: true,
+            responsive: true,
+            ready: function () {
+                const datos = recortador.getImageData();
+                medidaOriginal.textContent = textoMedidas(datos.naturalWidth, datos.naturalHeight);
+            },
+            crop: function (evento) {
+                const ancho = Math.round(evento.detail.width);
+                const alto = Math.round(evento.detail.height);
+                medidaRecorte.textContent = textoMedidas(ancho, alto);
+                aviso.textContent = ancho < 400 || alto < 150 ? "Es pequeño: puede verse borroso en el PDF." : "";
+            }
+        });
+    });
+    elementoModal.addEventListener("hidden.bs.modal", function () {
+        if (recortador) { recortador.destroy(); recortador = null; }
+        // Si se cerró sin elegir, queda el archivo original.
+        if (!aplicado && archivoOriginal) { ponerEnEntrada(archivoOriginal); }
+    });
+
+    elementoModal.querySelectorAll("[data-proporcion]").forEach(function (boton) {
+        boton.addEventListener("click", function () {
+            elementoModal.querySelectorAll("[data-proporcion]").forEach(function (otro) { otro.classList.remove("active"); });
+            boton.classList.add("active");
+            if (recortador) { recortador.setAspectRatio(Number(boton.dataset.proporcion)); }
+        });
+    });
+
+    document.getElementById("usarSinRecortar").addEventListener("click", function () {
+        aplicado = true;
+        ponerEnEntrada(archivoOriginal);
+        modal.hide();
+    });
+
+    document.getElementById("usarRecorte").addEventListener("click", function () {
+        if (!recortador) return;
+        const datos = recortador.getData(true);
+        const escala = Math.min(1, LADO_MAXIMO / Math.max(datos.width, datos.height));
+        const lienzo = recortador.getCroppedCanvas({
+            width: Math.round(datos.width * escala),
+            height: Math.round(datos.height * escala),
+            imageSmoothingQuality: "high",
+            // El JPG no tiene transparencia: el fondo queda blanco.
+            fillColor: archivoOriginal.type === "image/jpeg" ? "#fff" : "transparent"
+        });
+        const tipo = archivoOriginal.type === "image/jpeg" ? "image/jpeg" : "image/png";
+        lienzo.toBlob(function (blob) {
+            if (!blob) return;
+            const nombre = archivoOriginal.name.replace(/\.[^.]+$/, "") + (tipo === "image/png" ? ".png" : ".jpg");
+            aplicado = true;
+            ponerEnEntrada(new File([blob], nombre, { type: tipo }));
+            modal.hide();
+        }, tipo, 0.92);
+    });
+});
+</script>
 {% endblock %}

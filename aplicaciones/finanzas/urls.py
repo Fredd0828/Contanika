@@ -47,6 +47,11 @@ urlpatterns = [
         vistas.RegistrarAbonoView.as_view(),
         name="registrar_abono",
     ),
+    path(
+        "honorarios/abonos/<int:pk>/eliminar/",
+        vistas.EliminarAbonoView.as_view(),
+        name="eliminar_abono",
+    ),
     path("honorarios/cartera/", vistas.CarteraView.as_view(), name="cartera"),
     # Envíos (HU045-HU047) y programación
     path(

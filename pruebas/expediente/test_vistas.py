@@ -4,7 +4,7 @@ import pytest
 from django.urls import reverse
 
 from aplicaciones.comunes.models import Adjunto
-from aplicaciones.expediente.models import Anotacion
+from aplicaciones.expediente.models import AccionAnotacion, Anotacion
 from aplicaciones.seguridad.models import Modulo, PermisoRolModulo
 
 from .conftest import archivo_prueba
@@ -183,12 +183,12 @@ def test_junior_maximo_tres_adjuntos(client, usuario_junior, cliente_junior):
     assert not Adjunto.objects.exists()
 
 
-def test_no_existen_rutas_para_editar_o_eliminar():
-    from django.urls import NoReverseMatch
-
-    for nombre in ("expediente:editar", "expediente:eliminar"):
-        with pytest.raises(NoReverseMatch):
-            reverse(nombre, kwargs={"pk": 1})
+def test_editar_o_eliminar_por_get_no_borra(client, usuario_administrador, anotacion_cliente):
+    """Eliminar solo responde a POST; una anotación vigente tampoco se abre para editar."""
+    client.force_login(usuario_administrador)
+    assert client.get(reverse("expediente:eliminar", kwargs={"pk": anotacion_cliente.pk})).status_code == 405
+    assert client.get(reverse("expediente:editar", kwargs={"pk": anotacion_cliente.pk})).status_code == 404
+    assert Anotacion.objects.filter(pk=anotacion_cliente.pk).exists()
 
 
 # ---------------------------------------------------------------------------
@@ -219,6 +219,84 @@ def test_otros_roles_no_archivan(client, request, nombre_usuario, anotacion_clie
 def test_archivar_por_get_no_esta_permitido(client, usuario_administrador, anotacion_cliente):
     client.force_login(usuario_administrador)
     assert client.get(reverse("expediente:archivar", kwargs={"pk": anotacion_cliente.pk})).status_code == 405
+
+
+def test_tras_archivar_se_sigue_viendo_y_aparece_en_el_registro(
+    client, usuario_administrador, anotacion_cliente
+):
+    client.force_login(usuario_administrador)
+    respuesta = client.post(reverse("expediente:archivar", kwargs={"pk": anotacion_cliente.pk}), follow=True)
+    assert respuesta.redirect_chain[-1][0].endswith("?incluir_archivadas=on")
+    html = respuesta.content.decode()
+    assert "Se presentó la retención en la fuente de febrero." in html
+    assert "Registro de acciones" in html
+    assert "Archivó" in html
+    assert reverse("expediente:editar", kwargs={"pk": anotacion_cliente.pk}) in html
+    assert reverse("expediente:eliminar", kwargs={"pk": anotacion_cliente.pk}) in html
+
+
+def test_anotacion_vigente_no_ofrece_editar_ni_eliminar(client, usuario_administrador, anotacion_cliente):
+    client.force_login(usuario_administrador)
+    html = client.get(
+        reverse("expediente:cliente", kwargs={"pk_cliente": anotacion_cliente.cliente_id})
+    ).content
+    assert reverse("expediente:editar", kwargs={"pk": anotacion_cliente.pk}).encode() not in html
+    respuesta = client.get(
+        reverse("expediente:editar", kwargs={"pk": anotacion_cliente.pk}),
+        HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+    )
+    assert respuesta.status_code == 404
+
+
+def test_administrador_edita_archivada_desde_el_modal(client, usuario_administrador, anotacion_cliente):
+    anotacion_cliente.archivar()
+    client.force_login(usuario_administrador)
+    url = reverse("expediente:editar", kwargs={"pk": anotacion_cliente.pk})
+    modal = client.get(url, HTTP_X_REQUESTED_WITH="XMLHttpRequest")
+    assert modal.status_code == 200
+    assert b"Editar anotaci" in modal.content and b"<html" not in modal.content
+    respuesta = client.post(
+        url, {"tipo_anotacion": "Acuerdo", "fecha": "2026-03-11", "contenido": "Corregido."}
+    )
+    assert respuesta.status_code == 302
+    anotacion_cliente.refresh_from_db()
+    assert anotacion_cliente.contenido == "Corregido."
+    assert AccionAnotacion.objects.filter(accion=AccionAnotacion.EDITO, anotacion=anotacion_cliente).exists()
+
+
+def test_editar_con_datos_invalidos_muestra_errores(client, usuario_administrador, anotacion_cliente):
+    anotacion_cliente.archivar()
+    client.force_login(usuario_administrador)
+    url = reverse("expediente:editar", kwargs={"pk": anotacion_cliente.pk})
+    respuesta = client.post(url, {"tipo_anotacion": "Acuerdo", "fecha": "", "contenido": ""})
+    assert respuesta.status_code == 200
+    anotacion_cliente.refresh_from_db()
+    assert anotacion_cliente.tipo_anotacion == "Retención en la fuente"
+
+
+def test_administrador_elimina_archivada(client, usuario_administrador, anotacion_cliente):
+    anotacion_cliente.archivar()
+    client.force_login(usuario_administrador)
+    respuesta = client.post(reverse("expediente:eliminar", kwargs={"pk": anotacion_cliente.pk}), follow=True)
+    assert not Anotacion.objects.filter(pk=anotacion_cliente.pk).exists()
+    assert "Eliminó" in respuesta.content.decode()
+
+
+def test_eliminar_vigente_se_rechaza(client, usuario_administrador, anotacion_cliente):
+    client.force_login(usuario_administrador)
+    respuesta = client.post(reverse("expediente:eliminar", kwargs={"pk": anotacion_cliente.pk}), follow=True)
+    assert Anotacion.objects.filter(pk=anotacion_cliente.pk).exists()
+    assert "Archívela primero" in respuesta.content.decode()
+
+
+@pytest.mark.parametrize("nombre_usuario", ["usuario_senior", "usuario_junior"])
+def test_otros_roles_no_editan_ni_eliminan(client, request, nombre_usuario, anotacion_cliente_junior):
+    anotacion_cliente_junior.archivar()
+    client.force_login(request.getfixturevalue(nombre_usuario))
+    pk = anotacion_cliente_junior.pk
+    assert client.get(reverse("expediente:editar", kwargs={"pk": pk})).status_code == 403
+    assert client.post(reverse("expediente:eliminar", kwargs={"pk": pk})).status_code == 403
+    assert Anotacion.objects.filter(pk=pk).exists()
 
 
 # ---------------------------------------------------------------------------
