@@ -316,6 +316,7 @@ class Command(BaseCommand):
                     nombre_campo=nombre_campo,
                     defaults={
                         "tipo_campo": tipo_campo,
+                        "tipo_dato": CampoPlantilla.tipo_dato_sugerido(nombre_campo),
                         "es_repetible": tipo_campo == CampoPlantilla.REPETIBLE,
                     },
                 )

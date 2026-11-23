@@ -10,6 +10,6 @@ Titular: {{ cuenta_bancaria.titular }}
 {% endif %}{% if metodo_pago %}Método de pago: {{ metodo_pago.nombre_metodo }}
 {% endif %}
 Cordialmente,
-
+{% if nombre_despacho %}
 {{ nombre_despacho }}
-{% endautoescape %}
+{% endif %}{% endautoescape %}

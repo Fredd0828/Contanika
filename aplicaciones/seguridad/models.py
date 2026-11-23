@@ -273,7 +273,9 @@ class ConfiguracionDespacho(models.Model):
     """Datos fijos del despacho que se imprimen en documentos y cuentas de cobro."""
 
     id_configuracion = models.AutoField(primary_key=True)
-    nombre_despacho = models.CharField(max_length=150, default="Befrec Y Asociados SAS")
+    # Opcional (23-nov-2026): con el logo cargado y sin nombre, el encabezado
+    # de los PDF muestra solo el logo.
+    nombre_despacho = models.CharField(max_length=150, blank=True, default="Befrec Y Asociados SAS")
     nit_despacho = models.CharField(max_length=20, blank=True)
     membrete = models.ImageField(upload_to="despacho/", blank=True)
     ciudad = models.CharField(max_length=60, blank=True)
@@ -298,4 +300,4 @@ class ConfiguracionDespacho(models.Model):
         verbose_name_plural = "configuración del despacho"
 
     def __str__(self):
-        return self.nombre_despacho
+        return self.nombre_despacho or "Despacho"

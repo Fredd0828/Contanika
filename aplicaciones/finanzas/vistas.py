@@ -47,6 +47,7 @@ from .formularios import (
     campo_fecha_cuenta,
 )
 from .models import (
+    Abono,
     ConceptoFacturable,
     ConfiguracionCobro,
     CuentaBancaria,
@@ -208,6 +209,9 @@ class DetalleCuentaCobroView(ModuloHabilitadoMixin, View):
             "numero_whatsapp": envios.numero_whatsapp(cuenta.cliente),
             "abonos": cuenta.abonos.select_related("metodo_pago", "responsable"),
             "formulario_abono": AbonoForm(cuenta=cuenta),
+            # Solo el último abono se puede eliminar; los eliminados quedan como constancia.
+            "ultimo_abono": servicios.ultimo_abono(cuenta),
+            "abonos_eliminados": cuenta.abonos_eliminados.select_related("eliminado_por"),
         }
         return render(request, "finanzas/cuenta_cobro_detalle.html", contexto)
 
@@ -387,6 +391,33 @@ class RegistrarAbonoView(ModuloHabilitadoMixin, RolRequeridoMixin, View):
                 f"saldo actual {formato_pesos(abono.saldo_resultante)}.",
             )
         return redirect("finanzas:detalle", pk=pk)
+
+
+class EliminarAbonoView(ModuloHabilitadoMixin, RolRequeridoMixin, View):
+    """Elimina el último pago o abono de una cuenta, con su motivo (solo Administrador, 23-nov-2026)."""
+
+    codigo_modulo = Modulo.MOD06_FINANZAS
+    roles_permitidos = ROLES_ADMIN
+
+    def post(self, request, pk):
+        abono = get_object_or_404(
+            Abono.objects.select_related("cuenta_cobro", "responsable", "metodo_pago"), pk=pk
+        )
+        cuenta_pk = abono.cuenta_cobro_id
+        monto = abono.monto
+        try:
+            cuenta = servicios.eliminar_abono(
+                abono, usuario=request.user, motivo=request.POST.get("motivo", "")
+            )
+        except ValueError as error:
+            messages.error(request, str(error))
+        else:
+            messages.success(
+                request,
+                f"Se eliminó el pago de {formato_pesos(monto)}. Saldo pendiente: "
+                f"{formato_pesos(cuenta.saldo_pendiente)}. Queda constancia en «Pagos eliminados».",
+            )
+        return redirect("finanzas:detalle", pk=cuenta_pk)
 
 
 class CarteraView(ModuloHabilitadoMixin, View):

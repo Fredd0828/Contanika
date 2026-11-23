@@ -86,6 +86,7 @@ class ReporteView(ModuloHabilitadoMixin, View):
             "resultado": resultado,
             "secciones": _secciones_para_pantalla(resultado) if resultado else [],
             "grafico": _datos_grafico(resultado),
+            "circulos": _datos_circulos(resultado),
             "querystring": parametros.urlencode(),
             "filas_en_pantalla": FILAS_EN_PANTALLA,
         }
@@ -131,6 +132,24 @@ def _secciones_para_pantalla(resultado):
             }
         )
     return secciones
+
+
+def _datos_circulos(resultado):
+    """Gráficas de círculo del reporte, solo las que tienen datos (van con `json_script`)."""
+    if not resultado:
+        return []
+    return [
+        {
+            "titulo": circulo.titulo,
+            "etiquetas": [etiqueta for etiqueta, _ in circulo.partes],
+            "valores": [valor for _, valor in circulo.partes],
+            "formato": circulo.formato,
+            "centro": circulo.centro,
+            "colores": circulo.colores,
+        }
+        for circulo in resultado.circulos
+        if circulo.tiene_datos
+    ]
 
 
 def _datos_grafico(resultado):

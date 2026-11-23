@@ -35,7 +35,7 @@ from .formularios import (
     VencimientoManualForm,
 )
 from .importacion import anios_calendario, generar_plantilla_dian, importar_dian
-from .models import AnotacionCalendario, ConfiguracionAlerta, Vencimiento
+from .models import ConfiguracionAlerta, Vencimiento
 from .selectores import (
     anotaciones_visibles,
     filtrar_vencimientos,
@@ -44,6 +44,7 @@ from .selectores import (
     vencimientos_vencidos,
 )
 from .servicios import (
+    actualizar_anotacion,
     cambiar_estado_presentacion,
     eliminar_alerta,
     eliminar_anotacion,
@@ -54,6 +55,7 @@ from .servicios import (
     guardar_vencimiento_editado,
     guardar_vencimiento_manual,
     puede_actualizar_estado,
+    puede_modificar_anotacion,
     validar_vencimiento,
 )
 
@@ -574,16 +576,92 @@ class CrearAnotacionView(ModuloHabilitadoMixin, View):
         return render(request, self.template_name, {"formulario": formulario})
 
 
+def _es_ajax(request):
+    return request.headers.get("X-Requested-With") == "XMLHttpRequest"
+
+
+def _url_calendario_en(fecha):
+    return f"{redirect('calendario:calendario').url}?fecha={fecha:%Y-%m-%d}"
+
+
+def _anotacion_visible(request, pk):
+    """Anotación que el usuario puede ver; las privadas o de otro rol responden 404."""
+    return get_object_or_404(anotaciones_visibles(request.user), pk=pk)
+
+
+class DetalleAnotacionView(ModuloHabilitadoMixin, View):
+    """
+    Muestra una anotación del calendario. Desde el calendario se abre en un
+    modal; el autor o un Administrador la editan o la eliminan desde ahí.
+    """
+
+    codigo_modulo = Modulo.MOD02_CALENDARIO
+
+    def get(self, request, pk):
+        anotacion = _anotacion_visible(request, pk)
+        contexto = {
+            "anotacion": anotacion,
+            "destinatarios": [d.usuario for d in anotacion.destinatarios.all()],
+            "puede_modificar": puede_modificar_anotacion(anotacion, request.user),
+        }
+        template = (
+            "calendario/anotacion_detalle_modal.html"
+            if _es_ajax(request)
+            else "calendario/anotacion_detalle.html"
+        )
+        return render(request, template, contexto)
+
+
+class EditarAnotacionView(ModuloHabilitadoMixin, View):
+    """Edita una anotación del calendario (solo el autor o un Administrador)."""
+
+    codigo_modulo = Modulo.MOD02_CALENDARIO
+
+    def _anotacion(self, request, pk):
+        anotacion = _anotacion_visible(request, pk)
+        if not puede_modificar_anotacion(anotacion, request.user):
+            raise PermissionDenied("Solo el autor o un administrador pueden modificar la anotación.")
+        return anotacion
+
+    def _responder(self, request, anotacion, formulario):
+        template = (
+            "calendario/anotacion_editar_modal.html"
+            if _es_ajax(request)
+            else "calendario/anotacion_formulario.html"
+        )
+        return render(request, template, {"formulario": formulario, "anotacion": anotacion})
+
+    def get(self, request, pk):
+        anotacion = self._anotacion(request, pk)
+        formulario = AnotacionCalendarioForm(
+            instance=anotacion,
+            initial={"destinatarios": [d.usuario_id for d in anotacion.destinatarios.all()]},
+        )
+        return self._responder(request, anotacion, formulario)
+
+    def post(self, request, pk):
+        anotacion = self._anotacion(request, pk)
+        formulario = AnotacionCalendarioForm(request.POST, instance=anotacion)
+        if not formulario.is_valid():
+            return self._responder(request, anotacion, formulario)
+        anotacion = actualizar_anotacion(
+            formulario, request.user, destinatarios=formulario.cleaned_data.get("destinatarios")
+        )
+        messages.success(request, "La anotación se actualizó correctamente.")
+        return redirect(_url_calendario_en(anotacion.fecha))
+
+
 class EliminarAnotacionView(ModuloHabilitadoMixin, View):
     """Elimina una anotación; solo el autor o un Administrador."""
 
     codigo_modulo = Modulo.MOD02_CALENDARIO
 
     def post(self, request, pk):
-        anotacion = get_object_or_404(AnotacionCalendario, pk=pk)
+        anotacion = _anotacion_visible(request, pk)
+        fecha = anotacion.fecha
         try:
             eliminar_anotacion(anotacion, request.user)
             messages.success(request, "La anotación se eliminó correctamente.")
         except PermissionDenied as error:
             messages.error(request, str(error))
-        return redirect("calendario:calendario")
+        return redirect(_url_calendario_en(fecha))

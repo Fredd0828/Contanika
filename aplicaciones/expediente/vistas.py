@@ -4,12 +4,15 @@ Vistas del módulo 9: expediente y bitácora por cliente.
 Permisos (HU025-HU027 y decisiones de sesión del 1-oct-2026):
 - Los tres roles consultan el expediente, descargan adjuntos y registran
   anotaciones; el Contador Junior solo sobre sus clientes asignados.
-- Nadie edita ni elimina una anotación guardada (bitácora inmutable).
-- Solo el Administrador archiva o restaura anotaciones. Las archivadas se
-  ocultan por defecto, pero cualquier rol puede verlas con el filtro.
+- Una anotación vigente no se edita ni se elimina.
+- Solo el Administrador archiva o restaura anotaciones y, ya archivadas, las
+  corrige o las elimina (23-nov-2026). Las archivadas se ocultan por defecto,
+  pero cualquier rol puede verlas con el filtro. Cada acción queda en el
+  registro de acciones del expediente.
 """
 
 from django.contrib import messages
+from django.core.exceptions import ValidationError
 from django.http import FileResponse, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -21,7 +24,7 @@ from aplicaciones.seguridad.models import Modulo, Rol
 from aplicaciones.seguridad.permisos import ModuloHabilitadoMixin, RolRequeridoMixin
 
 from . import selectores, servicios
-from .formularios import AnotacionForm, FiltroAnotacionesForm
+from .formularios import AnotacionForm, EditarAnotacionForm, FiltroAnotacionesForm
 
 
 def _es_ajax(request):
@@ -80,6 +83,7 @@ class ListaAnotacionesView(ModuloHabilitadoMixin, PaginacionMixin, ListView):
         contexto["formulario_filtro"] = self.formulario_filtro
         contexto["tipos_anotacion"] = selectores.tipos_de_anotacion(self.request.user)
         contexto["es_administrador"] = self.request.user.es_administrador
+        contexto["acciones"] = selectores.acciones_del_expediente(self.request.user, cliente=self.cliente)
         contexto["puede_anotar"] = (
             self.cliente is None
             or selectores.clientes_anotables(self.request.user).filter(pk=self.cliente.pk).exists()
@@ -137,6 +141,12 @@ class CrearAnotacionView(ModuloHabilitadoMixin, View):
         return render(request, self._template(request), self._contexto(request, formulario))
 
 
+def _url_expediente(anotacion, con_archivadas=False):
+    """Expediente del cliente; tras archivar se ven las archivadas para no perder de vista la anotación."""
+    url = reverse("expediente:cliente", kwargs={"pk_cliente": anotacion.cliente_id})
+    return f"{url}?incluir_archivadas=on" if con_archivadas else url
+
+
 class ArchivarAnotacionView(ModuloHabilitadoMixin, RolRequeridoMixin, View):
     """Archiva o restaura una anotación (solo el Administrador)."""
 
@@ -147,13 +157,75 @@ class ArchivarAnotacionView(ModuloHabilitadoMixin, RolRequeridoMixin, View):
     def post(self, request, pk):
         anotacion = get_object_or_404(selectores.anotaciones_visibles(request.user), pk=pk)
         if self.restaurar:
-            servicios.restaurar_anotacion(anotacion)
+            servicios.restaurar_anotacion(anotacion, request.user)
             messages.success(request, "La anotación volvió al expediente.")
+            return _redirigir_o_recargar(request, _url_expediente(anotacion))
+        servicios.archivar_anotacion(anotacion, request.user)
+        messages.success(
+            request,
+            "La anotación se archivó. Sigue aquí, marcada «Archivada»: puede restaurarla, "
+            "editarla o eliminarla.",
+        )
+        return _redirigir_o_recargar(request, _url_expediente(anotacion, con_archivadas=True))
+
+
+class EditarAnotacionView(ModuloHabilitadoMixin, RolRequeridoMixin, View):
+    """Corrige una anotación archivada (solo el Administrador); se abre en un modal."""
+
+    codigo_modulo = Modulo.MOD09_EXPEDIENTE
+    roles_permitidos = (Rol.ADMINISTRADOR,)
+
+    def _anotacion(self, request, pk):
+        return get_object_or_404(selectores.anotaciones_visibles(request.user), pk=pk, archivado=True)
+
+    def _responder(self, request, anotacion, formulario):
+        template = (
+            "expediente/anotacion_editar_modal.html"
+            if _es_ajax(request)
+            else "expediente/anotacion_editar.html"
+        )
+        contexto = {
+            "formulario": formulario,
+            "anotacion": anotacion,
+            "tipos_anotacion": selectores.tipos_de_anotacion(request.user),
+        }
+        return render(request, template, contexto)
+
+    def get(self, request, pk):
+        anotacion = self._anotacion(request, pk)
+        return self._responder(request, anotacion, EditarAnotacionForm(instance=anotacion))
+
+    def post(self, request, pk):
+        anotacion = self._anotacion(request, pk)
+        # Sin `instance`: el formulario no toca la anotación y el servicio puede comparar antes y después.
+        formulario = EditarAnotacionForm(request.POST)
+        if not formulario.is_valid():
+            return self._responder(request, anotacion, formulario)
+        datos = formulario.cleaned_data
+        servicios.editar_anotacion(
+            anotacion, request.user, datos["tipo_anotacion"], datos["fecha"], datos["contenido"]
+        )
+        messages.success(
+            request, "La anotación archivada se corrigió; el cambio quedó en el registro de acciones."
+        )
+        return _redirigir_o_recargar(request, _url_expediente(anotacion, con_archivadas=True))
+
+
+class EliminarAnotacionView(ModuloHabilitadoMixin, RolRequeridoMixin, View):
+    """Elimina una anotación archivada y sus archivos (solo el Administrador)."""
+
+    codigo_modulo = Modulo.MOD09_EXPEDIENTE
+    roles_permitidos = (Rol.ADMINISTRADOR,)
+
+    def post(self, request, pk):
+        anotacion = get_object_or_404(selectores.anotaciones_visibles(request.user), pk=pk)
+        try:
+            servicios.eliminar_anotacion(anotacion, request.user)
+        except ValidationError as error:
+            messages.error(request, error.messages[0])
         else:
-            servicios.archivar_anotacion(anotacion)
-            messages.success(request, "La anotación se archivó; se conserva en el historial.")
-        url = reverse("expediente:cliente", kwargs={"pk_cliente": anotacion.cliente_id})
-        return _redirigir_o_recargar(request, url)
+            messages.success(request, "La anotación se eliminó; queda constancia en el registro de acciones.")
+        return _redirigir_o_recargar(request, _url_expediente(anotacion, con_archivadas=True))
 
 
 class DescargarAdjuntoAnotacionView(ModuloHabilitadoMixin, View):

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block titulo %}Editar anotación{% endblock %}
+
+{% block contenido %}
+<div class="panel">
+    <div class="ph">
+        <div class="ph-title"><i class="bi bi-pencil-square"></i> Editar anotación archivada</div>
+        <a class="ph-link" href="{% url 'expediente:cliente' anotacion.cliente_id %}?incluir_archivadas=on"><i class="bi bi-arrow-left"></i> Volver al expediente</a>
+    </div>
+
+    <form method="post" action="{% url 'expediente:editar' anotacion.pk %}">
+        {% include "expediente/_anotacion_editar_campos.html" %}
+        <div class="d-flex flex-wrap justify-content-end gap-2 mt-4">
+            <a class="ph-link" href="{% url 'expediente:cliente' anotacion.cliente_id %}?incluir_archivadas=on">Cancelar</a>
+            <button type="submit" class="ph-btn"><i class="bi bi-save"></i> Guardar cambios</button>
+        </div>
+    </form>
+</div>
+
+<datalist id="lista-tipos-anotacion">
+    {% for tipo in tipos_anotacion %}<option value="{{ tipo }}"></option>{% endfor %}
+</datalist>
+{% endblock %}

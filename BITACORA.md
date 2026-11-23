@@ -2625,3 +2625,52 @@ navegador: «9a0-0.1 2-3x-4» queda «9001234» (en el NIT del despacho,
 ### Resultado
 En este equipo (16 núcleos): 1484 en verde en 69 s, frente a ~9 min en serie.
 Con cobertura (como el CI): 84 s, 95,47 %. No quedan bases `test_*` sobrantes.
+
+## Lunes 23 de noviembre de 2026 — Ajustes de la revisión del 23-nov
+
+### Qué se hizo
+- **Calendario:** cada anotación es un enlace que abre un modal con su
+  contenido; el autor o un Administrador la editan (en el mismo modal) o la
+  eliminan. Sin JavaScript abre su propia página. Una anotación privada
+  ajena responde 404.
+- **Expediente (cambia la decisión del 1-oct):** una anotación vigente sigue
+  sin editarse ni borrarse, pero ya archivada el Administrador la corrige o la
+  elimina (con sus archivos). Tras archivar se queda en pantalla con
+  «Incluir archivadas». Nueva tabla `accion_anotacion` (migración
+  `expediente 0003`): «Registro de acciones» con archivó / restauró / editó
+  (qué cambió) / eliminó (copia del resumen), que se conserva aunque la
+  anotación se borre.
+- **Honorarios:** el Administrador elimina el **último** pago de una cuenta,
+  con motivo obligatorio; del último al primero se pueden quitar todos y
+  luego eliminar la cuenta. Tabla `abono_eliminado` y ajuste del disparador
+  `fn_abono_inmutable` (migración `finanzas 0005`): sigue rechazando todo
+  cambio o borrado salvo el del último abono autorizado en la misma
+  transacción (`set_config('contanika.eliminar_abono', id, true)`); el nuevo
+  `trg_abono_estado_tras_eliminar` recalcula el estado de pago. Sección
+  «Pagos eliminados» en la cuenta.
+- **Campos numéricos de las plantillas:** `CampoPlantilla.tipo_dato` (Texto,
+  Valor en pesos, Número, Porcentaje; migración `documentos 0003`, que asigna
+  el tipo a los campos existentes por su nombre). Pesos: puntos de miles
+  mientras se escribe y se guarda «1.250.000»; número: solo dígitos;
+  porcentaje: 0 a 100 con coma. Se elige al editar la plantilla.
+- **Teléfono del cliente** (`informacion_contacto`) solo dígitos, también en
+  la importación por Excel, que además valida el correo. **Correos:** aviso
+  en el navegador si no tienen la forma nombre@dominio.com.
+- **Datos del despacho:** el nombre es opcional (migración `seguridad 0008`);
+  con logo y sin nombre el encabezado de los PDF muestra solo el logo, más
+  grande. Los mensajes al cliente se leen bien sin nombre. Al elegir el logo
+  se recorta (Cropper.js 1.6.2 desde jsDelivr, con SRI) y se ven sus medidas
+  y las recomendadas (2:1 con nombre, 3:1 solo logo).
+- **Panel:** el mensaje de bienvenida se cierra con una X (queda cerrado en
+  ese navegador) y «Tareas por estado» es una dona con el total al centro.
+- **Reportes:** gráficas de círculo en los seis reportes (estado, prioridad,
+  responsable, cobrado y por cobrar…), con valor y porcentaje al pasar el
+  cursor; módulo común `estaticos/js/circulos.js`. Solo en pantalla.
+- **Letra («Aa»):** el menú lateral también crece.
+- **Marca:** logo nuevo en `estaticos/img/marca/` (SVG y PNG); el menú usa
+  la versión para fondo oscuro y, plegado, solo el símbolo.
+
+### Resultado
+Suite completa en verde (`pytest -n auto`). Revisado en el navegador sobre
+una copia de la base (`contanika_visual`) con las 4 migraciones aplicadas:
+escritorio, letra «Muy grande» y teléfono.

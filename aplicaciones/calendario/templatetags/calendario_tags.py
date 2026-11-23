@@ -39,12 +39,12 @@ def clase_evento(evento):
 
 @register.filter
 def url_evento(evento):
-    """URL de destino al hacer clic en un evento del calendario."""
-    if evento["tipo"] == "vencimiento":
-        from django.urls import reverse
+    """URL de destino al hacer clic en un evento del calendario (la anotación se abre en un modal)."""
+    from django.urls import reverse
 
+    if evento["tipo"] == "vencimiento":
         return reverse("calendario:detalle", kwargs={"pk": evento["objeto"].pk})
-    return ""
+    return reverse("calendario:detalle_anotacion", kwargs={"pk": evento["objeto"].pk})
 
 
 @register.filter

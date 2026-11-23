@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 {% block titulo %}Reporte de {{ definicion.nombre|lower }}{% endblock %}
 
 {% block contenido %}
@@ -58,6 +59,22 @@
     {% endif %}
 </div>
 
+{# Gráficas de círculo: cómo se reparte cada total. Al pasar el cursor se ve el valor y su porcentaje (23-nov-2026). #}
+{% if circulos %}
+<div class="rp-circulos mt-3">
+    {% for circulo in circulos %}
+    <div class="panel rp-circulo">
+        <div class="ph"><div class="ph-title"><i class="bi bi-pie-chart-fill"></i> {{ circulo.titulo }}</div></div>
+        <div class="rp-circulo-lienzo">
+            <canvas data-dona="datos-circulos" data-dona-indice="{{ forloop.counter0 }}" role="img"
+                    aria-label="{{ circulo.titulo }}: {% for etiqueta in circulo.etiquetas %}{{ etiqueta }}{% if not forloop.last %}, {% endif %}{% endfor %}"></canvas>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{{ circulos|json_script:"datos-circulos" }}
+{% endif %}
+
 {% if grafico %}
 <div class="panel mt-3">
     <div class="ph"><div class="ph-title"><i class="bi bi-bar-chart"></i> {{ grafico.titulo }}</div></div>
@@ -105,10 +122,14 @@
 </div>
 {% endif %}
 
-{% if grafico %}
+{% if grafico or circulos %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" integrity="sha384-9nhczxUqK87bcKHh20fSQcTGD4qq5GhayNYSYWqwBkINBhOfQLg/P5HG5lF1urn4" crossorigin="anonymous"></script>
+<script src="{% static 'js/circulos.js' %}"></script>
+{% endif %}
+{% if grafico %}
 <script>
 (function () {
+    if (!window.Chart) { return; }
     const datos = JSON.parse(document.getElementById('datos-grafico').textContent);
     const pesos = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
     new Chart(document.getElementById('graficoReporte'), {
@@ -116,13 +137,23 @@
         data: {
             labels: datos.etiquetas,
             datasets: datos.series.map(function (serie, i) {
-                return { label: serie.nombre, data: serie.valores, backgroundColor: datos.colores[i % datos.colores.length] };
+                return {
+                    label: serie.nombre,
+                    data: serie.valores,
+                    backgroundColor: datos.colores[i % datos.colores.length],
+                    borderRadius: 4,
+                    maxBarThickness: 36
+                };
             })
         },
         options: {
             indexAxis: datos.horizontal ? 'y' : 'x',
             maintainAspectRatio: false,
+            // Al tocar una serie de la leyenda se oculta; el cursor muestra todas las del mes.
+            interaction: { mode: 'index', intersect: false },
+            animation: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? false : { duration: 600 },
             plugins: {
+                legend: { position: 'bottom', labels: { usePointStyle: true, pointStyle: 'circle' } },
                 tooltip: { callbacks: { label: function (ctx) { return ctx.dataset.label + ': ' + pesos.format(ctx.raw); } } }
             },
             scales: {

@@ -78,7 +78,7 @@
     <div class="table-responsive">
         <table class="tbl">
             <thead>
-                <tr><th>Fecha</th><th class="text-end">Monto</th><th class="text-end">Saldo anterior</th><th class="text-end">Saldo resultante</th><th>Medio</th><th>Registró</th></tr>
+                <tr><th>Fecha</th><th class="text-end">Monto</th><th class="text-end">Saldo anterior</th><th class="text-end">Saldo resultante</th><th>Medio</th><th>Registró</th>{% if es_administrador %}<th class="text-end">Acciones</th>{% endif %}</tr>
             </thead>
             <tbody>
                 {% for abono in abonos %}
@@ -89,6 +89,17 @@
                     <td class="text-end">{{ abono.saldo_resultante|pesos }}</td>
                     <td>{{ abono.metodo_pago|default:"—" }}</td>
                     <td>{{ abono.responsable.nombre }}</td>
+                    {% if es_administrador %}
+                    <td class="text-end text-nowrap">
+                        {# Solo el último: cada abono guarda el saldo que dejó el anterior. #}
+                        {% if abono.pk == ultimo_abono.pk %}
+                        <button type="button" class="ph-link ph-link-peligro" data-bs-toggle="modal" data-bs-target="#modalEliminarAbono"
+                                data-url="{% url 'finanzas:eliminar_abono' abono.pk %}" data-monto="{{ abono.monto|pesos }}" data-fecha="{{ abono.fecha|date:'d/m/Y' }}">
+                            <i class="bi bi-trash"></i> Eliminar
+                        </button>
+                        {% endif %}
+                    </td>
+                    {% endif %}
                 </tr>
                 {% endfor %}
             </tbody>
@@ -120,10 +131,34 @@
             {{ formulario_abono.metodo_nuevo }}
         </div>
         <div class="col-12 d-flex flex-wrap align-items-center justify-content-end gap-2">
-            <span class="text-muted small">Los pagos registrados no se modifican ni se eliminan.</span>
+            <span class="text-muted small">Si un pago quedó mal, elimínelo desde la tabla (del último al primero); queda constancia.</span>
             <button type="submit" class="ph-btn"><i class="bi bi-cash-stack"></i> Registrar pago</button>
         </div>
     </form>
+    {% endif %}
+
+    {% if abonos_eliminados %}
+    <div class="sec-lbl mt-4">Pagos eliminados</div>
+    <div class="table-responsive">
+        <table class="tbl">
+            <thead>
+                <tr><th>Eliminado</th><th>Quién</th><th>Motivo</th><th>Fecha del pago</th><th class="text-end">Monto</th><th>Medio</th><th>Registró</th></tr>
+            </thead>
+            <tbody>
+                {% for eliminado in abonos_eliminados %}
+                <tr>
+                    <td class="text-nowrap">{{ eliminado.fecha_eliminacion|date:"d/m/Y H:i" }}</td>
+                    <td>{{ eliminado.eliminado_por.nombre }}</td>
+                    <td>{{ eliminado.motivo }}</td>
+                    <td>{{ eliminado.fecha_abono|date:"d/m/Y" }}</td>
+                    <td class="text-end">{{ eliminado.monto|pesos }}</td>
+                    <td>{{ eliminado.metodo_pago|default:"—" }}</td>
+                    <td>{{ eliminado.registrado_por }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
     {% endif %}
 </div>
 
@@ -213,8 +248,9 @@ document.addEventListener("DOMContentLoaded", function () {
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
             <div class="modal-body">
-                Se eliminará la cuenta de cobro No. {{ cuenta.pk }} y su PDF. Una cuenta con abonos
-                registrados no se puede eliminar. ¿Desea continuar?
+                Se eliminará la cuenta de cobro No. {{ cuenta.pk }} y su PDF.
+                {% if abonos %}Esta cuenta tiene pagos registrados: elimínelos primero en «Pagos y abonos», del último al primero.{% endif %}
+                ¿Desea continuar?
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -226,5 +262,43 @@ document.addEventListener("DOMContentLoaded", function () {
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="modalEliminarAbono" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <form method="post" class="modal-content" id="formEliminarAbono">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-trash"></i> Eliminar pago</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <p>Se eliminará el pago de <strong data-campo="monto"></strong> del <span data-campo="fecha"></span>
+                    y el saldo de la cuenta vuelve a subir. El PDF se actualiza y queda constancia de quién lo eliminó y por qué.</p>
+                <label class="form-label" for="motivoEliminarAbono">Motivo</label>
+                <textarea class="form-control" id="motivoEliminarAbono" name="motivo" rows="2" required maxlength="500"
+                          placeholder="Por ejemplo: el monto se digitó mal"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-danger">Sí, eliminar el pago</button>
+            </div>
+        </form>
+    </div>
+</div>
+<script>
+// El modal de eliminar pago toma la ruta, el monto y la fecha del botón que lo abrió.
+document.addEventListener("DOMContentLoaded", function () {
+    const modal = document.getElementById("modalEliminarAbono");
+    if (!modal) return;
+    modal.addEventListener("show.bs.modal", function (evento) {
+        const boton = evento.relatedTarget;
+        if (!boton) return;
+        document.getElementById("formEliminarAbono").action = boton.dataset.url;
+        modal.querySelector('[data-campo="monto"]').textContent = boton.dataset.monto;
+        modal.querySelector('[data-campo="fecha"]').textContent = boton.dataset.fecha;
+        document.getElementById("motivoEliminarAbono").value = "";
+    });
+});
+</script>
 {% endif %}
 {% endblock %}

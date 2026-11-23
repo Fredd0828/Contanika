@@ -1,0 +1,10 @@
+{# Contenido de una anotación del calendario: en el modal y en su página. #}
+<div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+    <span class="cal-ev ev-anotacion mb-0"><i class="bi bi-sticky"></i> {{ anotacion.fecha|date:"l, j \d\e F \d\e Y" }}</span>
+    <span class="badge-est be-n">{{ anotacion.visibilidad }}</span>
+</div>
+<div class="anotacion-cal-texto">{{ anotacion.contenido|linebreaksbr }}</div>
+{% if destinatarios %}
+<div class="small text-muted mt-3"><i class="bi bi-people"></i> Etiquetados: {% for usuario in destinatarios %}{{ usuario.nombre }}{% if not forloop.last %}, {% endif %}{% endfor %}</div>
+{% endif %}
+<div class="small text-muted mt-2"><i class="bi bi-person"></i> Escribió {{ anotacion.autor.nombre }}</div>

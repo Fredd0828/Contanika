@@ -9,14 +9,28 @@
         {% endif %}
         {% if anotacion.archivado %}<span class="badge-est be-n">Archivada</span>{% endif %}
         {% if es_administrador and mostrar_acciones %}
-        <form method="post" class="ms-auto"
-              action="{% if anotacion.archivado %}{% url 'expediente:restaurar' anotacion.pk %}{% else %}{% url 'expediente:archivar' anotacion.pk %}{% endif %}"
-              onsubmit="return confirm('{% if anotacion.archivado %}¿Devolver esta anotación al expediente?{% else %}¿Archivar esta anotación? Se oculta del expediente, pero no se borra.{% endif %}')">
-            {% csrf_token %}
-            <button type="submit" class="ph-link">
-                {% if anotacion.archivado %}<i class="bi bi-arrow-counterclockwise"></i> Restaurar{% else %}<i class="bi bi-archive"></i> Archivar{% endif %}
+        {# Acciones a la derecha. Ya archivada, la anotación se puede corregir o eliminar (23-nov-2026). #}
+        <div class="ms-auto d-flex flex-wrap justify-content-end gap-2">
+            {% if anotacion.archivado %}
+            <button type="button" class="ph-link" data-bs-toggle="modal" data-bs-target="#modalAnotacion"
+                    data-url="{% url 'expediente:editar' anotacion.pk %}">
+                <i class="bi bi-pencil"></i> Editar
             </button>
-        </form>
+            <form method="post" action="{% url 'expediente:eliminar' anotacion.pk %}"
+                  onsubmit="return confirm('¿Eliminar esta anotación y sus archivos? No se puede deshacer; queda constancia en el registro de acciones.')">
+                {% csrf_token %}
+                <button type="submit" class="ph-link ph-link-peligro"><i class="bi bi-trash"></i> Eliminar</button>
+            </form>
+            {% endif %}
+            <form method="post"
+                  action="{% if anotacion.archivado %}{% url 'expediente:restaurar' anotacion.pk %}{% else %}{% url 'expediente:archivar' anotacion.pk %}{% endif %}"
+                  onsubmit="return confirm('{% if anotacion.archivado %}¿Devolver esta anotación al expediente?{% else %}¿Archivar esta anotación? Se oculta del expediente, pero no se borra; ya archivada, podrá editarla o eliminarla.{% endif %}')">
+                {% csrf_token %}
+                <button type="submit" class="ph-link">
+                    {% if anotacion.archivado %}<i class="bi bi-arrow-counterclockwise"></i> Restaurar{% else %}<i class="bi bi-archive"></i> Archivar{% endif %}
+                </button>
+            </form>
+        </div>
         {% endif %}
     </div>
     <div class="mt-1"{% if anotacion.archivado %} style="opacity:.6"{% endif %}>{{ anotacion.contenido|linebreaksbr }}</div>

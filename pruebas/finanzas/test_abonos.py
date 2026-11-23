@@ -7,7 +7,7 @@ from datetime import date, timedelta
 from decimal import Decimal
 
 import pytest
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError, connection, transaction
 from django.urls import reverse
 from django.utils import timezone
 from reportlab.lib.styles import getSampleStyleSheet
@@ -15,7 +15,7 @@ from reportlab.lib.units import cm
 from reportlab.platypus import Paragraph, Table
 
 from aplicaciones.finanzas import selectores, servicios
-from aplicaciones.finanzas.models import Abono, CuentaCobro, MetodoPago
+from aplicaciones.finanzas.models import Abono, AbonoEliminado, CuentaCobro, MetodoPago
 
 pytestmark = pytest.mark.django_db
 
@@ -348,3 +348,117 @@ def test_historico_con_abonos_conserva_el_orden_de_la_mas_reciente(
     _abonar(primera, "100000", usuario_administrador)
     client.force_login(usuario_administrador)
     assert list(client.get(reverse("finanzas:historico")).context["cuentas"]) == [segunda, primera]
+
+
+# ---------------------------------------------------------------------------
+# Eliminar un pago que quedó mal (23-nov-2026)
+# ---------------------------------------------------------------------------
+
+
+def test_eliminar_ultimo_abono_devuelve_el_saldo_y_deja_constancia(cuenta_cliente, usuario_administrador):
+    _abonar(cuenta_cliente, "300000", usuario_administrador)
+    segundo = _abonar(cuenta_cliente, "700000", usuario_administrador)
+    cuenta_cliente.refresh_from_db()
+    assert cuenta_cliente.estado_pago == CuentaCobro.PAGADA
+
+    servicios.eliminar_abono(segundo, usuario=usuario_administrador, motivo="Monto mal digitado")
+
+    cuenta_cliente.refresh_from_db()
+    assert not Abono.objects.filter(pk=segundo.pk).exists()
+    assert cuenta_cliente.saldo_pendiente == Decimal("700000")
+    # La cuenta vencía el 10/10/2026 y vuelve a quedar con saldo: Vencida.
+    assert cuenta_cliente.estado_pago == CuentaCobro.VENCIDA
+    constancia = AbonoEliminado.objects.get()
+    assert constancia.monto == Decimal("700000")
+    assert constancia.motivo == "Monto mal digitado"
+    assert constancia.eliminado_por == usuario_administrador
+    assert constancia.numero_cuenta == cuenta_cliente.pk
+
+
+def test_sin_abonos_y_sin_vencer_la_cuenta_vuelve_a_pendiente(generar_cuenta, cliente, usuario_administrador):
+    cuenta = generar_cuenta(cliente, fecha_vencimiento_pago=timezone.localdate() + timedelta(days=10))
+    abono = _abonar(cuenta, "100000", usuario_administrador)
+    cuenta.refresh_from_db()
+    assert cuenta.estado_pago == CuentaCobro.ABONADA
+    servicios.eliminar_abono(abono, usuario=usuario_administrador, motivo="Pago de otra cuenta")
+    cuenta.refresh_from_db()
+    assert cuenta.estado_pago == CuentaCobro.PENDIENTE
+
+
+def test_solo_se_elimina_el_ultimo_abono(cuenta_cliente, usuario_administrador):
+    primero = _abonar(cuenta_cliente, "300000", usuario_administrador)
+    _abonar(cuenta_cliente, "200000", usuario_administrador)
+    with pytest.raises(ValueError, match="último pago"):
+        servicios.eliminar_abono(primero, usuario=usuario_administrador, motivo="Error")
+    assert Abono.objects.filter(pk=primero.pk).exists()
+    assert not AbonoEliminado.objects.exists()
+
+
+def test_eliminar_abono_exige_motivo(cuenta_cliente, usuario_administrador):
+    abono = _abonar(cuenta_cliente, "300000", usuario_administrador)
+    with pytest.raises(ValueError, match="por qué"):
+        servicios.eliminar_abono(abono, usuario=usuario_administrador, motivo="   ")
+    assert Abono.objects.filter(pk=abono.pk).exists()
+
+
+def test_el_disparador_solo_autoriza_el_abono_indicado(cuenta_cliente, usuario_administrador):
+    """Aun con la autorización activa, otro abono (o uno que no es el último) sigue protegido."""
+    primero = _abonar(cuenta_cliente, "300000", usuario_administrador)
+    segundo = _abonar(cuenta_cliente, "200000", usuario_administrador)
+    with pytest.raises(IntegrityError), transaction.atomic():
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT set_config('contanika.eliminar_abono', %s, true)", [str(primero.pk)])
+        Abono.objects.filter(pk=primero.pk).delete()
+    with pytest.raises(IntegrityError), transaction.atomic():
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT set_config('contanika.eliminar_abono', %s, true)", [str(segundo.pk)])
+        Abono.objects.filter(pk=segundo.pk).update(monto=Decimal("1"))
+    assert Abono.objects.filter(cuenta_cobro=cuenta_cliente).count() == 2
+
+
+def test_tras_eliminar_los_abonos_se_puede_eliminar_la_cuenta(cuenta_cliente, usuario_administrador):
+    abono = _abonar(cuenta_cliente, "300000", usuario_administrador)
+    with pytest.raises(ValueError, match="elimínelos primero"):
+        servicios.eliminar_cuenta_cobro(cuenta_cliente)
+    servicios.eliminar_abono(abono, usuario=usuario_administrador, motivo="Cuenta generada por error")
+    servicios.eliminar_cuenta_cobro(cuenta_cliente)
+    assert not CuentaCobro.objects.filter(pk=cuenta_cliente.pk).exists()
+    # La constancia del pago eliminado se conserva aunque ya no exista la cuenta.
+    constancia = AbonoEliminado.objects.get()
+    assert constancia.cuenta_cobro is None
+    assert constancia.numero_cuenta == abono.cuenta_cobro_id
+
+
+def test_vista_eliminar_abono_solo_el_ultimo_tiene_boton(client, cuenta_cliente, usuario_administrador):
+    primero = _abonar(cuenta_cliente, "300000", usuario_administrador)
+    segundo = _abonar(cuenta_cliente, "200000", usuario_administrador)
+    client.force_login(usuario_administrador)
+    html = client.get(reverse("finanzas:detalle", kwargs={"pk": cuenta_cliente.pk})).content.decode()
+    assert reverse("finanzas:eliminar_abono", kwargs={"pk": segundo.pk}) in html
+    assert reverse("finanzas:eliminar_abono", kwargs={"pk": primero.pk}) not in html
+
+    respuesta = client.post(
+        reverse("finanzas:eliminar_abono", kwargs={"pk": segundo.pk}), {"motivo": "Duplicado"}, follow=True
+    )
+    html = respuesta.content.decode()
+    assert not Abono.objects.filter(pk=segundo.pk).exists()
+    assert "Pagos eliminados" in html and "Duplicado" in html
+
+
+def test_vista_eliminar_abono_sin_motivo_muestra_el_error(client, cuenta_cliente, usuario_administrador):
+    abono = _abonar(cuenta_cliente, "300000", usuario_administrador)
+    client.force_login(usuario_administrador)
+    respuesta = client.post(
+        reverse("finanzas:eliminar_abono", kwargs={"pk": abono.pk}), {"motivo": ""}, follow=True
+    )
+    assert "Escriba por qué elimina el pago" in respuesta.content.decode()
+    assert Abono.objects.filter(pk=abono.pk).exists()
+
+
+def test_solo_el_administrador_elimina_abonos(client, cuenta_cliente, usuario_administrador, usuario_senior):
+    abono = _abonar(cuenta_cliente, "300000", usuario_administrador)
+    client.force_login(usuario_senior)
+    respuesta = client.post(reverse("finanzas:eliminar_abono", kwargs={"pk": abono.pk}), {"motivo": "x"})
+    assert respuesta.status_code == 403
+    assert Abono.objects.filter(pk=abono.pk).exists()
+    assert client.get(reverse("finanzas:eliminar_abono", kwargs={"pk": abono.pk})).status_code in (403, 405)

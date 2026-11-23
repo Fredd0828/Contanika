@@ -13,7 +13,7 @@ from decimal import Decimal
 
 from dateutil.relativedelta import relativedelta
 from django.core.files.base import ContentFile
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError, connection, transaction
 from django.db.models import ProtectedError
 from django.utils import timezone
 from django.utils.formats import date_format
@@ -47,6 +47,7 @@ from .models import (
     CORREO,
     WHATSAPP,
     Abono,
+    AbonoEliminado,
     ConfiguracionCobro,
     CuentaCobro,
     CuentaCobroDetalle,
@@ -267,9 +268,13 @@ def _cuadro_deuda(cuenta, despacho, ancho, textos, saldo):
     )
     etiqueta_derecha = ParagraphStyle("etiqueta_derecha", parent=textos["etiqueta"], alignment=TA_RIGHT)
     nota_derecha = ParagraphStyle("nota_derecha", parent=textos["nota"], alignment=TA_RIGHT)
-    izquierda = [Paragraph("DEBE A", textos["etiqueta"]), Paragraph(nombre_despacho, textos["valor"])]
-    if nit_despacho:
-        izquierda.append(Paragraph(nit_despacho, textos["nota"]))
+    # Sin nombre del despacho (es opcional), el NIT ocupa su lugar.
+    if nombre_despacho:
+        izquierda = [Paragraph("DEBE A", textos["etiqueta"]), Paragraph(nombre_despacho, textos["valor"])]
+        if nit_despacho:
+            izquierda.append(Paragraph(nit_despacho, textos["nota"]))
+    else:
+        izquierda = [Paragraph("DEBE A", textos["etiqueta"]), Paragraph(nit_despacho or "—", textos["valor"])]
     derecha = [Paragraph("LA SUMA DE", etiqueta_derecha), Paragraph(formato_pesos(cuenta.valor_total), monto)]
     if 0 < saldo < cuenta.valor_total:
         derecha.append(Paragraph(f"Saldo pendiente: <b>{formato_pesos(saldo)}</b>", nota_derecha))
@@ -285,7 +290,7 @@ def _texto_contacto(despacho):
         return ""
     return (
         f"Para cualquier inquietud sobre esta cuenta de cobro, comuníquese con "
-        f"{escape(despacho.nombre_despacho)} al {' o '.join(medios)}."
+        f"{escape(despacho.nombre_despacho) or 'nosotros'} al {' o '.join(medios)}."
     )
 
 
@@ -393,7 +398,10 @@ def eliminar_cuenta_cobro(cuenta):
     no se elimina, para no perder la trazabilidad de la cartera.
     """
     if cuenta.abonos.exists():
-        raise ValueError("No se puede eliminar una cuenta de cobro que ya tiene abonos registrados.")
+        raise ValueError(
+            "No se puede eliminar una cuenta de cobro que ya tiene abonos registrados. "
+            "Si están mal, elimínelos primero en «Pagos y abonos», del último al primero."
+        )
     cuenta.archivo.delete(save=False)
     cuenta.delete()
 
@@ -440,6 +448,57 @@ def registrar_abono(cuenta, *, fecha, monto, metodo_pago, usuario, metodo_nuevo=
     # El PDF se rehace para que el cliente vea el abono y el saldo pendiente.
     actualizar_pdf_cuenta_cobro(cuenta)
     return abono
+
+
+def ultimo_abono(cuenta):
+    """El último abono registrado de la cuenta: el único que se puede eliminar."""
+    return cuenta.abonos.order_by("-id_abono").first()
+
+
+def eliminar_abono(abono, *, usuario, motivo):
+    """
+    Elimina un pago o abono que quedó mal (solo el Administrador, 23-nov-2026).
+
+    Solo se elimina el último de la cuenta: cada abono guarda el saldo
+    anterior y el resultante, y borrar uno de en medio dejaría mal los
+    siguientes. El disparador `trg_abono_inmutable` sigue rechazando cualquier
+    otro borrado o cambio; aquí se le autoriza solo este abono, dentro de la
+    misma transacción, y `trg_abono_estado_tras_eliminar` recalcula el estado
+    de pago. Queda una copia en `AbonoEliminado` con el motivo.
+    """
+    motivo = (motivo or "").strip()
+    if not motivo:
+        raise ValueError("Escriba por qué elimina el pago; queda en la constancia.")
+    cuenta = abono.cuenta_cobro
+    try:
+        with transaction.atomic():
+            ultimo = cuenta.abonos.select_for_update().order_by("-id_abono").first()
+            if ultimo is None or ultimo.pk != abono.pk:
+                raise ValueError(
+                    "Solo se puede eliminar el último pago registrado de la cuenta. "
+                    "Elimine primero los pagos posteriores."
+                )
+            AbonoEliminado.objects.create(
+                cuenta_cobro=cuenta,
+                numero_cuenta=cuenta.pk,
+                cliente_id=cuenta.cliente_id,
+                fecha_abono=abono.fecha,
+                monto=abono.monto,
+                metodo_pago=abono.metodo_pago.nombre_metodo if abono.metodo_pago else "",
+                registrado_por=abono.responsable.nombre,
+                eliminado_por=usuario,
+                motivo=motivo,
+            )
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT set_config('contanika.eliminar_abono', %s, true)", [str(abono.pk)])
+            Abono.objects.filter(pk=abono.pk).delete()
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT set_config('contanika.eliminar_abono', '', true)")
+    except IntegrityError as error:
+        raise ValueError(_mensaje_base_datos(error)) from error
+    cuenta.refresh_from_db()
+    actualizar_pdf_cuenta_cobro(cuenta)
+    return cuenta
 
 
 # ---------------------------------------------------------------------------

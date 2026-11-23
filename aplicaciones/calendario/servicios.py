@@ -373,6 +373,31 @@ def guardar_anotacion(formulario, usuario, destinatarios=None):
     return anotacion
 
 
+def puede_modificar_anotacion(anotacion, usuario):
+    """Solo el autor o un Administrador modifican o eliminan una anotación del calendario."""
+    return anotacion.autor_id == usuario.id_usuario or usuario.es_administrador
+
+
+@transaction.atomic
+def actualizar_anotacion(formulario, usuario, destinatarios=None):
+    """
+    Guarda los cambios de una anotación (solo el autor o un Administrador).
+    Los compañeros etiquetados se reemplazan por los elegidos; si la
+    visibilidad ya no es «Por etiqueta», se quitan todos.
+    """
+    anotacion = formulario.instance
+    if not puede_modificar_anotacion(anotacion, usuario):
+        raise PermissionDenied("Solo el autor o un administrador pueden modificar la anotación.")
+    anotacion = formulario.save()
+    anotacion.destinatarios.all().delete()
+    if anotacion.visibilidad == AnotacionCalendario.POR_ETIQUETA and destinatarios:
+        AnotacionCalendarioDestinatario.objects.bulk_create(
+            AnotacionCalendarioDestinatario(anotacion_calendario=anotacion, usuario=destinatario)
+            for destinatario in destinatarios
+        )
+    return anotacion
+
+
 @transaction.atomic
 def eliminar_anotacion(anotacion, usuario):
     """
@@ -380,7 +405,7 @@ def eliminar_anotacion(anotacion, usuario):
 
     Solo el autor o un administrador pueden eliminar la anotación.
     """
-    if anotacion.autor_id != usuario.id_usuario and not usuario.es_administrador:
+    if not puede_modificar_anotacion(anotacion, usuario):
         raise PermissionDenied("Solo el autor o un administrador pueden eliminar la anotación.")
     anotacion.delete()
     return True

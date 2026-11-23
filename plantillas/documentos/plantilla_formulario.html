@@ -47,6 +47,12 @@
     <div class="panel mb-3">
         <div class="ph"><div class="ph-title"><i class="bi bi-list-columns"></i> Campos propios</div></div>
         {{ formset_campos.management_form }}
+        <p class="form-text mt-0">«Valor en pesos», «Número» y «Porcentaje» solo dejan escribir números al generar el documento.</p>
+        <div class="row g-2 d-none d-md-flex small text-muted fw-semibold mb-1">
+            <div class="col-md-5">Nombre del campo</div>
+            <div class="col-md-3">Simple o repetible</div>
+            <div class="col-md-3">Qué se escribe</div>
+        </div>
         <div id="filas-campos">
             {% for fila in formset_campos %}
             <div class="row g-2 align-items-center mb-2 fila-campo">
@@ -55,10 +61,14 @@
                     {{ fila.nombre_campo }}
                     {% if fila.nombre_campo.errors %}<div class="text-danger small">{{ fila.nombre_campo.errors }}</div>{% endif %}
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     {{ fila.tipo_campo }}
                 </div>
                 <div class="col-md-3">
+                    {{ fila.tipo_dato }}
+                    {% if fila.tipo_dato.errors %}<div class="text-danger small">{{ fila.tipo_dato.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-1">
                     {% if fila.instance.pk %}
                     <div class="form-check">
                         {{ fila.DELETE }}
@@ -81,7 +91,8 @@
 <div id="plantilla-campo" class="d-none">
     <div class="row g-2 align-items-center mb-2 fila-campo">
         <div class="col-md-5">{{ formset_campos.empty_form.nombre_campo }}</div>
-        <div class="col-md-4">{{ formset_campos.empty_form.tipo_campo }}</div>
+        <div class="col-md-3">{{ formset_campos.empty_form.tipo_campo }}</div>
+        <div class="col-md-3">{{ formset_campos.empty_form.tipo_dato }}</div>
     </div>
 </div>
 

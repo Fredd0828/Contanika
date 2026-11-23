@@ -1424,6 +1424,24 @@ a.login-btn:hover {
     color: #fff;
 }
 
+/* Logo de la marca en el menú lateral (23-nov-2026). */
+a.s-logo-wrap {
+    text-decoration: none;
+}
+
+.s-logo-completo {
+    display: block;
+    width: 168px;
+    max-width: 100%;
+    height: auto;
+}
+
+.s-logo-simbolo {
+    display: none;
+    width: 34px;
+    height: 34px;
+}
+
 .s-menu {
     padding: 6px 0 4px;
     overflow-y: auto;
@@ -1619,6 +1637,14 @@ a.login-btn:hover {
 
     .menu-plegado .s-logo-wrap {
         justify-content: center;
+    }
+
+    .menu-plegado .s-logo-completo {
+        display: none;
+    }
+
+    .menu-plegado .s-logo-simbolo {
+        display: block;
     }
 
     /* El título de cada grupo se reduce a una línea divisoria. */
@@ -2112,6 +2138,76 @@ a.login-btn:hover {
     background: var(--teal);
     color: #fff;
     border-color: var(--teal);
+}
+
+/* Datos del despacho: vista del logo con sus medidas y el recorte (23-nov-2026). */
+.logo-guia {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px;
+    padding: 12px;
+    border: 1px dashed var(--border2);
+    border-radius: 10px;
+}
+
+.logo-guia-vista {
+    flex: 0 0 auto;
+    width: 240px;
+    max-width: 100%;
+    height: 96px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px;
+}
+
+.logo-guia-vista img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.recorte-lienzo {
+    height: min(60vh, 420px);
+    background: var(--card2);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.recorte-lienzo img {
+    display: block;
+    max-width: 100%;
+}
+
+/* Reportes: gráficas de círculo en rejilla, tantas por fila como quepan. */
+.rp-circulos {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+    gap: 16px;
+}
+
+.rp-circulos .rp-circulo {
+    margin: 0;
+}
+
+.rp-circulo-lienzo {
+    position: relative;
+    height: 260px;
+}
+
+/* Acción que borra algo (eliminar un abono o una anotación archivada). */
+.ph-link.ph-link-peligro {
+    color: var(--rojo-texto);
+}
+
+.ph-link.ph-link-peligro:hover {
+    background: var(--rojo-texto);
+    border-color: var(--rojo-texto);
+    color: #fff;
 }
 
 .ph-btn:focus-visible,
@@ -4594,6 +4690,94 @@ a.cal-ev:hover {
     color: var(--text);
 }
 
+.pp-proposito[hidden] {
+    display: none;
+}
+
+.pp-proposito-simbolo {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+}
+
+/* En modo oscuro se cambia por la versión del símbolo para fondo oscuro. */
+[data-tema="oscuro"] .pp-proposito-simbolo {
+    content: url("../img/marca/contanika-simbolo-oscuro.svg");
+}
+
+.pp-proposito-texto {
+    flex: 1 1 auto;
+}
+
+/* La X que cierra el mensaje (23-nov-2026). */
+.pp-proposito-cerrar {
+    flex-shrink: 0;
+    align-self: flex-start;
+    width: 30px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: none;
+    color: var(--muted);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.pp-proposito-cerrar:hover {
+    background: var(--card2);
+    border-color: var(--border);
+    color: var(--text);
+}
+
+.pp-proposito-cerrar:focus-visible {
+    outline: 2px solid var(--teal);
+    outline-offset: 2px;
+}
+
+/* Gráfica de círculo del panel: la dona y, al lado, las cifras exactas. */
+.pp-dona-fila {
+    display: grid;
+    grid-template-columns: 170px minmax(0, 1fr);
+    align-items: center;
+    gap: 16px;
+}
+
+.pp-dona-fila > * {
+    min-width: 0;
+}
+
+.pp-dona {
+    position: relative;
+    height: 170px;
+}
+
+.pp-dona-punto {
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    margin-right: 6px;
+    vertical-align: 1px;
+}
+
+.pp-dona-punto-1 { background: var(--teal-claro); }
+.pp-dona-punto-2 { background: var(--teal); }
+.pp-dona-punto-3 { background: var(--orange); }
+.pp-dona-punto-4 { background: var(--green); }
+
+@media (max-width: 520px) {
+    .pp-dona-fila {
+        grid-template-columns: 1fr;
+    }
+
+    .pp-dona {
+        height: 190px;
+    }
+}
+
 .pp-proposito-icono {
     width: 36px;
     height: 36px;
@@ -4639,11 +4823,29 @@ a.cal-ev:hover {
 
 /* ══════════ TAMAÑO DE LA LETRA ══════════
    El botón «Aa» de la barra superior fija --zoom-letra (1, 1.15, 1.3 o 1.45)
-   y el contenido de la página se agranda con `zoom`; el menú lateral y la
-   barra superior no cambian. Como casi todo el CSS está en px, `zoom` es lo
-   que agranda de verdad letras, campos y tablas a la vez (22-nov-2026). */
+   y el contenido de la página se agranda con `zoom`. Como casi todo el CSS
+   está en px, `zoom` es lo que agranda de verdad letras, campos y tablas a la
+   vez (22-nov-2026). Desde el 23-nov-2026 el menú lateral también crece: se
+   ensancha en la misma proporción (el contenido se corre lo mismo) y su alto
+   se compensa para que siga ocupando justo la pantalla. */
 .content {
     zoom: var(--zoom-letra, 1);
+}
+
+#sidebar {
+    zoom: var(--zoom-letra, 1);
+    height: calc(100vh / var(--zoom-letra, 1));
+    height: calc(100dvh / var(--zoom-letra, 1));
+}
+
+#main {
+    margin-left: calc(var(--ancho-menu) * var(--zoom-letra, 1));
+}
+
+@media (max-width: 992px) {
+    #main {
+        margin-left: 0;
+    }
 }
 
 .tb-letra-marca {

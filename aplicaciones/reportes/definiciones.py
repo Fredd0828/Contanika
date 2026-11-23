@@ -28,7 +28,18 @@ from aplicaciones.tareas.models import Tarea
 
 from . import formularios
 from .models import Reporte
-from .resultados import FECHA, NUMERO, PESOS, PORCENTAJE, Columna, Grafico, ResultadoReporte, Seccion
+from .resultados import (
+    FECHA,
+    NUMERO,
+    PESOS,
+    PORCENTAJE,
+    Circulo,
+    Columna,
+    Grafico,
+    ResultadoReporte,
+    Seccion,
+    contar_por,
+)
 
 MESES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
 
@@ -124,6 +135,16 @@ class ReporteClientes(DefinicionReporte):
                 ("Activos", str(activos)),
                 ("Inactivos", str(len(filas) - activos)),
             ],
+            circulos=[
+                Circulo(
+                    "Clientes por estado",
+                    contar_por(filas, 10, orden=(Cliente.ACTIVO,)),
+                    centro="clientes",
+                    colores=["--green", "--muted"],
+                ),
+                Circulo("Por tipo de persona", contar_por(filas, 2), centro="clientes"),
+                Circulo("Por régimen tributario", contar_por(filas, 3), centro="clientes"),
+            ],
         )
 
 
@@ -202,6 +223,23 @@ class ReporteVencimientos(DefinicionReporte):
                 ("Obligaciones", str(len(filas))),
                 ("Presentadas", str(presentadas)),
                 ("Vencidas sin presentar", str(len(resaltadas))),
+            ],
+            circulos=[
+                Circulo(
+                    "Estado de las obligaciones",
+                    [
+                        ("Presentadas", presentadas),
+                        ("Por presentar", len(filas) - presentadas - len(resaltadas)),
+                        ("Vencidas sin presentar", len(resaltadas)),
+                    ],
+                    centro="obligaciones",
+                    colores=["--green", "--teal", "--red"],
+                ),
+                Circulo(
+                    "Por ámbito",
+                    contar_por(filas, 2, orden=("Nacional", "Distrital", "Municipal")),
+                    centro="obligaciones",
+                ),
             ],
         )
 
@@ -336,6 +374,25 @@ class ReporteCartera(DefinicionReporte):
                 ("Clientes en mora crítica", str(len(resaltadas))),
             ],
             grafico=grafico,
+            circulos=[
+                Circulo(
+                    "De lo facturado, cuánto se ha cobrado",
+                    [("Cobrado", float(totales["cobrado"])), ("Por cobrar", float(totales["saldo"]))],
+                    formato="pesos",
+                    centro="facturado",
+                    colores=["--green", "--orange"],
+                ),
+                Circulo(
+                    "Deuda por cliente (10 mayores)",
+                    [
+                        (f["cliente"].nombre_razon_social[:28], float(f["saldo"]))
+                        for f in mayores
+                        if f["saldo"] > 0
+                    ],
+                    formato="pesos",
+                    centro="deuda",
+                ),
+            ],
         )
 
 
@@ -408,6 +465,34 @@ class ReporteCuentasCobro(DefinicionReporte):
                 ("Valor total", formato_pesos(sum((fila[4] for fila in filas), Decimal("0")))),
                 ("Saldo pendiente", formato_pesos(sum((fila[6] for fila in filas), Decimal("0")))),
                 ("Vencidas", str(len(resaltadas))),
+            ],
+            circulos=[
+                Circulo(
+                    "Cuentas por estado de pago",
+                    contar_por(
+                        filas,
+                        8,
+                        orden=(
+                            CuentaCobro.PAGADA,
+                            CuentaCobro.ABONADA,
+                            CuentaCobro.PENDIENTE,
+                            CuentaCobro.VENCIDA,
+                        ),
+                    ),
+                    centro="cuentas",
+                    colores=["--green", "--teal", "--orange", "--red"],
+                ),
+                Circulo(
+                    "Valor facturado: abonado y saldo",
+                    [
+                        ("Abonado", float(sum((fila[5] for fila in filas), Decimal("0")))),
+                        ("Saldo", float(sum((fila[6] for fila in filas), Decimal("0")))),
+                    ],
+                    formato="pesos",
+                    centro="facturado",
+                    colores=["--green", "--orange"],
+                ),
+                Circulo("Por estado de envío", contar_por(filas, 7), centro="cuentas"),
             ],
         )
 
@@ -485,6 +570,21 @@ class ReporteTareas(DefinicionReporte):
                 ("Terminadas", str(terminadas)),
                 ("Pendientes", str(len(filas) - terminadas)),
                 ("Vencidas", str(len(resaltadas))),
+            ],
+            circulos=[
+                Circulo(
+                    "Tareas por estado",
+                    contar_por(filas, 6, orden=[estado for estado, _ in Tarea.OPCIONES_ESTADO]),
+                    centro="tareas",
+                    colores=["--teal-claro", "--teal", "--orange", "--green"],
+                ),
+                Circulo(
+                    "Por prioridad",
+                    contar_por(filas, 4, orden=(Tarea.ALTA, Tarea.MEDIA, Tarea.BAJA)),
+                    centro="tareas",
+                    colores=["--red", "--orange", "--teal-claro"],
+                ),
+                Circulo("Por responsable", contar_por(filas, 3), centro="tareas"),
             ],
         )
 
@@ -622,6 +722,27 @@ class ReporteIngresos(DefinicionReporte):
                     ("En mora", [float(v["mora"]) for v in valores]),
                 ],
             ),
+            circulos=[
+                Circulo(
+                    "Lo facturado en el rango, hoy",
+                    [
+                        (
+                            "Cobrado",
+                            float(
+                                sum(
+                                    (v["facturado"] - v["pendiente"] - v["mora"] for v in valores),
+                                    Decimal("0"),
+                                )
+                            ),
+                        ),
+                        ("Pendiente", float(sum((v["pendiente"] for v in valores), Decimal("0")))),
+                        ("En mora", float(sum((v["mora"] for v in valores), Decimal("0")))),
+                    ],
+                    formato="pesos",
+                    centro="facturado",
+                    colores=["--green", "--orange", "--red"],
+                ),
+            ],
             notas=[
                 "Facturado: cuentas de cobro generadas en el mes. Cobrado: abonos recibidos en el mes.",
                 "Pendiente y en mora: saldo actual de las cuentas generadas en el mes, "

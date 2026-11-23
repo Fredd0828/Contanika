@@ -12,7 +12,8 @@ from django.core.validators import RegexValidator
 # reconocen por su nombre en cualquier formulario: el navegador muestra el
 # teclado numérico y borra lo que no sea número mientras se escribe (guion de
 # `base.html`, atributo `data-solo-numeros`), y el servidor lo valida igual.
-CAMPOS_SOLO_DIGITOS = {"nit_cedula", "telefono", "identificacion", "numero_cuenta"}
+# `informacion_contacto` es el teléfono del cliente (23-nov-2026).
+CAMPOS_SOLO_DIGITOS = {"nit_cedula", "telefono", "identificacion", "numero_cuenta", "informacion_contacto"}
 # El NIT del despacho puede llevar el dígito de verificación tras un guion.
 CAMPOS_NIT = {"nit_despacho"}
 

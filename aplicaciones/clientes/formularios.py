@@ -78,6 +78,7 @@ class ClienteForm(ModeloFormularioBase):
         }
         labels = {
             "nit_cedula": "Número de documento",
+            "informacion_contacto": "Teléfono",
         }
 
     def __init__(self, *args, usuario=None, **kwargs):

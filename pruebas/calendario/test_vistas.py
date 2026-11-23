@@ -542,3 +542,124 @@ def test_calendario_no_ofrece_crear_tarea_al_junior(client, usuario_junior):
     client.force_login(usuario_junior)
     contenido = client.get(reverse("calendario:calendario")).content.decode()
     assert "?desde=calendario" not in contenido
+
+
+# ---------------------------------------------------------------------------
+# Abrir, editar y eliminar una anotación desde el calendario (23-nov-2026)
+# ---------------------------------------------------------------------------
+
+AJAX = {"HTTP_X_REQUESTED_WITH": "XMLHttpRequest"}
+
+
+def _anotacion(autor, **extra):
+    datos = {
+        "fecha": date(2026, 10, 5),
+        "contenido": "Reunión de cierre con el equipo",
+        "autor": autor,
+        "visibilidad": AnotacionCalendario.EQUIPO,
+    }
+    datos.update(extra)
+    return AnotacionCalendario.objects.create(**datos)
+
+
+def test_la_anotacion_del_calendario_es_un_enlace_que_abre_el_modal(client, usuario_senior):
+    anotacion = _anotacion(usuario_senior)
+    client.force_login(usuario_senior)
+    contenido = client.get(reverse("calendario:calendario"), {"fecha": "2026-10-05"}).content.decode()
+    assert reverse("calendario:detalle_anotacion", kwargs={"pk": anotacion.pk}) in contenido
+    assert "js-anotacion-cal" in contenido
+    assert 'id="modalAnotacionCal"' in contenido
+
+
+def test_el_autor_ve_la_anotacion_con_editar_y_eliminar(client, usuario_senior):
+    anotacion = _anotacion(usuario_senior)
+    client.force_login(usuario_senior)
+    respuesta = client.get(reverse("calendario:detalle_anotacion", kwargs={"pk": anotacion.pk}), **AJAX)
+    html = respuesta.content.decode()
+    assert respuesta.status_code == 200
+    assert "<html" not in html
+    assert "Reunión de cierre con el equipo" in html
+    assert reverse("calendario:editar_anotacion", kwargs={"pk": anotacion.pk}) in html
+    assert reverse("calendario:eliminar_anotacion", kwargs={"pk": anotacion.pk}) in html
+
+
+def test_otro_usuario_la_ve_sin_editar_ni_eliminar(client, usuario_senior, usuario_junior):
+    anotacion = _anotacion(usuario_senior)
+    client.force_login(usuario_junior)
+    html = client.get(
+        reverse("calendario:detalle_anotacion", kwargs={"pk": anotacion.pk}), **AJAX
+    ).content.decode()
+    assert "Reunión de cierre con el equipo" in html
+    assert reverse("calendario:editar_anotacion", kwargs={"pk": anotacion.pk}) not in html
+    assert client.get(reverse("calendario:editar_anotacion", kwargs={"pk": anotacion.pk})).status_code == 403
+
+
+def test_sin_javascript_la_anotacion_abre_su_pagina(client, usuario_senior):
+    anotacion = _anotacion(usuario_senior)
+    client.force_login(usuario_senior)
+    respuesta = client.get(reverse("calendario:detalle_anotacion", kwargs={"pk": anotacion.pk}))
+    assert respuesta.status_code == 200
+    assert "<html" in respuesta.content.decode()
+
+
+def test_anotacion_privada_ajena_no_se_abre(client, usuario_senior, usuario_junior):
+    anotacion = _anotacion(usuario_junior, visibilidad=AnotacionCalendario.PRIVADA)
+    client.force_login(usuario_senior)
+    assert client.get(reverse("calendario:detalle_anotacion", kwargs={"pk": anotacion.pk})).status_code == 404
+    assert (
+        client.post(reverse("calendario:eliminar_anotacion", kwargs={"pk": anotacion.pk})).status_code == 404
+    )
+    assert AnotacionCalendario.objects.filter(pk=anotacion.pk).exists()
+
+
+def test_el_autor_edita_la_anotacion(client, usuario_senior, usuario_junior):
+    anotacion = _anotacion(usuario_senior)
+    client.force_login(usuario_senior)
+    url = reverse("calendario:editar_anotacion", kwargs={"pk": anotacion.pk})
+    modal = client.get(url, **AJAX)
+    assert modal.status_code == 200 and "Guardar cambios" in modal.content.decode()
+    respuesta = client.post(
+        url,
+        {
+            "fecha": "2026-10-07",
+            "contenido": "Reunión movida al miércoles",
+            "visibilidad": AnotacionCalendario.POR_ETIQUETA,
+            "destinatarios": [usuario_junior.pk],
+        },
+    )
+    assert respuesta.status_code == 302
+    assert respuesta.url.endswith("?fecha=2026-10-07")
+    anotacion.refresh_from_db()
+    assert anotacion.contenido == "Reunión movida al miércoles"
+    assert [d.usuario for d in anotacion.destinatarios.all()] == [usuario_junior]
+
+    # Al pasar a «Equipo completo» se quitan los etiquetados.
+    client.post(url, {"fecha": "2026-10-07", "contenido": "Otra", "visibilidad": AnotacionCalendario.EQUIPO})
+    assert not anotacion.destinatarios.exists()
+
+
+def test_editar_con_error_muestra_el_formulario(client, usuario_senior):
+    anotacion = _anotacion(usuario_senior)
+    client.force_login(usuario_senior)
+    url = reverse("calendario:editar_anotacion", kwargs={"pk": anotacion.pk})
+    respuesta = client.post(url, {"fecha": "", "contenido": "", "visibilidad": AnotacionCalendario.EQUIPO})
+    assert respuesta.status_code == 200
+    assert "Editar anotación del calendario" in respuesta.content.decode()
+    anotacion.refresh_from_db()
+    assert anotacion.contenido == "Reunión de cierre con el equipo"
+
+
+def test_el_administrador_elimina_una_anotacion_ajena(client, usuario_administrador, usuario_senior):
+    anotacion = _anotacion(usuario_senior)
+    client.force_login(usuario_administrador)
+    respuesta = client.post(reverse("calendario:eliminar_anotacion", kwargs={"pk": anotacion.pk}))
+    assert respuesta.status_code == 302
+    assert respuesta.url.endswith("?fecha=2026-10-05")
+    assert not AnotacionCalendario.objects.filter(pk=anotacion.pk).exists()
+
+
+def test_otro_usuario_no_elimina_la_anotacion(client, usuario_senior, usuario_junior):
+    anotacion = _anotacion(usuario_senior)
+    client.force_login(usuario_junior)
+    client.post(reverse("calendario:eliminar_anotacion", kwargs={"pk": anotacion.pk}))
+    assert AnotacionCalendario.objects.filter(pk=anotacion.pk).exists()

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block titulo %}Anotación del calendario{% endblock %}
+
+{% block contenido %}
+<div class="panel">
+    <div class="ph">
+        <div class="ph-title"><i class="bi bi-sticky"></i> Anotación del calendario</div>
+        <div class="ph-actions">
+            <a class="ph-link" href="{% url 'calendario:calendario' %}?fecha={{ anotacion.fecha|date:'Y-m-d' }}"><i class="bi bi-arrow-left"></i> Volver al calendario</a>
+            {% if puede_modificar %}
+            <form method="post" action="{% url 'calendario:eliminar_anotacion' anotacion.pk %}"
+                  onsubmit="return confirm('¿Eliminar esta anotación del calendario? No se puede deshacer.')">
+                {% csrf_token %}
+                <button type="submit" class="ph-link ph-link-peligro"><i class="bi bi-trash"></i> Eliminar</button>
+            </form>
+            <a class="ph-btn" href="{% url 'calendario:editar_anotacion' anotacion.pk %}"><i class="bi bi-pencil"></i> Editar</a>
+            {% endif %}
+        </div>
+    </div>
+    {% include "calendario/_anotacion_detalle_cuerpo.html" %}
+</div>
+{% endblock %}

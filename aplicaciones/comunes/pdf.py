@@ -38,6 +38,10 @@ MARGEN_SUPERIOR = 1.7 * cm
 MARGEN_INFERIOR = 1.9 * cm
 ALTO_LOGO = 1.7 * cm
 ANCHO_LOGO = 3.4 * cm
+# Sin nombre del despacho el logo va solo y tiene más espacio (23-nov-2026).
+# En «Datos del despacho» se recomiendan imágenes de estas proporciones.
+ALTO_LOGO_SOLO = 2.2 * cm
+ANCHO_LOGO_SOLO = 6.6 * cm
 
 # ---------------------------------------------------------------------------
 # Letras
@@ -245,15 +249,22 @@ def _lineas_despacho(despacho, separador=" · "):
 
 def _bloque_despacho(despacho, ancho, estilos):
     """
-    Logo del despacho (si lo cargó) y, siempre a su lado, el nombre con los
-    datos de contacto. Sin logo, solo el nombre y los datos.
+    Logo del despacho (si lo cargó) y, a su lado, el nombre con los datos de
+    contacto. Sin logo, solo el nombre y los datos. El nombre es opcional:
+    con logo y sin nombre, el logo va más grande y los datos debajo.
     """
-    textos = [Paragraph(escape(despacho.nombre_despacho) if despacho else "", estilos["despacho"])]
+    nombre = despacho.nombre_despacho if despacho else ""
+    textos = [Paragraph(escape(nombre), estilos["despacho"])] if nombre else []
     lineas = _lineas_despacho(despacho)
     if lineas:
         textos.append(Paragraph("<br/>".join(lineas), estilos["despacho_datos"]))
     if not (despacho and despacho.membrete):
         return textos
+    if not nombre:
+        logo = imagen_proporcional(
+            despacho.membrete.path, min(ANCHO_LOGO_SOLO, ancho), ALTO_LOGO_SOLO, alineacion="LEFT"
+        )
+        return [logo, Spacer(1, 0.15 * cm), *textos] if textos else [logo]
     logo = imagen_proporcional(despacho.membrete.path, ANCHO_LOGO, ALTO_LOGO, alineacion="LEFT")
     espacio = 0.35 * cm
     tabla = Table([[logo, textos]], colWidths=[logo.drawWidth + espacio, ancho - logo.drawWidth - espacio])

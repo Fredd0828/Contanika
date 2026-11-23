@@ -72,6 +72,42 @@
 
 {% include "comunes/_paginacion.html" %}
 
+{# Lo que el Administrador hizo con las anotaciones: queda aunque la anotación se elimine. #}
+{% if acciones %}
+<div class="panel mt-3">
+    <div class="ph">
+        <div>
+            <div class="ph-title"><i class="bi bi-clock-history"></i> Registro de acciones</div>
+            <div class="ph-meta mt-1">Anotaciones archivadas, restauradas, corregidas o eliminadas{% if not cliente %} en todos los clientes{% endif %}</div>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="tbl">
+            <thead>
+                <tr>
+                    <th>Fecha y hora</th>
+                    <th>Acción</th>
+                    {% if not cliente %}<th>Cliente</th>{% endif %}
+                    <th>Quién</th>
+                    <th>Detalle</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for accion in acciones %}
+                <tr>
+                    <td class="text-nowrap">{{ accion.fecha_hora|date:"d/m/Y H:i" }}</td>
+                    <td><span class="badge-est {% if accion.accion == 'Eliminó' %}be-r{% elif accion.accion == 'Editó' %}be-w{% else %}be-n{% endif %}">{{ accion.accion }}</span></td>
+                    {% if not cliente %}<td><a href="{% url 'expediente:cliente' accion.cliente_id %}">{{ accion.cliente.nombre_razon_social }}</a></td>{% endif %}
+                    <td>{{ accion.usuario.nombre }}</td>
+                    <td class="small">{{ accion.detalle|linebreaksbr }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
 <datalist id="lista-tipos-anotacion">
     {% for tipo in tipos_anotacion %}<option value="{{ tipo }}"></option>{% endfor %}
 </datalist>

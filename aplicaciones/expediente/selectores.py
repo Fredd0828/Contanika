@@ -8,7 +8,7 @@ expediente de un cliente y el panel dentro de su ficha.
 from aplicaciones.clientes.models import Cliente
 from aplicaciones.comunes.models import Adjunto
 
-from .models import Anotacion
+from .models import AccionAnotacion, Anotacion
 
 
 def clientes_visibles(usuario):
@@ -95,3 +95,13 @@ def con_adjuntos(anotaciones):
 def anotaciones_del_cliente(usuario, cliente, limite=10):
     """Últimas anotaciones vigentes del cliente, para el panel en su ficha."""
     return con_adjuntos(filtrar_anotaciones(usuario, cliente=cliente)[:limite])
+
+
+def acciones_del_expediente(usuario, cliente=None, limite=30):
+    """Últimas acciones del Administrador sobre anotaciones (archivar, restaurar, editar, eliminar)."""
+    consulta = AccionAnotacion.objects.select_related("usuario", "cliente").filter(
+        cliente__in=clientes_visibles(usuario)
+    )
+    if cliente:
+        consulta = consulta.filter(cliente=cliente)
+    return consulta[:limite]
