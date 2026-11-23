@@ -4901,9 +4901,12 @@ a.cal-ev:hover {
         white-space: nowrap;
     }
 
-    /* Una celda larga (descripción, filtros) se parte en varias líneas. */
+    /* Una celda larga (descripción, filtros) se parte en varias líneas; una
+       palabra sin espacios también se corta, para no montarse en la columna
+       siguiente (23-nov-2026). */
     .tbl-deslizable td {
         max-width: 240px;
+        overflow-wrap: anywhere;
     }
 
     /* Primera columna fija: no se pierde de vista de quién es cada fila. */
