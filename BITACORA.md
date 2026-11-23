@@ -2752,3 +2752,23 @@ lo fusionado desde `v1.0.0` (2-nov-2026), PR #21 a #47:
 Medido sobre `main` con el #47 (30e42b9) más el número de versión: 1605
 pruebas en verde, cobertura total 95 % (líneas 96,9 %); ruff, `check` y
 migraciones sin hallazgos.
+
+## Lunes 23 de noviembre de 2026 — Documentación al día con la versión 1.1.0
+
+### Qué se hizo
+- `scripts/bd/01_esquema_contanika.sql` y `02_datos_iniciales.sql` regenerados
+  desde una base migrada con este código (44 tablas). Verificado en una base
+  vacía: 01 + 02 dan las mismas 279 columnas, 138 restricciones, 4
+  disparadores y los mismos catálogos que la base migrada.
+- Documentos SENA (fuera del repositorio, en `documentos_documentacion/Contanika/`):
+  Manual Técnico, Manual de Implantación y Formato de Pruebas en su versión
+  1.1, con la producción en contanika.tech, la medición nueva (1605 pruebas,
+  96,9 % de líneas y 88,0 % de ramas), el ensayo 4 de actualización y
+  reversión, y los defectos DEF-009 a DEF-014 con sus no conformidades.
+  Evidencias renovadas en la carpeta `Evidencias`.
+- `Contanika_Fases1y2_v12.docx` con lo de `documentacion/CAMBIOS_WORD.md`
+  (marcado como llevado al Word).
+
+### Pendientes
+- Capturas de los módulos 6 a 10 para el Word del proyecto.
+- Revisión entre pares, firmas y fecha de entrega (del usuario).
