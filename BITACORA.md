@@ -2700,3 +2700,37 @@ escritorio, letra «Muy grande» y teléfono.
 ### Resultado
 Suite completa en verde. Revisado en el navegador: inicio de sesión
 (escritorio y teléfono), recuperar contraseña y página pública.
+
+## Lunes 23 de noviembre de 2026 — Versión 1.1.0
+
+### Notas de la versión
+`VERSION_APLICACION` pasa a `1.1.0` y se publica la etiqueta `v1.1.0`. Reúne
+lo fusionado desde `v1.0.0` (2-nov-2026), PR #21 a #45:
+- **Acceso:** el usuario nuevo crea su contraseña con un enlace de un solo
+  uso (3 días); «¿Olvidó su contraseña?»; el Administrador reenvía el acceso
+  (#27). Instalación por despacho con `cargar_datos_iniciales
+  --nombre-despacho` (#27).
+- **PDF:** letras Montserrat y Open Sans, encabezado con logo y nombre, sello
+  PAGADA, fecha con el mes en minúscula y pie con nombre y NIT; descripción
+  del documento antes de «Se expide» y firma al pie (#28, #31, #41).
+- **Calendario DIAN:** plantilla de Excel con la forma del PDF oficial, 704
+  fechas de 2026 y 27 obligaciones (#33, #34). Anotaciones del calendario en
+  ventana, con editar y eliminar (#44).
+- **Asistente de consultas** con 8 preguntas guiadas, sin IA (#30).
+- **Despliegue:** instalación en un VPS en un paso (`despliegue/`), con
+  Nginx, HTTPS, systemd, cron y respaldos; django-axes con la IP real (#32).
+  En producción en https://contanika.tech desde el 16-nov-2026.
+- **Pantallas:** versión móvil a pantalla completa, modo oscuro, botón «Aa»
+  de letra, tablas deslizables en el teléfono, donas en el panel y los
+  reportes, y logo nuevo en todas las pantallas (#29, #36, #41, #42, #44, #45).
+- **Reglas que cambian:** el Administrador corrige o elimina una anotación
+  archivada del expediente, con «Registro de acciones»; elimina el último
+  abono de una cuenta indicando el motivo; los campos de las plantillas de
+  documentos tienen tipo de dato (#44).
+- **Calidad:** Documentos y Tareas al 100 % de ramas (#26); pruebas en
+  paralelo con pytest-xdist (#43); dependencias al día (#21–#24, #37–#40).
+
+### Resultado
+Medido sobre `639c597` (mismo código, salvo el número de versión): 1604
+pruebas en verde, cobertura de líneas 96,9 % y de ramas 88,0 %; ruff,
+bandit y pip-audit sin hallazgos.
