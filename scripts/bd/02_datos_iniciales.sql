@@ -12,7 +12,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict DUwTXrkFdnqTrXsRn5JBpFaUmfsOx5f6TdPaldhuHybmj8JW1NiUfqubDT5GT8v
+\restrict vOqpzj7d4dfZEpvnJv8aV5sOW7bNWP5HGGEvOYrwbhZh04f8mxsfMDSMCMKEGao
 
 -- Dumped from database version 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)
 -- Dumped by pg_dump version 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)
@@ -46,29 +46,29 @@ COPY public.plantilla (id_plantilla, nombre_plantilla, texto_predeterminado, tip
 -- Data for Name: campo_plantilla; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.campo_plantilla (id_campo, nombre_campo, tipo_campo, es_repetible, id_plantilla) FROM stdin;
-1	Actividad económica	Simple	f	1
-2	Valor del ingreso certificado	Simple	f	1
-3	Concepto	Simple	f	1
-4	Ciudad donde se consignó la retención	Simple	f	2
-5	Nombre del asalariado	Simple	f	2
-6	Identificación del asalariado	Simple	f	2
-7	Dirección del agente retenedor	Simple	f	2
-8	Valor de los pagos o abonos	Simple	f	2
-9	Concepto	Simple	f	2
-10	Monto de la retención	Simple	f	2
-11	Nombre del accionista	Repetible	t	3
-12	Porcentaje de participación	Repetible	t	3
-13	Valor del patrimonio	Simple	f	4
-14	Total de activos	Simple	f	4
-15	Total de pasivos	Simple	f	4
-16	Base de la certificación	Simple	f	4
-17	Nombre del dependiente económico	Simple	f	5
-18	Identificación del dependiente económico	Simple	f	5
-19	Relación o parentesco	Simple	f	5
-20	Ingresos brutos	Simple	f	6
-21	Patrimonio bruto	Simple	f	6
-22	Consignaciones, compras y consumos del período	Simple	f	6
+COPY public.campo_plantilla (id_campo, nombre_campo, tipo_campo, es_repetible, id_plantilla, tipo_dato) FROM stdin;
+1	Actividad económica	Simple	f	1	Texto
+2	Valor del ingreso certificado	Simple	f	1	Valor en pesos
+3	Concepto	Simple	f	1	Texto
+4	Ciudad donde se consignó la retención	Simple	f	2	Texto
+5	Nombre del asalariado	Simple	f	2	Texto
+6	Identificación del asalariado	Simple	f	2	Número
+7	Dirección del agente retenedor	Simple	f	2	Texto
+8	Valor de los pagos o abonos	Simple	f	2	Valor en pesos
+9	Concepto	Simple	f	2	Texto
+10	Monto de la retención	Simple	f	2	Valor en pesos
+11	Nombre del accionista	Repetible	t	3	Texto
+12	Porcentaje de participación	Repetible	t	3	Porcentaje
+13	Valor del patrimonio	Simple	f	4	Valor en pesos
+14	Total de activos	Simple	f	4	Valor en pesos
+15	Total de pasivos	Simple	f	4	Valor en pesos
+16	Base de la certificación	Simple	f	4	Texto
+17	Nombre del dependiente económico	Simple	f	5	Texto
+18	Identificación del dependiente económico	Simple	f	5	Número
+19	Relación o parentesco	Simple	f	5	Texto
+20	Ingresos brutos	Simple	f	6	Valor en pesos
+21	Patrimonio bruto	Simple	f	6	Valor en pesos
+22	Consignaciones, compras y consumos del período	Simple	f	6	Valor en pesos
 \.
 
 
@@ -86,24 +86,6 @@ COPY public.concepto_facturable (id_concepto, nombre_concepto, valor_sugerido) F
 
 
 --
--- Data for Name: configuracion_cobro; Type: TABLE DATA; Schema: public; Owner: -
---
-
-COPY public.configuracion_cobro (id_configuracion_cobro, cobro_automatico_activo, dia_generacion, dias_plazo_pago, canal_cobro, recordatorios_activos, dias_antes_vencimiento, frecuencia_mora_dias, canal_recordatorio, ultima_ejecucion, id_cuenta_bancaria, id_metodo_pago) FROM stdin;
-1	f	1	10	Correo	f	3	7	Correo	\N	\N	\N
-\.
-
-
---
--- Data for Name: configuracion_despacho; Type: TABLE DATA; Schema: public; Owner: -
---
-
-COPY public.configuracion_despacho (id_configuracion, nombre_despacho, nit_despacho, membrete, ciudad, direccion, telefono, correo) FROM stdin;
-1	Befrec Y Asociados SAS			Bogotá D.C.			
-\.
-
-
---
 -- Data for Name: metodo_pago; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -117,22 +99,75 @@ COPY public.metodo_pago (id_metodo_pago, nombre_metodo) FROM stdin;
 
 
 --
+-- Data for Name: configuracion_cobro; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.configuracion_cobro (id_configuracion_cobro, cobro_automatico_activo, dia_generacion, dias_plazo_pago, canal_cobro, recordatorios_activos, dias_antes_vencimiento, frecuencia_mora_dias, canal_recordatorio, ultima_ejecucion, id_cuenta_bancaria, id_metodo_pago) FROM stdin;
+1	f	1	10	Correo	f	3	7	Correo	\N	\N	\N
+\.
+
+
+--
+-- Data for Name: configuracion_despacho; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.configuracion_despacho (id_configuracion, nombre_despacho, nit_despacho, ciudad, direccion, telefono, correo, membrete, dias_aviso_vencimientos) FROM stdin;
+1	Mi despacho contable		Bogotá D.C.					5
+\.
+
+
+--
 -- Data for Name: modulo; Type: TABLE DATA; Schema: public; Owner: -
 --
 
 COPY public.modulo (id_modulo, nombre_modulo, codigo_modulo) FROM stdin;
-11	Gestión de clientes	MOD01
-12	Calendario	MOD02
-13	Tablero de tareas Kanban	MOD03
-14	Expedición de documentos y certificados	MOD04
-15	Hallazgos y revisiones	MOD05
-16	Honorarios, cartera y cuentas de cobro	MOD06
-17	Comunicaciones integradas	MOD07
-18	Gestión de equipo y roles	MOD08
-19	Expediente y bitácora por cliente	MOD09
-20	Reportes y análisis	MOD10
-21	Panel principal	PANEL
-22	Asistente de consultas	ASISTENTE
+1	Gestión de clientes	MOD01
+2	Calendario	MOD02
+3	Tablero de tareas Kanban	MOD03
+4	Expedición de documentos y certificados	MOD04
+5	Hallazgos y revisiones	MOD05
+6	Honorarios, cartera y cuentas de cobro	MOD06
+7	Comunicaciones integradas	MOD07
+8	Gestión de equipo y roles	MOD08
+9	Expediente y bitácora por cliente	MOD09
+10	Reportes y análisis	MOD10
+11	Panel principal	PANEL
+12	Asistente de consultas	ASISTENTE
+\.
+
+
+--
+-- Data for Name: obligacion_tributaria; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.obligacion_tributaria (id_obligacion, nombre, ambito) FROM stdin;
+1	Renta personas naturales	Nacional
+2	Renta personas jurídicas	Nacional
+3	Renta grandes contribuyentes	Nacional
+4	Retención en la fuente	Nacional
+5	IVA bimestral	Nacional
+6	IVA cuatrimestral	Nacional
+7	RST anticipo bimestral	Nacional
+8	RST consolidada anual	Nacional
+9	Exógena nacional	Nacional
+10	Exógena distrital	Distrital
+11	Impuesto al consumo	Nacional
+12	Gasolina y ACPM	Nacional
+13	Impuesto al carbono	Nacional
+14	IVA servicios desde el exterior	Nacional
+15	Bebidas ultraprocesadas	Nacional
+16	Plásticos de un solo uso	Nacional
+17	Presencia económica significativa	Nacional
+18	Impuesto al patrimonio	Nacional
+19	Precios transferencia - informativa	Nacional
+20	Precios transferencia - documentación	Nacional
+21	Informe país por país	Nacional
+22	Beneficiarios finales (RUB)	Nacional
+23	Activos exterior grandes contribuyentes	Nacional
+24	Activos exterior personas jurídicas	Nacional
+25	Activos exterior personas naturales	Nacional
+26	Activos exterior RST	Nacional
+27	Exógena nacional grandes contribuyentes	Nacional
 \.
 
 
@@ -141,12 +176,12 @@ COPY public.modulo (id_modulo, nombre_modulo, codigo_modulo) FROM stdin;
 --
 
 COPY public.reporte (id_reporte, nombre_reporte, modulo_origen) FROM stdin;
-3	Clientes	Gestión de clientes
-4	Vencimientos tributarios	Calendario
-5	Cartera	Honorarios y cartera
-6	Cuentas de cobro	Honorarios y cartera
-7	Tareas del Kanban	Tablero Kanban
-8	Ingresos mensuales del despacho	Honorarios y cartera
+1	Clientes	Gestión de clientes
+2	Vencimientos tributarios	Calendario
+3	Cartera	Honorarios y cartera
+4	Cuentas de cobro	Honorarios y cartera
+5	Tareas del Kanban	Tablero Kanban
+6	Ingresos mensuales del despacho	Honorarios y cartera
 \.
 
 
@@ -155,9 +190,9 @@ COPY public.reporte (id_reporte, nombre_reporte, modulo_origen) FROM stdin;
 --
 
 COPY public.rol (id_rol, nombre_rol) FROM stdin;
-4	Administrador
-5	Contador Senior
-6	Contador Junior
+1	Administrador
+2	Contador Senior
+3	Contador Junior
 \.
 
 
@@ -166,24 +201,24 @@ COPY public.rol (id_rol, nombre_rol) FROM stdin;
 --
 
 COPY public.permiso_reporte_rol (id_permiso_reporte, habilitado, id_reporte, id_rol) FROM stdin;
-1	t	3	4
-2	t	4	4
-3	t	5	4
-4	t	6	4
-5	t	7	4
-6	t	8	4
-7	t	3	5
-8	t	4	5
-9	t	5	5
-10	t	6	5
-11	t	7	5
-12	t	8	5
-13	t	3	6
-14	t	4	6
-15	f	5	6
-16	f	6	6
-17	t	7	6
-18	f	8	6
+1	t	1	1
+2	t	2	1
+3	t	3	1
+4	t	4	1
+5	t	5	1
+6	t	6	1
+7	t	1	2
+8	t	2	2
+9	t	3	2
+10	t	4	2
+11	t	5	2
+12	t	6	2
+13	t	1	3
+14	t	2	3
+15	f	3	3
+16	f	4	3
+17	t	5	3
+18	f	6	3
 \.
 
 
@@ -192,42 +227,42 @@ COPY public.permiso_reporte_rol (id_permiso_reporte, habilitado, id_reporte, id_
 --
 
 COPY public.permiso_rol_modulo (id_permiso, habilitado, id_modulo, id_rol) FROM stdin;
-1	t	11	4
-2	t	12	4
-3	t	13	4
-4	t	14	4
-5	t	15	4
-6	t	16	4
-7	t	17	4
-8	t	18	4
-9	t	19	4
-10	t	20	4
-11	t	11	5
-12	t	12	5
-13	t	13	5
-14	t	14	5
-15	t	15	5
-16	t	16	5
-17	t	17	5
-18	t	18	5
-19	t	19	5
-20	t	20	5
-21	t	11	6
-22	t	12	6
-23	t	13	6
-24	t	14	6
-25	t	15	6
-26	f	16	6
-27	t	17	6
-28	t	18	6
-29	t	19	6
-30	t	20	6
-31	t	21	4
-32	t	21	5
-33	f	21	6
-34	t	22	4
-35	t	22	5
-36	t	22	6
+1	t	1	1
+2	t	2	1
+3	t	3	1
+4	t	4	1
+5	t	5	1
+6	t	6	1
+7	t	7	1
+8	t	8	1
+9	t	9	1
+10	t	10	1
+11	t	11	1
+12	t	12	1
+13	t	1	2
+14	t	2	2
+15	t	3	2
+16	t	4	2
+17	t	5	2
+18	t	6	2
+19	t	7	2
+20	t	8	2
+21	t	9	2
+22	t	10	2
+23	t	11	2
+24	t	12	2
+25	t	1	3
+26	t	2	3
+27	t	3	3
+28	t	4	3
+29	t	5	3
+30	f	6	3
+31	t	7	3
+32	t	8	3
+33	t	9	3
+34	t	10	3
+35	f	11	3
+36	t	12	3
 \.
 
 
@@ -956,7 +991,6 @@ COPY public.tipo_servicio (id_tipo_servicio, nombre_servicio) FROM stdin;
 6	Información exógena
 7	Medios magnéticos
 8	Industria y comercio (ICA)
-9	Asesoría
 \.
 
 
@@ -978,7 +1012,7 @@ SELECT pg_catalog.setval('public.concepto_facturable_id_concepto_seq', 5, true);
 -- Name: configuracion_cobro_id_configuracion_cobro_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.configuracion_cobro_id_configuracion_cobro_seq', 1, true);
+SELECT pg_catalog.setval('public.configuracion_cobro_id_configuracion_cobro_seq', 1, false);
 
 
 --
@@ -999,7 +1033,14 @@ SELECT pg_catalog.setval('public.metodo_pago_id_metodo_pago_seq', 5, true);
 -- Name: modulo_id_modulo_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.modulo_id_modulo_seq', 22, true);
+SELECT pg_catalog.setval('public.modulo_id_modulo_seq', 12, true);
+
+
+--
+-- Name: obligacion_tributaria_id_obligacion_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.obligacion_tributaria_id_obligacion_seq', 27, true);
 
 
 --
@@ -1027,14 +1068,14 @@ SELECT pg_catalog.setval('public.plantilla_id_plantilla_seq', 6, true);
 -- Name: reporte_id_reporte_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.reporte_id_reporte_seq', 8, true);
+SELECT pg_catalog.setval('public.reporte_id_reporte_seq', 6, true);
 
 
 --
 -- Name: rol_id_rol_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.rol_id_rol_seq', 6, true);
+SELECT pg_catalog.setval('public.rol_id_rol_seq', 3, true);
 
 
 --
@@ -1048,50 +1089,12 @@ SELECT pg_catalog.setval('public.tabla_referencia_dian_id_referencia_seq', 704, 
 -- Name: tipo_servicio_id_tipo_servicio_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.tipo_servicio_id_tipo_servicio_seq', 9, true);
-
-
---
--- Data for Name: obligacion_tributaria; Type: TABLE DATA; Schema: public; Owner: -
---
-
-COPY public.obligacion_tributaria (id_obligacion, nombre, ambito) FROM stdin;
-1	Renta personas naturales	Nacional
-2	Renta personas jurídicas	Nacional
-3	Renta grandes contribuyentes	Nacional
-4	Retención en la fuente	Nacional
-5	IVA bimestral	Nacional
-6	IVA cuatrimestral	Nacional
-7	RST anticipo bimestral	Nacional
-8	RST consolidada anual	Nacional
-9	Exógena nacional	Nacional
-10	Exógena distrital	Distrital
-11	Impuesto al consumo	Nacional
-12	Gasolina y ACPM	Nacional
-13	Impuesto al carbono	Nacional
-14	IVA servicios desde el exterior	Nacional
-15	Bebidas ultraprocesadas	Nacional
-16	Plásticos de un solo uso	Nacional
-17	Presencia económica significativa	Nacional
-18	Impuesto al patrimonio	Nacional
-19	Precios transferencia - informativa	Nacional
-20	Precios transferencia - documentación	Nacional
-21	Informe país por país	Nacional
-22	Beneficiarios finales (RUB)	Nacional
-23	Activos exterior grandes contribuyentes	Nacional
-24	Activos exterior personas jurídicas	Nacional
-25	Activos exterior personas naturales	Nacional
-26	Activos exterior RST	Nacional
-27	Exógena nacional grandes contribuyentes	Nacional
-\.
-
-
-SELECT pg_catalog.setval('public.obligacion_tributaria_id_obligacion_seq', 27, true);
+SELECT pg_catalog.setval('public.tipo_servicio_id_tipo_servicio_seq', 8, true);
 
 
 --
 -- PostgreSQL database dump complete
 --
 
-\unrestrict DUwTXrkFdnqTrXsRn5JBpFaUmfsOx5f6TdPaldhuHybmj8JW1NiUfqubDT5GT8v
+\unrestrict vOqpzj7d4dfZEpvnJv8aV5sOW7bNWP5HGGEvOYrwbhZh04f8mxsfMDSMCMKEGao
 
