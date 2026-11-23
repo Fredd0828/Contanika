@@ -150,7 +150,7 @@ cd /srv/contanika/codigo && sudo -u contanika .venv/bin/python gestionar.py coll
 |---|---|
 | Código | `/srv/contanika/codigo`, del usuario `contanika` (sin permisos de administrador) |
 | Aplicación | Servicio `contanika` (gunicorn), solo escucha dentro del servidor |
-| Web | nginx con HTTPS de Let's Encrypt; el certificado se renueva solo |
+| Web | nginx con HTTPS de Let's Encrypt; el certificado se renueva solo. Quien entra por la IP o con otro nombre no recibe respuesta, ni por HTTP ni por HTTPS (`/etc/nginx/conf.d/contanika-rechazo-443.conf`) |
 | Base de datos | PostgreSQL en el mismo servidor, cerrado a internet; usuario `contanika_app` sin permiso para crear o borrar tablas; RLS activo |
 | Cortafuegos | Solo SSH (22), HTTP (80) y HTTPS (443) |
 | Tareas automáticas | Cobros cada 15 minutos y alertas cada hora (cron del usuario `contanika`) |

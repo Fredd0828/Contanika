@@ -470,8 +470,8 @@ GUIAS = (
         ruta="documentos:generar",
         etiqueta_ruta="Ir a Generar documento",
         requisitos=(
-            "El contador que firma debe haber cargado su firma y su tarjeta profesional "
-            "(Documentos → «Mi firma»).",
+            "El contador que firma (Administrador o Contador Senior) debe haber cargado su firma y su "
+            "tarjeta profesional (Documentos → «Mi firma»). El Contador Junior no firma.",
             "Para que salga el membrete, el Administrador lo carga en Documentos → «Datos del despacho».",
         ),
         pasos=(
