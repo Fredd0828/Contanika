@@ -29,14 +29,30 @@ sql() { sudo -u postgres env PGOPTIONS="-c client_min_messages=warning" psql -v 
 . "$SECRETOS"
 cd /tmp
 
-paso "Respaldo previo"
-/usr/local/sbin/contanika-respaldar
+if [[ -z "${CONTANIKA_RELANZADO_DESDE:-}" ]]; then
+    paso "Respaldo previo"
+    /usr/local/sbin/contanika-respaldar
 
-paso "Bajando el código"
-ANTES=$(como_app git -C "$CODIGO" rev-parse --short HEAD)
-como_app git -C "$CODIGO" pull --ff-only --quiet
-AHORA=$(como_app git -C "$CODIGO" rev-parse --short HEAD)
-echo "Versión: $ANTES -> $AHORA"
+    paso "Bajando el código"
+    ANTES=$(como_app git -C "$CODIGO" rev-parse --short HEAD)
+    como_app git -C "$CODIGO" pull --ff-only --quiet
+    AHORA=$(como_app git -C "$CODIGO" rev-parse --short HEAD)
+    echo "Versión: $ANTES -> $AHORA"
+
+    # Bash lee este archivo mientras lo ejecuta, pero el pull lo cambió por
+    # otro: sin esto seguiría la copia vieja y un paso nuevo de este script no
+    # correría hasta la siguiente actualización. Se relanza la versión recién
+    # bajada, que no repite el respaldo ni el pull.
+    if [[ "$ANTES" != "$AHORA" ]] &&
+        ! como_app git -C "$CODIGO" diff --quiet "$ANTES" "$AHORA" -- despliegue/actualizar.sh; then
+        echo "Este script cambió con la actualización: sigue con la versión nueva."
+        exec env CONTANIKA_RELANZADO_DESDE="$ANTES" bash "$CODIGO/despliegue/actualizar.sh"
+    fi
+else
+    ANTES=$CONTANIKA_RELANZADO_DESDE
+    AHORA=$(como_app git -C "$CODIGO" rev-parse --short HEAD)
+    echo "Versión: $ANTES -> $AHORA (script nuevo; el respaldo y el código ya están)"
+fi
 
 paso "Librerías de Python"
 como_app "$CODIGO/.venv/bin/pip" install --quiet -r "$CODIGO/requirements.txt"
