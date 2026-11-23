@@ -188,8 +188,18 @@ class FiltroDescargasForm(FormularioBase):
     usuario = forms.ModelChoiceField(
         required=False, label="Usuario", queryset=Usuario.objects.all(), empty_label="Todos"
     )
+    formato = forms.ChoiceField(
+        required=False, label="Formato", choices=[("", "Todos"), *DescargaReporte.OPCIONES_FORMATO]
+    )
     desde = forms.DateField(required=False, label="Desde", widget=forms.DateInput(attrs={"type": "date"}))
     hasta = forms.DateField(required=False, label="Hasta", widget=forms.DateInput(attrs={"type": "date"}))
+
+    def clean(self):
+        datos = super().clean()
+        desde, hasta = datos.get("desde"), datos.get("hasta")
+        if desde and hasta and desde > hasta:
+            self.add_error("hasta", "«Desde» no puede ser posterior a «Hasta».")
+        return datos
 
 
 class DescargasReportesView(MixinAdministrarReportes, PaginacionMixin, ListView):
@@ -199,13 +209,21 @@ class DescargasReportesView(MixinAdministrarReportes, PaginacionMixin, ListView)
     context_object_name = "descargas"
 
     def get_queryset(self):
-        self.formulario_filtro = FiltroDescargasForm(self.request.GET or None)
-        filtros = self.formulario_filtro.cleaned_data if self.formulario_filtro.is_valid() else {}
+        parametros = self.request.GET.copy()
+        parametros.pop("page", None)
+        parametros.pop("por_pagina", None)
+        self.formulario_filtro = FiltroDescargasForm(parametros or None)
+        if self.formulario_filtro.is_bound and not self.formulario_filtro.is_valid():
+            # Con un filtro mal escrito no se muestra todo como si nada: la
+            # lista queda vacía y el error se ve junto al campo.
+            return DescargaReporte.objects.none()
+        filtros = self.formulario_filtro.cleaned_data if self.formulario_filtro.is_bound else {}
         return selectores.descargas(**filtros)
 
     def get_context_data(self, **kwargs):
         contexto = super().get_context_data(**kwargs)
         contexto["formulario_filtro"] = self.formulario_filtro
+        contexto["por_pagina"] = self.get_paginate_by(None)
         parametros = self.request.GET.copy()
         parametros.pop("page", None)
         contexto["querystring"] = parametros.urlencode()

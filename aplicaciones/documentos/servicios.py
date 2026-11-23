@@ -15,7 +15,7 @@ from django.utils.html import escape
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import cm
-from reportlab.platypus import HRFlowable, KeepTogether, Paragraph, Spacer
+from reportlab.platypus import Flowable, HRFlowable, KeepTogether, Paragraph, Spacer
 
 from aplicaciones.comunes import paleta
 from aplicaciones.comunes.fechas import fecha_larga
@@ -37,6 +37,8 @@ ANCHO_FIRMA = 5 * cm
 ALTO_FIRMA = 2.5 * cm
 # Un certificado se lee como carta: márgenes laterales más amplios.
 MARGEN_DOCUMENTO = 2.6 * cm
+# Espacio mínimo entre el texto del documento y la firma.
+ESPACIO_ANTES_FIRMA = 1.8 * cm
 
 
 @transaction.atomic
@@ -147,8 +149,10 @@ def construir_pdf_documento(documento, usuario_firmante):
         )
     )
     elementos.append(Paragraph(selectores.texto_certificado_renderizado(documento), textos["cuerpo"]))
-    elementos.append(Spacer(1, 1.8 * cm))
-    elementos.append(bloque_firma(usuario_firmante, None))
+    # La firma va al final de la hoja (decisión del usuario, 22-nov-2026).
+    firma = bloque_firma(usuario_firmante, None)
+    elementos.append(EspacioHastaElFinal(firma, minimo=ESPACIO_ANTES_FIRMA))
+    elementos.append(firma)
 
     return construir_pdf(
         elementos,
@@ -157,6 +161,31 @@ def construir_pdf_documento(documento, usuario_firmante):
         despacho=despacho,
         margen_lateral=MARGEN_DOCUMENTO,
     )
+
+
+class EspacioHastaElFinal(Flowable):
+    """
+    Espacio en blanco que ocupa lo que sobra de la hoja, para que `bloque`
+    (el que sigue) quede pegado al margen inferior. Nunca es menor que
+    `minimo`; si el bloque no cabe con ese mínimo, pasa a la hoja siguiente.
+    """
+
+    def __init__(self, bloque, minimo=0):
+        super().__init__()
+        self.bloque = bloque
+        self.minimo = minimo
+
+    def wrap(self, ancho_disponible, alto_disponible):
+        _, alto_bloque = self.bloque.wrapOn(self.canv, ancho_disponible, alto_disponible)
+        # KeepTogether devuelve un alto enorme para forzar el corte; el real queda en `_H`.
+        alto_bloque = getattr(self.bloque, "_H", alto_bloque)
+        # 1 punto de holgura para que el redondeo no empuje el bloque a otra hoja.
+        sobrante = alto_disponible - alto_bloque - 1
+        self.width, self.height = ancho_disponible, max(self.minimo, sobrante)
+        return self.width, self.height
+
+    def draw(self):
+        """No dibuja nada: solo reserva espacio."""
 
 
 class _NombreConLinea(Paragraph):

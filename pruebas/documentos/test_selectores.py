@@ -222,6 +222,58 @@ def test_texto_no_repite_la_descripcion_si_la_plantilla_ya_la_usa(cliente, usuar
     assert selectores.texto_certificado_renderizado(documento).count("Única") == 1
 
 
+def _documento_con_texto(cliente, usuario, texto, descripcion):
+    plantilla = Plantilla.objects.create(
+        nombre_plantilla="Prueba de orden", tipo_documento="Prueba de orden", texto_predeterminado=texto
+    )
+    return Documento.objects.create(
+        cliente=cliente, plantilla=plantilla, usuario_generador=usuario, descripcion=descripcion
+    )
+
+
+def test_descripcion_va_antes_del_parrafo_de_expedicion(cliente, usuario_administrador, despacho):
+    """Decisión del usuario (22-nov-2026): la descripción antes de «Se expide…»."""
+    documento = _documento_con_texto(
+        cliente,
+        usuario_administrador,
+        "Se certifica que {{ cliente }} existe.\n\nSe expide la presente en Bogotá.",
+        "Para trámite bancario.",
+    )
+    texto = selectores.texto_certificado_renderizado(documento)
+    assert texto.index("existe.") < texto.index("Para trámite bancario.") < texto.index("Se expide")
+    assert "Para trámite bancario.<br/><br/>Se expide" in texto
+
+
+def test_descripcion_antes_de_la_expedicion_despues_de_una_lista(cliente, usuario_administrador, despacho):
+    """Como en la composición accionaria: la expedición sigue a un `{% endfor %}`."""
+    documento = _documento_con_texto(
+        cliente,
+        usuario_administrador,
+        "Socios:\n\n{% for fila in filas_repetibles %}- x\n{% endfor %}"
+        "Se expide la presente certificación en Bogotá.",
+        "Nota final.",
+    )
+    texto = selectores.texto_certificado_renderizado(documento)
+    assert texto.index("Nota final.") < texto.index("Se expide")
+    assert "<br/>Nota final.<br/><br/>Se expide" in texto
+
+
+def test_descripcion_usa_la_ultima_mencion_de_expedicion(cliente, usuario_administrador, despacho):
+    documento = _documento_con_texto(
+        cliente,
+        usuario_administrador,
+        "Esta certificación se expide a solicitud.\n\nOtro párrafo.\n\nSe expide en Bogotá.",
+        "Descripción.",
+    )
+    texto = selectores.texto_certificado_renderizado(documento)
+    assert texto.index("Otro párrafo.") < texto.index("Descripción.") < texto.index("Se expide en")
+
+
+def test_descripcion_al_final_si_la_plantilla_no_dice_expide(cliente, usuario_administrador, despacho):
+    documento = _documento_con_texto(cliente, usuario_administrador, "Texto sin cierre.", "Al final.")
+    assert selectores.texto_certificado_renderizado(documento).endswith("Al final.")
+
+
 def test_texto_sin_descripcion_no_agrega_nada(cliente, plantilla_simple, usuario_administrador, despacho):
     documento = Documento.objects.create(
         cliente=cliente, plantilla=plantilla_simple, usuario_generador=usuario_administrador

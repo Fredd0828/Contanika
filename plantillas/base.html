@@ -30,6 +30,12 @@
                 document.documentElement.setAttribute("data-tema", "oscuro");
                 document.documentElement.setAttribute("data-bs-theme", "dark");
             }
+            // Tamaño de la letra elegido con el botón «Aa» (solo agranda el contenido).
+            var letra = null;
+            try { letra = localStorage.getItem("contanika.letra"); } catch (error) { /* sin almacenamiento local */ }
+            if (letra && ["1", "1.15", "1.3", "1.45"].indexOf(letra) !== -1) {
+                document.documentElement.style.setProperty("--zoom-letra", letra);
+            }
         })();
     </script>
     {% endif %}
@@ -146,6 +152,27 @@
         </div>
         {% endwith %}
         {% endif %}
+        <div class="dropdown me-2">
+            <button type="button" class="tb-tema" id="btnLetra" data-bs-toggle="dropdown" aria-expanded="false"
+                    title="Tamaño de la letra" aria-label="Tamaño de la letra">
+                <i class="bi bi-type" aria-hidden="true"></i>
+            </button>
+            <div class="dropdown-menu dropdown-menu-end p-1" aria-labelledby="btnLetra">
+                <div class="small fw-semibold px-2 py-1">Tamaño de la letra</div>
+                <button type="button" class="dropdown-item d-flex align-items-center gap-2 tb-letra-opcion" data-letra="1" aria-pressed="false">
+                    <i class="bi bi-check2 tb-letra-marca" aria-hidden="true"></i>Normal
+                </button>
+                <button type="button" class="dropdown-item d-flex align-items-center gap-2 tb-letra-opcion" data-letra="1.15" aria-pressed="false">
+                    <i class="bi bi-check2 tb-letra-marca" aria-hidden="true"></i>Grande
+                </button>
+                <button type="button" class="dropdown-item d-flex align-items-center gap-2 tb-letra-opcion" data-letra="1.3" aria-pressed="false">
+                    <i class="bi bi-check2 tb-letra-marca" aria-hidden="true"></i>Más grande
+                </button>
+                <button type="button" class="dropdown-item d-flex align-items-center gap-2 tb-letra-opcion" data-letra="1.45" aria-pressed="false">
+                    <i class="bi bi-check2 tb-letra-marca" aria-hidden="true"></i>Muy grande
+                </button>
+            </div>
+        </div>
         <button type="button" class="tb-tema me-2" id="btnTema" aria-pressed="false"
                 title="Cambiar a modo oscuro" aria-label="Cambiar a modo oscuro">
             <i class="bi bi-moon-stars tb-tema-luna" aria-hidden="true"></i>
@@ -240,29 +267,58 @@
         marcar();
     })();
 
-    // Tablas en teléfono: cada fila se muestra como una tarjeta y cada celda
-    // lleva el nombre de su columna (data-etiqueta), que el CSS pinta a la
-    // izquierda del valor. Así ninguna tabla obliga a deslizar de lado.
-    // Una tabla puede quedarse como tabla con data-sin-tarjetas.
-    document.querySelectorAll(".content table.tbl").forEach(function (tabla) {
-        if (tabla.hasAttribute("data-sin-tarjetas") || tabla.classList.contains("as-tabla") || !tabla.tHead) { return; }
-        var filaTitulos = tabla.tHead.rows[tabla.tHead.rows.length - 1];
-        var titulos = [];
-        Array.prototype.forEach.call(filaTitulos.cells, function (celda) {
-            for (var i = 0; i < (celda.colSpan || 1); i++) { titulos.push(celda.textContent.trim()); }
-        });
-        Array.prototype.forEach.call(tabla.tBodies, function (cuerpo) {
-            Array.prototype.forEach.call(cuerpo.rows, function (fila) {
-                var columna = 0;
-                Array.prototype.forEach.call(fila.cells, function (celda) {
-                    if (!celda.hasAttribute("data-etiqueta")) {
-                        celda.setAttribute("data-etiqueta", (celda.colSpan || 1) > 1 ? "" : (titulos[columna] || ""));
-                    }
-                    columna += celda.colSpan || 1;
-                });
+    // Tamaño de la letra: agranda el contenido (no el menú ni la barra) con
+    // `zoom`; la elección queda guardada en este navegador.
+    (function () {
+        var opciones = document.querySelectorAll(".tb-letra-opcion");
+        if (!opciones.length) { return; }
+        var raiz = document.documentElement;
+        var actual = function () {
+            return (raiz.style.getPropertyValue("--zoom-letra") || "1").trim();
+        };
+        var marcar = function () {
+            opciones.forEach(function (opcion) {
+                var elegida = opcion.getAttribute("data-letra") === actual();
+                opcion.setAttribute("aria-pressed", elegida ? "true" : "false");
+                opcion.classList.toggle("active", elegida);
+            });
+        };
+        opciones.forEach(function (opcion) {
+            opcion.addEventListener("click", function () {
+                var valor = opcion.getAttribute("data-letra");
+                raiz.style.setProperty("--zoom-letra", valor);
+                try { localStorage.setItem("contanika.letra", valor); } catch (error) { /* vale solo para esta página */ }
+                marcar();
+                window.dispatchEvent(new Event("resize"));
             });
         });
-        tabla.classList.add("tbl-tarjetas");
+        marcar();
+    })();
+
+    // Tablas en teléfono: siguen siendo tablas y se deslizan de lado, con la
+    // primera columna fija (decisión del usuario, 22-nov-2026; antes cada fila
+    // se volvía una tarjeta y las listas quedaban muy largas). Cada tabla va
+    // dentro de un .table-responsive; mientras quede tabla a la derecha, el
+    // borde derecho muestra una sombra que invita a deslizar.
+    document.querySelectorAll(".content table.tbl").forEach(function (tabla) {
+        if (tabla.classList.contains("as-tabla")) { return; }
+        var envoltura = tabla.parentElement;
+        if (!envoltura.classList.contains("table-responsive")) {
+            envoltura = document.createElement("div");
+            envoltura.className = "table-responsive";
+            tabla.parentNode.insertBefore(envoltura, tabla);
+            envoltura.appendChild(tabla);
+        }
+        tabla.classList.add("tbl-deslizable");
+        envoltura.classList.add("tbl-envoltura");
+        var marcar = function () {
+            var resto = envoltura.scrollWidth - envoltura.clientWidth - envoltura.scrollLeft;
+            envoltura.classList.toggle("hay-mas", resto > 4);
+            envoltura.classList.toggle("deslizada", envoltura.scrollLeft > 4);
+        };
+        envoltura.addEventListener("scroll", marcar, { passive: true });
+        window.addEventListener("resize", marcar);
+        marcar();
     });
 
     // Tablas: ninguna muestra más de 10 registros a la vez. Los listados los

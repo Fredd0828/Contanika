@@ -33,12 +33,20 @@
         <div class="col-12">
             <label class="form-label">{{ formulario.destinatarios.label }}</label>
             <div class="form-text mb-1">{{ formulario.destinatarios.help_text }}</div>
-            {{ formulario.destinatarios }}
+            {# Cada compañero como casilla de Bootstrap: el widget por defecto se encogía y tapaba los botones. #}
+            <div class="d-flex flex-wrap gap-3">
+                {% for opcion in formulario.destinatarios %}
+                <div class="form-check mb-0">
+                    {{ opcion.tag }}
+                    <label class="form-check-label" for="{{ opcion.id_for_label }}">{{ opcion.choice_label }}</label>
+                </div>
+                {% endfor %}
+            </div>
             {{ formulario.destinatarios.errors }}
         </div>
-        <div class="col-12 d-flex gap-2">
-            <button type="submit" class="ph-btn"><i class="bi bi-check2"></i> Guardar anotación</button>
+        <div class="col-12 d-flex flex-wrap justify-content-end gap-2 mt-4">
             <a class="ph-link" href="{% url 'calendario:calendario' %}">Cancelar</a>
+            <button type="submit" class="ph-btn"><i class="bi bi-check2"></i> Guardar anotación</button>
         </div>
     </form>
 </div>

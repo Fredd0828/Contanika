@@ -186,3 +186,51 @@ def test_historial_de_descargas_filtra_por_reporte_usuario_y_fecha(
     filtros = {"reporte": tareas.pk, "usuario": usuario_administrador.pk, "desde": hoy, "hasta": hoy}
     respuesta = client.get(reverse("reportes:descargas"), filtros)
     assert [d.reporte for d in respuesta.context["descargas"]] == [tareas]
+
+
+# ---------------------------------------------------------------------------
+# Filtros del historial de descargas y botones de descarga (22-nov-2026)
+# ---------------------------------------------------------------------------
+
+
+def test_historial_filtra_por_formato(client, usuario_administrador, datos_reportes):
+    client.force_login(usuario_administrador)
+    client.get(_url("clientes"), {"formato": "PDF"})
+    client.get(_url("tareas"), {"formato": "Excel"})
+    respuesta = client.get(reverse("reportes:descargas"), {"formato": "Excel"})
+    assert [d.formato for d in respuesta.context["descargas"]] == [DescargaReporte.EXCEL]
+
+
+def test_historial_con_desde_posterior_a_hasta_avisa_y_no_filtra_a_ciegas(
+    client, usuario_administrador, datos_reportes
+):
+    client.force_login(usuario_administrador)
+    client.get(_url("clientes"), {"formato": "PDF"})
+    respuesta = client.get(reverse("reportes:descargas"), {"desde": "2026-12-01", "hasta": "2026-01-01"})
+    assert list(respuesta.context["descargas"]) == []
+    assert "«Desde» no puede ser posterior a «Hasta»" in respuesta.content.decode()
+
+
+def test_historial_con_fecha_invalida_muestra_el_error(client, usuario_administrador, datos_reportes):
+    client.force_login(usuario_administrador)
+    client.get(_url("clientes"), {"formato": "PDF"})
+    respuesta = client.get(reverse("reportes:descargas"), {"desde": "2026-13-45"})
+    assert list(respuesta.context["descargas"]) == []
+    assert "text-danger" in respuesta.content.decode()
+
+
+def test_historial_conserva_registros_por_pagina_al_filtrar(client, usuario_administrador):
+    client.force_login(usuario_administrador)
+    contenido = client.get(reverse("reportes:descargas"), {"por_pagina": "25"}).content.decode()
+    assert '<input type="hidden" name="por_pagina" value="25">' in contenido
+
+
+def test_botones_de_descarga_envian_los_filtros_que_se_ven_en_pantalla(
+    client, usuario_administrador, datos_reportes
+):
+    """Excel y PDF son botones del formulario: usan los filtros escritos aunque no se aplicaran."""
+    client.force_login(usuario_administrador)
+    contenido = client.get(_url("vencimientos")).content.decode()
+    assert 'form="filtros-reporte" name="formato" value="Excel"' in contenido
+    assert 'form="filtros-reporte" name="formato" value="PDF"' in contenido
+    assert 'id="filtros-reporte"' in contenido

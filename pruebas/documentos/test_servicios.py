@@ -238,3 +238,51 @@ def test_sin_firma_cargada_se_deja_el_espacio_para_firmar(usuario_administrador)
     bloque = servicios.bloque_firma(usuario_administrador, getSampleStyleSheet())
     assert not isinstance(bloque._content[0], Image)
     assert bloque._content[1].getPlainText() == usuario_administrador.nombre
+
+
+# ---------------------------------------------------------------------------
+# La firma va al final de la hoja (decisión del usuario, 22-nov-2026).
+# ---------------------------------------------------------------------------
+
+
+def _lienzo():
+    from reportlab.pdfgen.canvas import Canvas
+
+    return Canvas(io.BytesIO())
+
+
+def test_espacio_hasta_el_final_deja_la_firma_pegada_al_margen_inferior():
+    from reportlab.platypus import KeepTogether, Spacer
+
+    firma = KeepTogether([Spacer(1, 30), Spacer(1, 20)])
+    espacio = servicios.EspacioHastaElFinal(firma, minimo=10)
+    _, alto = espacio.wrapOn(_lienzo(), 400, 500)
+    assert alto == 500 - 50 - 1
+
+
+def test_espacio_hasta_el_final_respeta_el_minimo_si_no_cabe():
+    from reportlab.platypus import KeepTogether, Spacer
+
+    firma = KeepTogether([Spacer(1, 30), Spacer(1, 20)])
+    espacio = servicios.EspacioHastaElFinal(firma, minimo=40)
+    _, alto = espacio.wrapOn(_lienzo(), 400, 60)
+    assert alto == 40
+
+
+def test_el_pdf_del_documento_sigue_en_una_hoja_con_la_firma_abajo(
+    cliente, plantilla_mixta, usuario_firmante, usuario_administrador, despacho
+):
+    plantilla, campo_simple, campo_accionista, campo_porcentaje = plantilla_mixta
+    documento = servicios.generar_documento(
+        cliente=cliente,
+        plantilla=plantilla,
+        periodo="2026",
+        descripcion="Prueba",
+        usuario_firmante=usuario_firmante,
+        usuario_generador=usuario_administrador,
+        valores_simples={campo_simple.pk: "Honorarios"},
+        filas_repetibles=[{campo_accionista.pk: "Ana", campo_porcentaje.pk: "60"}],
+    )
+    contenido = documento.archivo.read()
+    # Una sola hoja: el espacio no empuja la firma a una página nueva.
+    assert contenido.count(b"/Type /Page\n") + contenido.count(b"/Type /Page ") == 1

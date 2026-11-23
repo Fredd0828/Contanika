@@ -39,13 +39,15 @@ def matriz_visibilidad():
     return roles, filas
 
 
-def descargas(reporte=None, usuario=None, desde=None, hasta=None):
+def descargas(reporte=None, usuario=None, formato=None, desde=None, hasta=None):
     """Historial de descargas de reportes, más recientes primero."""
     consulta = DescargaReporte.objects.select_related("reporte", "usuario")
     if reporte:
         consulta = consulta.filter(reporte=reporte)
     if usuario:
         consulta = consulta.filter(usuario=usuario)
+    if formato:
+        consulta = consulta.filter(formato=formato)
     if desde:
         consulta = consulta.filter(fecha_hora__date__gte=desde)
     if hasta:

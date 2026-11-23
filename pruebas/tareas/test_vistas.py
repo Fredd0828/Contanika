@@ -541,3 +541,40 @@ def test_la_campana_general_no_incluye_mis_propios_cambios(client, usuario_junio
     tarea_junior.cambiar_estado(Tarea.EN_PROGRESO, usuario_junior)
     client.force_login(usuario_junior)
     assert client.get(reverse("seguridad:panel")).context["total_avisos_tareas"] == 0
+
+
+# ---------------------------------------------------------------------------
+# Crear una tarea desde el calendario (22-nov-2026)
+# ---------------------------------------------------------------------------
+
+
+def test_crear_desde_calendario_marca_mostrar_en_calendario_y_ofrece_volver(client, usuario_senior):
+    client.force_login(usuario_senior)
+    respuesta = client.get(reverse("tareas:crear"), {"desde": "calendario"})
+    assert respuesta.context["formulario"].initial["mostrar_en_calendario"] is True
+    contenido = respuesta.content.decode()
+    assert "Volver al calendario" in contenido
+    assert '<input type="hidden" name="desde" value="calendario">' in contenido
+
+
+def test_crear_desde_calendario_vuelve_al_calendario(client, usuario_senior, cliente):
+    client.force_login(usuario_senior)
+    respuesta = client.post(
+        reverse("tareas:crear"),
+        {
+            "cliente": cliente.pk,
+            "titulo": "Desde el calendario",
+            "prioridad": Tarea.MEDIA,
+            "desde": "calendario",
+        },
+    )
+    assert respuesta.status_code == 302
+    assert respuesta.url == reverse("calendario:calendario")
+
+
+def test_crear_sin_origen_sigue_volviendo_al_tablero(client, usuario_senior, cliente):
+    client.force_login(usuario_senior)
+    respuesta = client.post(
+        reverse("tareas:crear"), {"cliente": cliente.pk, "titulo": "Normal", "prioridad": Tarea.MEDIA}
+    )
+    assert respuesta.url == reverse("tareas:tablero")

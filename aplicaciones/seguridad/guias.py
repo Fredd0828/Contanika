@@ -407,7 +407,11 @@ GUIAS = (
         ruta="tareas:tablero",
         etiqueta_ruta="Ir al Tablero de tareas",
         pasos=(
-            Paso("Abra el tablero", "En el menú lateral entre a «Tareas» y pulse «Nueva tarea»."),
+            Paso(
+                "Abra el formulario",
+                "En el menú lateral entre a «Tareas» y pulse «Nueva tarea», o en el «Calendario» "
+                "pulse «Tarea» (arriba a la derecha).",
+            ),
             Paso(
                 "Diligencie la tarea",
                 "Cliente, título, «Tipo de tarea» (de la lista o uno nuevo), responsable, prioridad y "
@@ -419,6 +423,9 @@ GUIAS = (
                 "en ese caso la fecha de vencimiento es obligatoria.",
             ),
             Paso("Guarde", "Pulse «Crear tarea». La tarjeta queda en la columna «Por hacer»."),
+        ),
+        notas=(
+            "Desde el calendario «Mostrar en calendario» viene marcado y, al guardar, vuelve al calendario.",
         ),
         relacionadas=("avanzar-tarea",),
     ),
@@ -489,6 +496,8 @@ GUIAS = (
             "El Contador Junior solo genera documentos de los clientes que tiene asignados.",
             "Un documento generado no se edita: si quedó mal, genere uno nuevo. Administrador y "
             "Contador Senior pueden eliminar el anterior.",
+            "La descripción sale en el texto justo antes del párrafo «Se expide…», y la firma va "
+            "al final de la hoja.",
         ),
         relacionadas=("mi-perfil",),
     ),
@@ -785,13 +794,16 @@ GUIAS = (
             ),
             Paso(
                 "Descargue",
-                "Pulse «Excel» o «PDF». El archivo trae todas las filas, con los filtros aplicados.",
+                "Pulse «Excel» o «PDF». El archivo trae todas las filas, con los filtros que se ven "
+                "en pantalla (aunque no haya pulsado «Aplicar filtros»).",
             ),
         ),
         notas=(
             "Contador Senior y Contador Junior ven solo los datos de sus clientes asignados.",
             "Si no ve un reporte, el Administrador no lo tiene habilitado para su rol.",
-            "Cada descarga queda registrada: quién, cuándo, en qué formato y con qué filtros.",
+            "Cada descarga queda registrada: quién, cuándo, en qué formato y con qué filtros. El "
+            "Administrador la consulta en Reportes → «Historial de descargas», filtrando por "
+            "reporte, usuario, formato y fechas.",
         ),
     ),
     # ------------------------------------------------------------------
@@ -896,6 +908,8 @@ GUIAS = (
             "Si olvidó la contraseña, pulse «¿Olvidó su contraseña?» en el inicio de sesión: le "
             "llega al correo un enlace para crear una nueva.",
             "Tras varios intentos fallidos el acceso se bloquea por un tiempo, por seguridad.",
+            "Para ver la letra más grande, pulse «Aa» en la barra superior y elija el tamaño; "
+            "queda guardado en ese navegador. El sol o la luna cambian a modo oscuro o claro.",
         ),
     ),
     # ------------------------------------------------------------------

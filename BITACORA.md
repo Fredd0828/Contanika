@@ -2525,3 +2525,59 @@ aplicada en la base local.
 
 ### Pendientes
 - Servidor: mergear el PR #36 y correr `despliegue/actualizar.sh`.
+
+## Domingo 22 de noviembre de 2026 (noche) — Ajustes de la revisión del usuario
+
+### Qué se hizo
+- **Documentos (PDF):** la descripción va antes del párrafo de expedición
+  («Se expide…», «Esta certificación se expide…»); si la línea empieza con
+  `{% endfor %}`, el marcador queda después de la etiqueta. La firma se pega
+  al final de la hoja (`EspacioHastaElFinal` en `documentos/servicios.py`),
+  con 1,8 cm mínimos de separación; si no cabe, pasa a la hoja siguiente.
+- **Calendario:** los botones de acción pasan a la derecha del encabezado y
+  se agrega «Tarea» (Administrador y Senior con el Módulo 3 habilitado): abre
+  el formulario con «Mostrar en calendario» marcado y al guardar vuelve al
+  calendario (`?desde=calendario`). Nunca hubo un botón de tarea en el
+  calendario (revisado en git); se interpretó como pedido nuevo.
+- **Nueva anotación:** las casillas de «Compañeros etiquetados» se encogían y
+  tapaban los botones; ahora son casillas de Bootstrap. Botones a la derecha.
+- **Cuenta de cobro → Pagos y abonos:** «Monto» quedaba más arriba por
+  `align-items-end` y la nota del saldo; ahora `align-items-start`. «Registrar
+  pago» y «Enviar / programar» a la derecha.
+- **Reportes:** Excel y PDF son botones del formulario de filtros: descargan
+  con lo que se ve escrito aunque no se haya pulsado «Aplicar». Historial de
+  descargas: filtro por formato, error visible si «Desde» > «Hasta» o la fecha
+  no es válida (antes se ignoraba y mostraba todo), conserva «Mostrar N».
+  Los desplegables de las barras de filtros vuelven a mostrar la flecha
+  (`background-color` en vez de `background` en `.filters select`).
+- **Tamaño de la letra:** botón «Aa» en la barra superior con cuatro tamaños
+  (100, 115, 130 y 145 %); agranda `.content` con `zoom` (casi todo el CSS
+  está en px) y se guarda en `localStorage` (`contanika.letra`). En teléfono
+  se multiplica por el 1,12 que ya tenía.
+- **Cobros programados (validación):** en local el cron corre cada 15 min y
+  despacha bien (4 enviados, 1 programado para el 26-nov). Se blindó
+  `procesar_cobros`: cada cliente del cobro mensual y cada envío van en su
+  propia transacción; un error se registra en el log y en el resumen
+  («Errores: N») y no frena a los demás (antes una excepción detenía todo el
+  proceso en cada pasada).
+- Guías de la Ayuda actualizadas (crear tarea, generar documento, descargar
+  reporte, mi perfil).
+- **Teléfono (pedido del usuario):** las tablas ya no se vuelven tarjetas (las
+  listas quedaban muy largas): se deslizan de lado dentro de `.table-responsive`,
+  con la primera columna fija y el borde derecho desvanecido mientras queden
+  columnas por ver. Los botones de `.ph-actions` y de `.grupo-acciones`
+  (accesos de Honorarios) van de a dos por fila. Regla anotada en `AGENTS.md`.
+
+### Resultado
+Suite completa 1484 en verde (pruebas nuevas de documentos, reportes, tareas,
+calendario y cobro). Ruff, formato y `makemigrations --check` limpios.
+Revisado en pantalla a 390, 768 y 1366 px.
+
+### Cómo verificarlo
+Calendario → «Tarea»; Nueva anotación; cuenta de cobro con saldo; Reportes →
+Historial de descargas con fechas cruzadas; botón «Aa»; generar un documento
+con descripción y descargar el PDF.
+
+### Pendientes
+- En el servidor: revisar que el cron de `contanika` esté instalado
+  (`crontab -u contanika -l`) y el registro `registros/cron_cobros.log`.

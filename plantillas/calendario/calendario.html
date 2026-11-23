@@ -9,6 +9,30 @@
             <i class="bi bi-calendar2-check-fill"></i>
             Calendario · {{ nombre_mes }} {{ fecha_base.year }}
         </div>
+        {# Acciones a la derecha del encabezado, como en el resto de módulos (22-nov-2026). #}
+        <div class="ph-actions">
+            <a class="ph-link" href="{% url 'calendario:lista' %}">
+                <i class="bi bi-list-ul"></i> Lista
+            </a>
+            {% if es_administrador %}
+            <a class="ph-link" href="{% url 'calendario:cargar_dian' %}">
+                <i class="bi bi-cloud-upload"></i> Tabla DIAN
+            </a>
+            {% endif %}
+            <a class="ph-btn" href="{% url 'calendario:crear_anotacion' %}">
+                <i class="bi bi-sticky"></i> Anotación
+            </a>
+            {% if puede_crear_tarea %}
+            <a class="ph-btn" href="{% url 'tareas:crear' %}?desde=calendario">
+                <i class="bi bi-kanban"></i> Tarea
+            </a>
+            {% endif %}
+            {% if puede_editar %}
+            <a class="ph-btn" href="{% url 'calendario:crear_vencimiento' %}">
+                <i class="bi bi-plus-lg"></i> Vencimiento
+            </a>
+            {% endif %}
+        </div>
     </div>
 
     <div class="cal-seccion">
@@ -29,28 +53,6 @@
             <a class="ph-link" href="?vista={{ vista }}&fecha={{ siguiente|date:'Y-m-d' }}">
                 Siguiente <i class="bi bi-chevron-right"></i>
             </a>
-        </div>
-    </div>
-
-    <div class="cal-seccion">
-        <span class="cal-seccion-etiqueta">Acciones</span>
-        <div class="cal-actions-group">
-            <a class="ph-btn" href="{% url 'calendario:lista' %}">
-                <i class="bi bi-list-ul"></i> Lista
-            </a>
-            {% if puede_editar %}
-            <a class="ph-btn" href="{% url 'calendario:crear_vencimiento' %}">
-                <i class="bi bi-plus-lg"></i> Vencimiento
-            </a>
-            {% endif %}
-            <a class="ph-btn" href="{% url 'calendario:crear_anotacion' %}">
-                <i class="bi bi-sticky"></i> Anotación
-            </a>
-            {% if es_administrador %}
-            <a class="ph-link" href="{% url 'calendario:cargar_dian' %}">
-                <i class="bi bi-cloud-upload"></i> Tabla DIAN
-            </a>
-            {% endif %}
         </div>
     </div>
 
