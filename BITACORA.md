@@ -2674,3 +2674,29 @@ Con cobertura (como el CI): 84 s, 95,47 %. No quedan bases `test_*` sobrantes.
 Suite completa en verde (`pytest -n auto`). Revisado en el navegador sobre
 una copia de la base (`contanika_visual`) con las 4 migraciones aplicadas:
 escritorio, letra «Muy grande» y teléfono.
+
+## Lunes 23 de noviembre de 2026 — Logo en todas las pantallas y textos al día
+
+### Qué se hizo
+- Logo nuevo en el inicio de sesión, en recuperar y crear contraseña (versión
+  para fondo claro) y en el encabezado y el pie de la página pública (versión
+  para fondo oscuro). Ícono de la pestaña del navegador (SVG y PNG de 32 px)
+  y de acceso directo en el teléfono (180 px).
+- Se quitaron del CSS los estilos del logo anterior (ícono naranja con
+  «Conta» + «nika» en texto), que ya no usaba ninguna pantalla.
+- `ConfiguracionDespacho.nombre_despacho` sin valor inicial (antes «Befrec Y
+  Asociados SAS»; migración `seguridad 0009`, no cambia datos). Las pruebas
+  usan «Despacho Ejemplo SAS».
+- Página pública: «704 fechas de la DIAN para 2026» (eran 440 antes de la
+  plantilla del 17-nov) y «Bitácora con registro» en vez de «Bitácora que no
+  se borra», que dejó de ser cierto con el ajuste del 23-nov.
+- Ayuda: las guías de anotaciones y pagos y la pregunta frecuente «Me
+  equivoqué en una anotación o en un abono» explican lo nuevo (el
+  Administrador archiva y corrige o elimina; elimina el último pago con motivo).
+- Dependencias: con django-axes 9.1.0, python-dateutil 4.0.0 y psycopg 3.3.9
+  instalados, la suite completa pasa (1604) y no hay migraciones pendientes ni
+  avisos. Los PR de Dependabot #37–#40 quedan listos para mergear.
+
+### Resultado
+Suite completa en verde. Revisado en el navegador: inicio de sesión
+(escritorio y teléfono), recuperar contraseña y página pública.

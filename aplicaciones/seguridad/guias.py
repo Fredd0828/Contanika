@@ -568,8 +568,9 @@ GUIAS = (
             Paso("Guarde", "Pulse «Registrar anotación». Queda con su nombre y la fecha y hora exactas."),
         ),
         notas=(
-            "La bitácora es inmutable: una anotación no se edita ni se elimina. Si se equivocó, "
-            "registre una anotación aclaratoria; el Administrador puede archivar la incorrecta.",
+            "Una anotación guardada no se edita ni se elimina. Si se equivocó, avise al "
+            "Administrador: él la archiva y, ya archivada, la corrige o la elimina. Cada una de esas "
+            "acciones queda en el «Registro de acciones» del expediente.",
             "Los archivos solo se adjuntan al crear la anotación.",
             "Para ver las archivadas marque el filtro «Incluir archivadas».",
         ),
@@ -711,7 +712,8 @@ GUIAS = (
             ),
         ),
         notas=(
-            "Los pagos registrados no se modifican ni se eliminan. Revise fecha y monto antes de guardar.",
+            "Un pago no se modifica. Si quedó mal, el Administrador elimina el último pago de la "
+            "cuenta (pide el motivo y queda en «Pagos eliminados») y lo registra de nuevo.",
             "El monto no puede ser mayor que el saldo de la cuenta.",
             "El PDF de la cuenta se actualiza con los abonos y el saldo pendiente.",
         ),
@@ -998,8 +1000,9 @@ PREGUNTAS_FRECUENTES = (
     ),
     PreguntaFrecuente(
         "Me equivoqué en una anotación o en un abono, ¿cómo lo corrijo?",
-        "Por trazabilidad no se editan ni se borran. Registre una anotación aclaratoria; el "
-        "Administrador puede archivar la anotación incorrecta.",
+        "Pídaselo al Administrador. Una anotación la archiva y, ya archivada, la corrige o la elimina; "
+        "un pago lo elimina (solo el último de la cuenta, con el motivo) y usted lo registra de nuevo. "
+        "Todo queda registrado: quién lo hizo y cuándo.",
     ),
     PreguntaFrecuente(
         "¿Por qué no puedo modificar la información de algunos clientes?",

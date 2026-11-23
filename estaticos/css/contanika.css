@@ -190,39 +190,18 @@ a {
     margin-bottom: 22px;
 }
 
-.login-logo-icon,
-.s-logo-icon {
-    width: 38px;
-    height: 38px;
-    border-radius: 9px;
-    background: var(--orange);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+/* Logo de la marca en las pantallas de acceso y en la página pública (23-nov-2026). */
+.login-logo-img {
+    display: block;
+    width: 190px;
+    max-width: 100%;
+    height: auto;
 }
 
-.login-logo-icon i,
-.s-logo-icon i {
-    color: #fff;
-    font-size: 19px;
-}
-
-.login-name,
-.s-name {
-    font-family: "Montserrat", sans-serif;
-    font-weight: 900;
-    font-size: 21px;
-    letter-spacing: -0.3px;
-}
-
-.login-name .w,
-.s-name .w {
-    color: var(--navy);
-}
-
-.login-name .o,
-.s-name .o {
-    color: var(--orange);
+.pw-logo-img {
+    display: block;
+    width: 180px;
+    height: auto;
 }
 
 .login-sub {
@@ -430,31 +409,6 @@ a.login-btn:hover {
     align-items: center;
     gap: 10px;
     margin-right: auto;
-}
-
-.pw-logo-icono {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-    background: var(--pw-naranja);
-    color: #fff;
-    font-size: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 8px 20px rgba(255, 125, 0, 0.35);
-}
-
-.pw-logo-nombre {
-    font-family: "Montserrat", sans-serif;
-    font-weight: 900;
-    font-size: 22px;
-    letter-spacing: -0.3px;
-    color: #fff;
-}
-
-.pw-logo-nombre span {
-    color: var(--orange);
 }
 
 .pw-nav-enlaces {
@@ -1405,25 +1359,6 @@ a.login-btn:hover {
     gap: 9px;
 }
 
-.s-logo-icon {
-    width: 32px;
-    height: 32px;
-    border-radius: 7px;
-    flex-shrink: 0;
-}
-
-.s-logo-icon i {
-    font-size: 16px;
-}
-
-.s-name {
-    font-size: 17px;
-}
-
-.s-name .w {
-    color: #fff;
-}
-
 /* Logo de la marca en el menú lateral (23-nov-2026). */
 a.s-logo-wrap {
     text-decoration: none;
@@ -1623,7 +1558,6 @@ a.s-logo-wrap {
         --ancho-menu: 68px;
     }
 
-    .menu-plegado .s-name,
     .menu-plegado .ni-txt,
     .menu-plegado .np,
     .menu-plegado .s-foot-datos {

@@ -30,7 +30,7 @@ def media_root_temporal(settings, tmp_path):
 @pytest.fixture(autouse=True)
 def despacho(db):
     return ConfiguracionDespacho.objects.create(
-        pk=1, nombre_despacho="Befrec Y Asociados SAS", ciudad="Bogotá D.C."
+        pk=1, nombre_despacho="Despacho Ejemplo SAS", ciudad="Bogotá D.C."
     )
 
 
@@ -229,7 +229,7 @@ def test_administrador_carga_membrete_del_despacho(client, usuario_administrador
     respuesta = client.post(
         reverse("documentos:datos_despacho"),
         {
-            "nombre_despacho": "Befrec Y Asociados SAS",
+            "nombre_despacho": "Despacho Ejemplo SAS",
             "nit_despacho": "900123456-1",
             "membrete": imagen,
             "ciudad": "Bogotá D.C.",
@@ -725,5 +725,5 @@ def test_datos_del_despacho_rechaza_membrete_no_permitido(client, usuario_admini
     assert respuesta.status_code == 200
     assert "membrete" in respuesta.context["formulario"].errors
     despacho.refresh_from_db()
-    assert despacho.nombre_despacho == "Befrec Y Asociados SAS"
+    assert despacho.nombre_despacho == "Despacho Ejemplo SAS"
     assert not despacho.membrete

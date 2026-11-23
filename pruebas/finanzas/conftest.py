@@ -20,7 +20,7 @@ def media_root_temporal(settings, tmp_path):
 @pytest.fixture
 def despacho(db):
     return ConfiguracionDespacho.objects.create(
-        pk=1, nombre_despacho="Befrec Y Asociados SAS", nit_despacho="900111222-3", ciudad="Bogotá D.C."
+        pk=1, nombre_despacho="Despacho Ejemplo SAS", nit_despacho="900111222-3", ciudad="Bogotá D.C."
     )
 
 
@@ -47,7 +47,7 @@ def cuenta_bancaria(db):
         banco="Bancolombia",
         tipo_cuenta="Ahorros",
         numero_cuenta="123-456789-01",
-        titular="Befrec Y Asociados SAS",
+        titular="Despacho Ejemplo SAS",
     )
 
 

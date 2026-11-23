@@ -78,10 +78,10 @@ def _enlace_del_correo(correo):
 
 def test_administrador_crea_usuario_y_este_crea_su_contrasena(client, usuario_administrador, rol_junior):
     client.force_login(usuario_administrador)
-    datos = {"nombre": "Ana Contadora", "correo": "ana@befrec.co", "telefono": "", "rol": rol_junior.pk}
+    datos = {"nombre": "Ana Contadora", "correo": "ana@ejemplo.co", "telefono": "", "rol": rol_junior.pk}
     respuesta = client.post(reverse("seguridad:crear_usuario"), datos)
     assert respuesta.status_code == 302
-    nuevo = Usuario.objects.get(correo="ana@befrec.co")
+    nuevo = Usuario.objects.get(correo="ana@ejemplo.co")
     assert nuevo.rol == rol_junior
     assert not nuevo.has_usable_password()
     assert len(mail.outbox) == 1
@@ -98,7 +98,7 @@ def test_administrador_crea_usuario_y_este_crea_su_contrasena(client, usuario_ad
     assert respuesta.status_code == 302
     assert respuesta.url == reverse("seguridad:contrasena_creada")
     respuesta = client.post(
-        reverse("seguridad:iniciar_sesion"), {"username": "ana@befrec.co", "password": CLAVE_TEMPORAL}
+        reverse("seguridad:iniciar_sesion"), {"username": "ana@ejemplo.co", "password": CLAVE_TEMPORAL}
     )
     assert respuesta.status_code == 302
 
@@ -117,12 +117,12 @@ def test_si_el_correo_falla_el_listado_muestra_el_enlace_una_vez(
 
     monkeypatch.setattr(servicios, "send_mail", rechazar)
     client.force_login(usuario_administrador)
-    datos = {"nombre": "Luis", "correo": "luis@befrec.co", "telefono": "", "rol": rol_junior.pk}
+    datos = {"nombre": "Luis", "correo": "luis@ejemplo.co", "telefono": "", "rol": rol_junior.pk}
     respuesta = client.post(reverse("seguridad:crear_usuario"), datos, follow=True)
     contenido = respuesta.content.decode()
     assert "No se pudo enviar el correo" in contenido
     assert "/crear-contrasena/" in contenido
-    assert respuesta.context["enlace_manual"]["correo"] == "luis@befrec.co"
+    assert respuesta.context["enlace_manual"]["correo"] == "luis@ejemplo.co"
     assert "Acceso pendiente" in contenido
 
     otra_vez = client.get(reverse("seguridad:usuarios"))
@@ -168,15 +168,15 @@ def test_formulario_de_creacion_muestra_modulos_del_rol(client, usuario_administ
 
 def test_crear_segundo_administrador_pide_confirmacion(client, usuario_administrador, rol_administrador):
     client.force_login(usuario_administrador)
-    datos = {"nombre": "Otro", "correo": "otro@befrec.co", "rol": rol_administrador.pk}
+    datos = {"nombre": "Otro", "correo": "otro@ejemplo.co", "rol": rol_administrador.pk}
     respuesta = client.post(reverse("seguridad:crear_usuario"), datos)
     assert respuesta.status_code == 200
     assert "Confirme" in respuesta.content.decode()
-    assert not Usuario.objects.filter(correo="otro@befrec.co").exists()
+    assert not Usuario.objects.filter(correo="otro@ejemplo.co").exists()
 
     datos["confirmar_otro_administrador"] = "on"
     assert client.post(reverse("seguridad:crear_usuario"), datos).status_code == 302
-    assert Usuario.objects.filter(correo="otro@befrec.co").exists()
+    assert Usuario.objects.filter(correo="otro@ejemplo.co").exists()
 
 
 def test_editar_usuario_cambia_el_rol_sin_tocar_la_clave(
@@ -302,7 +302,7 @@ def test_perfil_actualiza_nombre_telefono_y_foto(client, usuario_junior):
     usuario_junior.refresh_from_db()
     assert usuario_junior.nombre == "Junior Actualizado"
     assert usuario_junior.foto.name.startswith("fotos/")
-    assert usuario_junior.correo == "junior@befrec.co"  # el correo no se cambia desde el perfil
+    assert usuario_junior.correo == "junior@ejemplo.co"  # el correo no se cambia desde el perfil
 
 
 def test_perfil_del_junior_no_muestra_firma(client, usuario_junior):

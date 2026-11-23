@@ -275,7 +275,7 @@ class ConfiguracionDespacho(models.Model):
     id_configuracion = models.AutoField(primary_key=True)
     # Opcional (23-nov-2026): con el logo cargado y sin nombre, el encabezado
     # de los PDF muestra solo el logo.
-    nombre_despacho = models.CharField(max_length=150, blank=True, default="Befrec Y Asociados SAS")
+    nombre_despacho = models.CharField(max_length=150, blank=True)
     nit_despacho = models.CharField(max_length=20, blank=True)
     membrete = models.ImageField(upload_to="despacho/", blank=True)
     ciudad = models.CharField(max_length=60, blank=True)
