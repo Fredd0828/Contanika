@@ -2792,3 +2792,23 @@ Hallazgos de la revisión del registro del servidor (prueba PD-007):
 
 ### Resultado
 Pruebas de documentos y de la ayuda en verde (6 casos nuevos).
+
+## Lunes 23 de noviembre de 2026 — actualizar.sh se relanza si cambió
+
+### Qué se hizo
+- Al instalar el PR #48 en el servidor, la primera corrida de `actualizar.sh`
+  no instaló la regla de nginx: bash lee el script mientras lo ejecuta y,
+  tras el `git pull`, siguió con la copia vieja, que no tenía ese paso. Hubo
+  que correrlo dos veces.
+- Ahora, si el pull trae un `actualizar.sh` distinto, el script avisa y se
+  relanza (`exec`) con la versión nueva, con `CONTANIKA_RELANZADO_DESDE` para
+  no repetir el respaldo ni el pull. Guía de despliegue y `AGENTS.md` al día.
+- Este arreglo empieza a servir desde la actualización siguiente a la que lo
+  instala (esa todavía corre la copia vieja, aunque no le hace falta nada).
+
+### Resultado
+Ensayado con dos repositorios de juguete (el script adaptado sin sudo, base
+ni systemd): si el script cambia, respalda una sola vez y termina con los
+pasos nuevos; si no cambia o no hay nada nuevo, sigue igual que antes.
+En el servidor (23-nov): con la segunda corrida la regla quedó activa; el
+dominio responde 200 y por la IP la conexión TLS se corta (curl código 35).

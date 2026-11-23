@@ -252,7 +252,10 @@ models.py → servicios.py → selectores.py → formularios.py → vistas.py �
     dominio (los dos scripts lo instalan y lo quitan si `nginx -t` falla). Guía:
     `documentacion/DESPLIEGUE_VPS.md`. Si una migración nueva necesita algo
     del sistema (un paquete apt, una carpeta, una variable), agregarlo a los
-    dos scripts y a la guía.
+    dos scripts y a la guía. Si el pull trae un `actualizar.sh` distinto, el
+    script se relanza con la versión nueva (variable
+    `CONTANIKA_RELANZADO_DESDE`, sin repetir respaldo ni pull): un paso nuevo
+    en él corre en la misma actualización.
   - Nunca escribir contraseñas ni claves en archivos versionados: hay una
     prueba que lo impide.
 - Variables sensibles: solo en `.env`, nunca en el código.

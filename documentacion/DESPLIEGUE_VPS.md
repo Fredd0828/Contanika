@@ -103,7 +103,9 @@ bash /srv/contanika/codigo/despliegue/actualizar.sh
 ```
 
 Hace un respaldo, baja el código, aplica migraciones y reinicia. Tarda uno o
-dos minutos.
+dos minutos. Si lo que baja trae una versión nueva de `actualizar.sh`, avisa
+«Este script cambió con la actualización» y sigue con esa versión, sin repetir
+el respaldo.
 
 ## Respaldos
 
