@@ -477,6 +477,13 @@ Ninguna funcionalidad se da por terminada sin:
   base de los enlaces públicos: en producción debe ser el dominio real.
 - Pruebas: el `addopts` del proyecto ya trae `-q`; no agregar otro `-q` o se
   oculta la línea de resumen de pytest.
+- Pruebas en paralelo (`pytest-xdist`, 23-nov-2026): la suite completa se
+  corre con `pytest -n auto` (un trabajador por núcleo, cada uno con su propia
+  base de prueba): ~70 s en vez de ~9 min. Para un solo módulo o archivo,
+  `pytest pruebas/<módulo>` sin `-n` (crear las bases de cada trabajador cuesta
+  más que lo que se gana). Un cambio dentro de un módulo se prueba con las
+  pruebas de ese módulo; uno en piezas compartidas (formulario común,
+  `base.html`, CSS, permisos), con la suite completa.
 - **Bloque 3 (abonos y cartera):** el **disparador** de PostgreSQL (migración
   `finanzas 0004`, `RunSQL`) es la autoridad sobre los saldos:
   `trg_abono_calcular_saldo` (BEFORE INSERT, bloquea la cuenta `FOR UPDATE`,

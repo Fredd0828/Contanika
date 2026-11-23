@@ -2581,3 +2581,16 @@ con descripción y descargar el PDF.
 ### Pendientes
 - En el servidor: revisar que el cron de `contanika` esté instalado
   (`crontab -u contanika -l`) y el registro `registros/cron_cobros.log`.
+
+## Lunes 23 de noviembre de 2026 — Pruebas en paralelo (pytest-xdist)
+
+### Qué se hizo
+- `pytest-xdist>=3.8.0` en `requirements-dev.txt` (instalado 3.8.0 en el `.venv`).
+- La suite completa se corre con `pytest -n auto`: un trabajador por núcleo,
+  cada uno con su propia base de prueba (`pytest-django` las crea y las borra).
+- El CI (`.github/workflows/pruebas.yml`) y `scripts/calidad.sh` usan `-n auto`.
+- `AGENTS.md`: cuándo correr solo el módulo tocado y cuándo la suite completa.
+
+### Resultado
+En este equipo (16 núcleos): 1484 en verde en 69 s, frente a ~9 min en serie.
+Con cobertura (como el CI): 84 s, 95,47 %. No quedan bases `test_*` sobrantes.

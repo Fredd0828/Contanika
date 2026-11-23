@@ -48,4 +48,5 @@ jobs:
       - name: Migraciones al día
         run: python gestionar.py makemigrations --check --dry-run
       - name: Pruebas con cobertura
-        run: pytest --cov=aplicaciones --cov-branch --cov-fail-under=80
+        # -n auto: en paralelo, un trabajador por núcleo (pytest-xdist).
+        run: pytest -n auto --cov=aplicaciones --cov-branch --cov-fail-under=80

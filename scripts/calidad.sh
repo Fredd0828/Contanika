@@ -19,6 +19,6 @@ echo "== 4/5 pip-audit: vulnerabilidades en dependencias =="
 .venv/bin/pip-audit --skip-editable
 
 echo "== 5/5 Pruebas con cobertura =="
-.venv/bin/pytest --cov=aplicaciones --cov-report=term-missing
+.venv/bin/pytest -n auto --cov=aplicaciones --cov-report=term-missing
 
 echo "Calidad verificada correctamente."
