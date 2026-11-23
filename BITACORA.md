@@ -2701,11 +2701,26 @@ escritorio, letra «Muy grande» y teléfono.
 Suite completa en verde. Revisado en el navegador: inicio de sesión
 (escritorio y teléfono), recuperar contraseña y página pública.
 
+## Lunes 23 de noviembre de 2026 — Bloqueo por intentos: 15 minutos
+
+### Qué se hizo
+- Decisión del usuario: 5 intentos fallidos bloquean el inicio de sesión
+  15 minutos (antes 1 hora). `AXES_COOLOFF_TIME` se mide ahora en minutos con
+  la variable `AXES_TIEMPO_BLOQUEO_MINUTOS` (por defecto 15); la anterior,
+  `AXES_TIEMPO_BLOQUEO_HORAS`, ya no se lee.
+- `.env.example`, `instalar_vps.sh`, la guía de despliegue, la matriz de
+  seguridad y `CREDENCIALES_PRUEBA.md` dicen 15 minutos. Prueba nueva en
+  `pruebas/seguridad/test_seguridad_transversal.py`.
+
+### En el servidor
+No hace falta tocar el `.env`: la línea vieja (`AXES_TIEMPO_BLOQUEO_HORAS=1`)
+se ignora y rige el valor por defecto, 15 minutos.
+
 ## Lunes 23 de noviembre de 2026 — Versión 1.1.0
 
 ### Notas de la versión
 `VERSION_APLICACION` pasa a `1.1.0` y se publica la etiqueta `v1.1.0`. Reúne
-lo fusionado desde `v1.0.0` (2-nov-2026), PR #21 a #45:
+lo fusionado desde `v1.0.0` (2-nov-2026), PR #21 a #47:
 - **Acceso:** el usuario nuevo crea su contraseña con un enlace de un solo
   uso (3 días); «¿Olvidó su contraseña?»; el Administrador reenvía el acceso
   (#27). Instalación por despacho con `cargar_datos_iniciales
@@ -2727,10 +2742,13 @@ lo fusionado desde `v1.0.0` (2-nov-2026), PR #21 a #45:
   archivada del expediente, con «Registro de acciones»; elimina el último
   abono de una cuenta indicando el motivo; los campos de las plantillas de
   documentos tienen tipo de dato (#44).
+- **Seguridad:** el bloqueo por intentos fallidos pasa de 1 hora a 15 minutos
+  (siguen siendo 5 intentos) (#47). Guía para restaurar un respaldo sobre
+  una base vacía, sin `pg_restore --clean` (#46).
 - **Calidad:** Documentos y Tareas al 100 % de ramas (#26); pruebas en
   paralelo con pytest-xdist (#43); dependencias al día (#21–#24, #37–#40).
 
 ### Resultado
-Medido sobre `639c597` (mismo código, salvo el número de versión): 1604
-pruebas en verde, cobertura de líneas 96,9 % y de ramas 88,0 %; ruff,
-bandit y pip-audit sin hallazgos.
+Medido sobre `main` con el #47 (30e42b9) más el número de versión: 1605
+pruebas en verde, cobertura total 95 % (líneas 96,9 %); ruff, `check` y
+migraciones sin hallazgos.

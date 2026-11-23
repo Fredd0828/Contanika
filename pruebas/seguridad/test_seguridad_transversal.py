@@ -116,3 +116,11 @@ def test_las_rutas_publicas_son_solo_las_previstas():
         "salud",
         "version",
     }
+
+
+def test_el_bloqueo_por_intentos_dura_15_minutos_tras_5_fallos(settings):
+    """Decisión del usuario (23-nov-2026): 5 intentos fallidos bloquean 15 minutos."""
+    from datetime import timedelta
+
+    assert settings.AXES_FAILURE_LIMIT == 5
+    assert settings.AXES_COOLOFF_TIME == timedelta(minutes=15)

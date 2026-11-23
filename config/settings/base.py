@@ -7,6 +7,7 @@ Los entornos local y producción heredan de este archivo y solo sobreescriben
 lo que cambia entre uno y otro.
 """
 
+from datetime import timedelta
 from pathlib import Path
 
 from decouple import Csv, config
@@ -159,7 +160,9 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # Bloqueo de fuerza bruta en el inicio de sesión (django-axes)
 # ---------------------------------------------------------------
 AXES_FAILURE_LIMIT = config("AXES_INTENTOS_MAXIMOS", default=5, cast=int)
-AXES_COOLOFF_TIME = config("AXES_TIEMPO_BLOQUEO_HORAS", default=1, cast=int)
+# Bloqueo de 15 minutos (decisión del usuario, 23-nov-2026; antes 1 hora). Se mide en
+# minutos: la variable anterior AXES_TIEMPO_BLOQUEO_HORAS ya no se lee.
+AXES_COOLOFF_TIME = timedelta(minutes=config("AXES_TIEMPO_BLOQUEO_MINUTOS", default=15, cast=int))
 AXES_LOCKOUT_PARAMETERS = ["username", "ip_address"]
 AXES_RESET_ON_SUCCESS = True
 # La IP del visitante sale de la misma función que usan los límites por minuto.
