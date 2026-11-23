@@ -6,14 +6,38 @@ campos, para que las plantillas no tengan que repetir esa configuración.
 """
 
 from django import forms
+from django.core.validators import RegexValidator
+
+# Campos que solo aceptan números (pedido del usuario, 23-nov-2026). Se
+# reconocen por su nombre en cualquier formulario: el navegador muestra el
+# teclado numérico y borra lo que no sea número mientras se escribe (guion de
+# `base.html`, atributo `data-solo-numeros`), y el servidor lo valida igual.
+CAMPOS_SOLO_DIGITOS = {"nit_cedula", "telefono", "identificacion", "numero_cuenta"}
+# El NIT del despacho puede llevar el dígito de verificación tras un guion.
+CAMPOS_NIT = {"nit_despacho"}
+
+validar_solo_digitos = RegexValidator(
+    r"^\d*$", "Escriba solo números, sin letras, puntos, guiones ni espacios."
+)
+validar_nit = RegexValidator(
+    r"^(\d+(-\d)?)?$",
+    "Escriba el NIT solo con números; el dígito de verificación va después de un guion (900123456-7).",
+)
+
+
+def _marcar_numerico(campo, tipo, validador):
+    """Teclado numérico, filtro en el navegador y validación en el servidor."""
+    campo.widget.attrs.update({"inputmode": "numeric", "data-solo-numeros": tipo})
+    if validador not in campo.validators:
+        campo.validators.append(validador)
 
 
 class MixinEstilosBootstrap:
-    """Asigna las clases de Bootstrap 5 a cada campo del formulario."""
+    """Asigna las clases de Bootstrap 5 a cada campo y marca los que son solo números."""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for campo in self.fields.values():
+        for nombre, campo in self.fields.items():
             widget = campo.widget
             if isinstance(widget, (forms.CheckboxInput, forms.CheckboxSelectMultiple)):
                 widget.attrs.setdefault("class", "form-check-input")
@@ -21,6 +45,11 @@ class MixinEstilosBootstrap:
                 widget.attrs.setdefault("class", "form-select")
             else:
                 widget.attrs.setdefault("class", "form-control")
+            if isinstance(campo, forms.CharField) and not isinstance(widget, forms.Select):
+                if nombre in CAMPOS_SOLO_DIGITOS:
+                    _marcar_numerico(campo, "digitos", validar_solo_digitos)
+                elif nombre in CAMPOS_NIT:
+                    _marcar_numerico(campo, "nit", validar_nit)
 
 
 class FormularioBase(MixinEstilosBootstrap, forms.Form):

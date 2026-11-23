@@ -132,6 +132,11 @@ models.py → servicios.py → selectores.py → formularios.py → vistas.py �
   no se convierten en tarjetas (decisión del usuario, 22-nov-2026). Los
   botones de `.ph-actions` van de a dos por fila; un grupo de accesos fuera
   del encabezado usa `.grupo-acciones` para lo mismo.
+- **Campos de solo números:** `comunes/formularios.py` (`CAMPOS_SOLO_DIGITOS`,
+  `CAMPOS_NIT`) los reconoce por su nombre en cualquier formulario: teclado
+  numérico, filtro en el navegador (`data-solo-numeros`, guion de `base.html`)
+  y validación en el servidor. Un campo nuevo de ese tipo se agrega a la lista,
+  no se valida a mano en cada formulario (decisión del usuario, 23-nov-2026).
 - **Botones de acción a la derecha:** en encabezados y al pie de los
   formularios (Cancelar y luego la acción principal), como en el resto de
   módulos (decisión del usuario, 22-nov-2026).
