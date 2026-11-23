@@ -204,6 +204,7 @@ def test_un_aviso_por_vencimiento_aunque_tenga_varias_alertas(vencimiento, usuar
 
 
 def test_no_hay_avisos_antes_de_la_fecha_ni_con_el_vencimiento_presentado(vencimiento, usuario_administrador):
+    _despacho(0)  # sin aviso automático, para probar solo la fecha de la alerta
     _alerta(vencimiento)
     assert selectores.avisos_para_usuario(usuario_administrador, hoy=HOY - timedelta(days=1)) == []
     vencimiento.estado_presentacion = Vencimiento.PRESENTADA
@@ -241,3 +242,44 @@ def test_la_campana_muestra_los_avisos_del_usuario(client, vencimiento, usuario_
 def test_la_campana_no_aparece_sin_sesion(client):
     contenido = client.get(reverse("seguridad:iniciar_sesion")).content.decode()
     assert "campanaAvisos" not in contenido
+
+
+# ---------------------------------------------------------------------------
+# Aviso automático: sin alerta configurada, la campana avisa los vencimientos
+# pendientes dentro de los días que fija el Administrador en el despacho.
+# ---------------------------------------------------------------------------
+
+
+def _despacho(dias):
+    from aplicaciones.seguridad.models import ConfiguracionDespacho
+
+    return ConfiguracionDespacho.objects.create(pk=1, dias_aviso_vencimientos=dias)
+
+
+def test_avisa_sin_alerta_configurada_con_los_dias_predeterminados(vencimiento, usuario_administrador):
+    avisos = selectores.avisos_para_usuario(usuario_administrador, hoy=HOY)
+    assert [a["vencimiento"] for a in avisos] == [vencimiento]
+    assert avisos[0]["dias"] == 3
+    assert avisos[0]["whatsapp"] is False
+
+
+def test_el_aviso_automatico_respeta_los_dias_del_despacho(vencimiento, usuario_administrador):
+    _despacho(2)
+    assert selectores.avisos_para_usuario(usuario_administrador, hoy=HOY) == []
+    assert len(selectores.avisos_para_usuario(usuario_administrador, hoy=HOY + timedelta(days=1))) == 1
+
+
+def test_el_aviso_automatico_es_solo_del_responsable_y_pendiente(
+    vencimiento, usuario_administrador, usuario_senior
+):
+    assert selectores.avisos_para_usuario(usuario_senior, hoy=HOY) == []
+    vencimiento.estado_presentacion = Vencimiento.PRESENTADA
+    vencimiento.save()
+    assert selectores.avisos_para_usuario(usuario_administrador, hoy=HOY) == []
+
+
+def test_con_cero_dias_solo_avisan_las_alertas_configuradas(vencimiento, usuario_administrador):
+    _despacho(0)
+    assert selectores.avisos_para_usuario(usuario_administrador, hoy=HOY) == []
+    _alerta(vencimiento, dias=3)
+    assert len(selectores.avisos_para_usuario(usuario_administrador, hoy=HOY)) == 1

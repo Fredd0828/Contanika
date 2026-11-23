@@ -189,3 +189,41 @@ def test_documentos_del_cliente_solo_trae_los_suyos_y_respeta_el_limite(
     documentos = list(selectores.documentos_del_cliente(usuario_administrador, cliente, limite=2))
     assert len(documentos) == 2
     assert {documento.cliente for documento in documentos} == {cliente}
+
+
+# ---------------------------------------------------------------------------
+# La descripción anotada al generar el documento debe salir en el texto
+# (vista previa, detalle y PDF), aunque la plantilla no tenga el marcador.
+# ---------------------------------------------------------------------------
+
+
+def test_texto_incluye_descripcion_aunque_la_plantilla_no_la_nombre(
+    cliente, plantilla_simple, usuario_administrador, despacho
+):
+    documento = Documento.objects.create(
+        cliente=cliente,
+        plantilla=plantilla_simple,
+        usuario_generador=usuario_administrador,
+        descripcion="Se expide para trámite <bancario>.",
+    )
+    texto = selectores.texto_certificado_renderizado(documento)
+    assert "Se expide para trámite &lt;bancario&gt;." in texto
+
+
+def test_texto_no_repite_la_descripcion_si_la_plantilla_ya_la_usa(cliente, usuario_administrador, despacho):
+    plantilla = Plantilla.objects.create(
+        nombre_plantilla="Con descripción",
+        tipo_documento="Con descripción",
+        texto_predeterminado="{{ cliente }}. Nota: {{ descripcion }}",
+    )
+    documento = Documento.objects.create(
+        cliente=cliente, plantilla=plantilla, usuario_generador=usuario_administrador, descripcion="Única"
+    )
+    assert selectores.texto_certificado_renderizado(documento).count("Única") == 1
+
+
+def test_texto_sin_descripcion_no_agrega_nada(cliente, plantilla_simple, usuario_administrador, despacho):
+    documento = Documento.objects.create(
+        cliente=cliente, plantilla=plantilla_simple, usuario_generador=usuario_administrador
+    )
+    assert not selectores.texto_certificado_renderizado(documento).endswith("<br/>")

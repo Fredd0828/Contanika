@@ -88,6 +88,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "aplicaciones.seguridad.context_processors.menu_lateral",
                 "aplicaciones.calendario.context_processors.avisos_vencimientos",
+                "aplicaciones.tareas.context_processors.avisos_tareas",
             ],
         },
     },

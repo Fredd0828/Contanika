@@ -360,6 +360,9 @@ GUIAS = (
             "El aviso va al responsable del vencimiento o, si no tiene, al responsable del cliente.",
             "Desde el día del aviso y hasta que se presente, el vencimiento aparece en la campana "
             "de la barra superior.",
+            "Aunque no configure alertas, la campana avisa sola los vencimientos pendientes que "
+            "vencen en los próximos días (5 por defecto). El Administrador cambia ese número en "
+            "Documentos → «Datos del despacho»; con 0 solo avisan las alertas configuradas.",
             "Por WhatsApp el sistema deja el mensaje listo en la campana: alguien debe pulsar "
             "«Enviar por WhatsApp».",
         ),

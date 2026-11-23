@@ -492,3 +492,52 @@ def test_tablero_filtra_por_cliente_y_responsable(client, usuario_administrador,
     assert respuesta.status_code == 200
     visibles = [tarea for _, _, tareas in respuesta.context["tablero"] for tarea in tareas]
     assert visibles == [tarea_junior]
+
+
+def test_arrastre_funciona_con_el_nombre_de_cookie_csrf_de_produccion(
+    settings, usuario_administrador, tarea_admin
+):
+    """
+    En producción la cookie CSRF se llama `__Host-csrf`; el tablero no puede
+    depender de leer la cookie `csrftoken`, o el POST del arrastre recibe la
+    página HTML del error CSRF y el navegador muestra «Unexpected token '<'».
+    """
+    import re
+
+    from django.test import Client
+
+    settings.CSRF_COOKIE_NAME = "__Host-csrf"
+    cliente_http = Client(enforce_csrf_checks=True)
+    cliente_http.force_login(usuario_administrador)
+
+    pagina = cliente_http.get(reverse("tareas:tablero")).content.decode()
+    assert "getCookie('csrftoken')" not in pagina
+    token = re.search(r'const csrftoken = "([^"]+)"', pagina).group(1)
+
+    respuesta = cliente_http.post(
+        reverse("tareas:cambiar_estado", args=[tarea_admin.pk]),
+        {"estado": Tarea.EN_PROGRESO},
+        HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        HTTP_X_CSRFTOKEN=token,
+    )
+    assert respuesta.status_code == 200
+    assert respuesta.json() == {"ok": True, "estado": Tarea.EN_PROGRESO}
+
+
+def test_la_campana_general_muestra_los_cambios_en_mis_tareas(
+    client, usuario_junior, usuario_administrador, tarea_junior
+):
+    tarea_junior.cambiar_estado(Tarea.EN_PROGRESO, usuario_administrador)
+    client.force_login(usuario_junior)
+    respuesta = client.get(reverse("seguridad:panel"))
+
+    assert respuesta.context["total_avisos_tareas"] == 1
+    contenido = respuesta.content.decode()
+    assert "campanaAvisos" in contenido
+    assert "Reunir soportes de renta" in contenido
+
+
+def test_la_campana_general_no_incluye_mis_propios_cambios(client, usuario_junior, tarea_junior):
+    tarea_junior.cambiar_estado(Tarea.EN_PROGRESO, usuario_junior)
+    client.force_login(usuario_junior)
+    assert client.get(reverse("seguridad:panel")).context["total_avisos_tareas"] == 0

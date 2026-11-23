@@ -6,6 +6,8 @@ histórico, el panel de la ficha del cliente y la construcción del PDF, que
 comparten la misma forma de armar el contexto de una plantilla renderizada.
 """
 
+import re
+
 from django.template import Context, Template
 from django.utils import timezone
 from django.utils.safestring import mark_safe
@@ -16,6 +18,8 @@ from aplicaciones.comunes.fechas import fecha_larga
 from aplicaciones.seguridad.models import ConfiguracionDespacho, Rol, Usuario
 
 from .models import CampoPlantilla, Documento, Plantilla
+
+_MARCADOR_DESCRIPCION = re.compile(r"\{\{\s*descripcion\b")
 
 
 def clave_variable_campo(nombre_campo):
@@ -175,6 +179,10 @@ def renderizar_texto(texto_predeterminado, contexto):
     defecto) neutraliza cualquier `<`, `>` o `&` capturado en los valores
     antes de convertir los saltos de línea en `<br/>`.
     """
+    # La descripción anotada al generar el documento sale como párrafo final,
+    # salvo que la plantilla ya la ubique con su marcador `{{ descripcion }}`.
+    if contexto.get("descripcion") and not _MARCADOR_DESCRIPCION.search(texto_predeterminado):
+        texto_predeterminado = texto_predeterminado.rstrip() + "\n\n{{ descripcion }}"
     plantilla = Template(texto_predeterminado)
     # mark_safe es seguro aquí: las variables ya fueron escapadas por el
     # autoescape de Context (activo por defecto) y el texto literal que las

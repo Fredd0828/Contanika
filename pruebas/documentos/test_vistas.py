@@ -236,6 +236,7 @@ def test_administrador_carga_membrete_del_despacho(client, usuario_administrador
             "direccion": "",
             "telefono": "",
             "correo": "",
+            "dias_aviso_vencimientos": 5,
         },
     )
     assert respuesta.status_code == 302

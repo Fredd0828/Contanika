@@ -5,8 +5,12 @@ Se separan de las vistas para reutilizarse en el calendario, el listado, el
 detalle del cliente y el futuro reporte de vencimientos (Módulo 10).
 """
 
+from datetime import timedelta
+
 from django.db.models import Q
 from django.utils import timezone
+
+from aplicaciones.seguridad.models import ConfiguracionDespacho
 
 from .models import (
     AnotacionCalendario,
@@ -16,6 +20,8 @@ from .models import (
 )
 
 LIMITE_RESUMEN = 10
+# Anticipación del aviso automático cuando el despacho aún no está configurado.
+DIAS_AVISO_PREDETERMINADOS = 5
 
 
 def vencimientos_visibles(usuario):
@@ -139,11 +145,21 @@ def alertas_en_curso(usuario=None, hoy=None):
         .exclude(vencimiento__estado_presentacion=Vencimiento.PRESENTADA)
     )
     if usuario is not None:
-        consulta = consulta.filter(
-            Q(vencimiento__responsable=usuario)
-            | Q(vencimiento__responsable__isnull=True, vencimiento__cliente__responsable=usuario)
-        )
+        consulta = consulta.filter(_asignados_a(usuario, prefijo="vencimiento__"))
     return [alerta for alerta in consulta if alerta.fecha_aviso <= hoy]
+
+
+def _asignados_a(usuario, prefijo=""):
+    """Vencimientos a cargo del usuario: su responsable o, si no tiene, el del cliente (HU040-3)."""
+    return Q(**{f"{prefijo}responsable": usuario}) | Q(
+        **{f"{prefijo}responsable__isnull": True, f"{prefijo}cliente__responsable": usuario}
+    )
+
+
+def dias_aviso_automatico():
+    """Días de anticipación del aviso automático, configurados en el despacho."""
+    despacho = ConfiguracionDespacho.objects.only("dias_aviso_vencimientos").first()
+    return despacho.dias_aviso_vencimientos if despacho else DIAS_AVISO_PREDETERMINADOS
 
 
 def avisos_para_usuario(usuario, hoy=None):
@@ -152,10 +168,25 @@ def avisos_para_usuario(usuario, hoy=None):
 
     Un aviso por vencimiento, del más cercano al más lejano, sin importar por
     qué canal se configuró la alerta: la notificación interna se muestra
-    siempre, aunque falle el correo o WhatsApp (HU040-5).
+    siempre, aunque falle el correo o WhatsApp (HU040-5). Además de las alertas
+    configuradas, avisa solo los pendientes que vencen dentro de
+    `dias_aviso_automatico()` (decisión del usuario, 18-nov-2026).
     """
     hoy = hoy or timezone.localdate()
     por_vencimiento = {}
+
+    # Aviso automático: los vencimientos pendientes del usuario que caen dentro
+    # de los días que fija el Administrador, aunque no tengan alerta propia.
+    dias = dias_aviso_automatico()
+    if dias:
+        automaticos = (
+            Vencimiento.objects.select_related("cliente")
+            .filter(_asignados_a(usuario), fecha_vencimiento__range=(hoy, hoy + timedelta(days=dias)))
+            .exclude(estado_presentacion=Vencimiento.PRESENTADA)
+        )
+        for vencimiento in automaticos:
+            por_vencimiento[vencimiento.pk] = {"vencimiento": vencimiento, "whatsapp": False}
+
     for alerta in alertas_en_curso(usuario, hoy):
         aviso = por_vencimiento.setdefault(
             alerta.vencimiento_id,

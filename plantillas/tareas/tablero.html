@@ -89,11 +89,9 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    function getCookie(nombre) {
-        const valor = document.cookie.split('; ').find((fila) => fila.startsWith(nombre + '='));
-        return valor ? decodeURIComponent(valor.split('=')[1]) : '';
-    }
-    const csrftoken = getCookie('csrftoken');
+    // El token va en la página: en producción la cookie se llama «__Host-csrf»,
+    // así que leer la cookie «csrftoken» dejaría el arrastre sin token.
+    const csrftoken = "{{ csrf_token }}";
 
     /* ══ Carga del modal (crear o detalle) vía AJAX ══ */
     const modalTarea = document.getElementById('modalTarea');
@@ -217,7 +215,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 },
                 body: 'estado=' + encodeURIComponent(nuevoEstado),
             })
-                .then((respuesta) => respuesta.json())
+                .then((respuesta) => {
+                    // Si el servidor devuelve una página (sesión vencida, error), no es JSON.
+                    if (!(respuesta.headers.get('Content-Type') || '').includes('application/json')) {
+                        throw new Error('No se pudo cambiar el estado. Recargue la página e intente de nuevo.');
+                    }
+                    return respuesta.json();
+                })
                 .then((datos) => {
                     if (!datos.ok) throw new Error(datos.error || 'No se pudo cambiar el estado.');
                 })

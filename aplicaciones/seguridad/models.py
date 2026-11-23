@@ -280,6 +280,17 @@ class ConfiguracionDespacho(models.Model):
     direccion = models.CharField(max_length=150, blank=True)
     telefono = models.CharField(max_length=20, blank=True)
     correo = models.EmailField(max_length=100, blank=True)
+    # La campana avisa los vencimientos pendientes de cada responsable con esta
+    # anticipación, aunque nadie les haya configurado una alerta. 0 = solo las
+    # alertas configuradas a mano.
+    dias_aviso_vencimientos = models.PositiveSmallIntegerField(
+        "días de aviso de vencimientos",
+        default=5,
+        help_text=(
+            "La campana avisa los vencimientos pendientes con esta anticipación. "
+            "0 = solo alertas configuradas."
+        ),
+    )
 
     class Meta:
         db_table = "configuracion_despacho"
