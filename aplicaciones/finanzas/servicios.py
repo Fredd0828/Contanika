@@ -7,6 +7,7 @@ cuenta de cobro (con sus líneas y su archivo) o el honorario (con sus montos
 por servicio) queden consistentes.
 """
 
+import logging
 from datetime import timedelta
 from decimal import Decimal
 
@@ -66,6 +67,8 @@ MESES_POR_PERIODO = {
     CuentaCobro.SEMESTRAL: 6,
     CuentaCobro.ANUAL: 12,
 }
+
+registro = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -577,12 +580,17 @@ def marcar_cuentas_vencidas(hoy):
     return marcadas
 
 
-def generar_cobros_mensuales(configuracion, ahora):
+def generar_cobros_mensuales(configuracion, ahora, errores=None):
     """
     Cobro mensual automático: desde el día configurado, genera la cuenta de
     cobro del mes de cada cliente activo con honorario, una sola vez por mes,
     y programa su envío inmediato por el canal configurado.
+
+    Cada cliente va en su propia transacción: si uno falla (por ejemplo, al
+    armar su PDF), se registra en el log y en `errores` y se sigue con los
+    demás; en la próxima pasada del cron se vuelve a intentar.
     """
+    errores = [] if errores is None else errores
     hoy = timezone.localdate(ahora)
     if not configuracion.cobro_automatico_activo or hoy.day < configuracion.dia_generacion:
         return []
@@ -597,24 +605,36 @@ def generar_cobros_mensuales(configuracion, ahora):
         ).exists()
         if ya_generada:
             continue
-        sugerencia = selectores.sugerencia_cuenta_cobro(cliente)
-        lineas = sugerencia["lineas"] or [
-            {"descripcion_linea": f"Honorarios contables {fecha_larga(inicio, 'F Y')}", "valor_linea": None}
-        ]
-        cuenta = generar_cuenta_cobro(
-            cliente=cliente,
-            periodo_facturado=CuentaCobro.MENSUAL,
-            fecha_inicio_periodo=inicio,
-            fecha_fin_periodo=calcular_fin_periodo(CuentaCobro.MENSUAL, inicio),
-            valor_total=sugerencia["valor_total"],
-            cuenta_bancaria=configuracion.cuenta_bancaria,
-            metodo_pago=configuracion.metodo_pago,
-            fecha_vencimiento_pago=hoy + timedelta(days=configuracion.dias_plazo_pago),
-            lineas=lineas,
-        )
-        programar_envio(cuenta, EnvioProgramado.CUENTA_COBRO, configuracion.canal_cobro, ahora)
+        try:
+            with transaction.atomic():
+                cuenta = _generar_cobro_mensual_de(cliente, configuracion, inicio, hoy, ahora)
+        except Exception as error:  # noqa: BLE001 - un cliente no debe frenar el cobro de los demás
+            registro.exception("Cobro mensual: no se pudo generar la cuenta de %s", cliente)
+            errores.append((cliente, error))
+            continue
         generadas.append(cuenta)
     return generadas
+
+
+def _generar_cobro_mensual_de(cliente, configuracion, inicio, hoy, ahora):
+    """Genera la cuenta de cobro del mes de un cliente y programa su envío."""
+    sugerencia = selectores.sugerencia_cuenta_cobro(cliente)
+    lineas = sugerencia["lineas"] or [
+        {"descripcion_linea": f"Honorarios contables {fecha_larga(inicio, 'F Y')}", "valor_linea": None}
+    ]
+    cuenta = generar_cuenta_cobro(
+        cliente=cliente,
+        periodo_facturado=CuentaCobro.MENSUAL,
+        fecha_inicio_periodo=inicio,
+        fecha_fin_periodo=calcular_fin_periodo(CuentaCobro.MENSUAL, inicio),
+        valor_total=sugerencia["valor_total"],
+        cuenta_bancaria=configuracion.cuenta_bancaria,
+        metodo_pago=configuracion.metodo_pago,
+        fecha_vencimiento_pago=hoy + timedelta(days=configuracion.dias_plazo_pago),
+        lineas=lineas,
+    )
+    programar_envio(cuenta, EnvioProgramado.CUENTA_COBRO, configuracion.canal_cobro, ahora)
+    return cuenta
 
 
 def programar_recordatorios_automaticos(configuracion, ahora):
@@ -651,12 +671,25 @@ def programar_recordatorios_automaticos(configuracion, ahora):
     return programados
 
 
-def despachar_programados(ahora):
-    """Ejecuta los envíos programados cuya hora ya llegó."""
+def despachar_programados(ahora, errores=None):
+    """
+    Ejecuta los envíos programados cuya hora ya llegó. Un envío con un error
+    inesperado se registra y queda «Programado» para la próxima pasada, sin
+    frenar los demás (los fallos de correo ya quedan como «Fallido»).
+    """
+    errores = [] if errores is None else errores
     pendientes = EnvioProgramado.objects.filter(
         estado=EnvioProgramado.PROGRAMADO, fecha_programada__lte=ahora
     ).select_related("cuenta_cobro__cliente", "comunicacion", "usuario")
-    return [despachar_envio(envio, ahora=ahora) for envio in pendientes]
+    despachados = []
+    for envio in pendientes:
+        try:
+            with transaction.atomic():
+                despachados.append(despachar_envio(envio, ahora=ahora))
+        except Exception as error:  # noqa: BLE001 - un envío no debe frenar los demás
+            registro.exception("Envío programado %s: error inesperado al despacharlo", envio.pk)
+            errores.append((envio, error))
+    return despachados
 
 
 def procesar_cobros(ahora=None):
@@ -668,10 +701,11 @@ def procesar_cobros(ahora=None):
     """
     ahora = ahora or timezone.now()
     configuracion = ConfiguracionCobro.obtener()
+    errores = []
     vencidas = marcar_cuentas_vencidas(timezone.localdate(ahora))
-    generadas = generar_cobros_mensuales(configuracion, ahora)
+    generadas = generar_cobros_mensuales(configuracion, ahora, errores)
     recordatorios = programar_recordatorios_automaticos(configuracion, ahora)
-    despachados = despachar_programados(ahora)
+    despachados = despachar_programados(ahora, errores)
     configuracion.ultima_ejecucion = ahora
     configuracion.save(update_fields=["ultima_ejecucion"])
     return {
@@ -681,4 +715,5 @@ def procesar_cobros(ahora=None):
         "correos_enviados": sum(1 for e in despachados if e.estado == EnvioProgramado.ENVIADO),
         "correos_fallidos": sum(1 for e in despachados if e.estado == EnvioProgramado.FALLIDO),
         "whatsapp_pendientes": sum(1 for e in despachados if e.estado == EnvioProgramado.PENDIENTE_WHATSAPP),
+        "errores": len(errores),
     }

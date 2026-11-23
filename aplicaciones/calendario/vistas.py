@@ -148,6 +148,9 @@ class CalendarioView(ModuloHabilitadoMixin, View):
                 opciones=opciones_filtro_calendario(),
             ),
             "puede_editar": request.user.rol.nombre_rol in ROLES_EDITAN,
+            # Crear tareas: los mismos roles que en el tablero, con el Módulo 3 habilitado.
+            "puede_crear_tarea": request.user.rol.nombre_rol in ROLES_EDITAN
+            and request.user.tiene_modulo_habilitado(Modulo.MOD03_TAREAS),
             "es_administrador": request.user.es_administrador,
             "hoy": hoy,
         }

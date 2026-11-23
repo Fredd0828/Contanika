@@ -193,3 +193,67 @@ def test_envio_programado_str(cuenta_cliente):
         cuenta_cliente, EnvioProgramado.RECORDATORIO, CORREO, timezone.now() + timedelta(days=1)
     )
     assert "Recordatorio por Correo" in str(envio)
+
+
+# ---------------------------------------------------------------------------
+# Un error en un cliente o en un envío no detiene el resto (22-nov-2026)
+# ---------------------------------------------------------------------------
+
+
+def test_un_cliente_con_error_no_detiene_el_cobro_de_los_demas(
+    configuracion, cliente_con_honorario, cliente_junior, usuario_administrador, monkeypatch
+):
+    servicios.configurar_honorario(
+        cliente_junior, Honorario.FIJO_MENSUAL, Decimal("500000"), {}, usuario_administrador
+    )
+    original = servicios.generar_cuenta_cobro
+
+    def generar_con_falla(**datos):
+        if datos["cliente"] == cliente_con_honorario:
+            raise RuntimeError("PDF dañado")
+        return original(**datos)
+
+    monkeypatch.setattr(servicios, "generar_cuenta_cobro", generar_con_falla)
+    resumen = servicios.procesar_cobros(_momento(2026, 10, 5))
+
+    assert resumen["cuentas_generadas"] == 1
+    assert resumen["errores"] == 1
+    assert CuentaCobro.objects.get().cliente == cliente_junior
+    # El despacho de envíos sí corrió: el envío ya no está «Programado».
+    envio = EnvioProgramado.objects.get(cuenta_cobro__cliente=cliente_junior)
+    assert envio.estado != EnvioProgramado.PROGRAMADO
+
+
+def test_un_envio_con_error_no_detiene_los_demas(configuracion, cuenta_cliente, monkeypatch):
+    ahora = timezone.now()
+    primero = EnvioProgramado.objects.create(
+        cuenta_cobro=cuenta_cliente,
+        tipo=EnvioProgramado.CUENTA_COBRO,
+        canal=CORREO,
+        fecha_programada=ahora - timedelta(minutes=5),
+    )
+    segundo = EnvioProgramado.objects.create(
+        cuenta_cobro=cuenta_cliente,
+        tipo=EnvioProgramado.RECORDATORIO,
+        canal=WHATSAPP,
+        fecha_programada=ahora - timedelta(minutes=1),
+    )
+    original = servicios.despachar_envio
+
+    def despachar_con_falla(envio, **opciones):
+        if envio.pk == primero.pk:
+            raise RuntimeError("falla inesperada")
+        return original(envio, **opciones)
+
+    monkeypatch.setattr(servicios, "despachar_envio", despachar_con_falla)
+    resumen = servicios.procesar_cobros(ahora)
+
+    assert resumen["errores"] == 1
+    primero.refresh_from_db()
+    segundo.refresh_from_db()
+    assert primero.estado == EnvioProgramado.PROGRAMADO  # se reintenta en la próxima pasada
+    assert segundo.estado == EnvioProgramado.PENDIENTE_WHATSAPP
+
+
+def test_resumen_sin_errores_los_reporta_en_cero(configuracion):
+    assert servicios.procesar_cobros(_momento(2026, 10, 4))["errores"] == 0

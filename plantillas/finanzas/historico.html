@@ -18,7 +18,7 @@
     </div>
 
     {% if es_administrador %}
-    <div class="d-flex flex-wrap gap-2 mb-3">
+    <div class="d-flex flex-wrap gap-2 mb-3 grupo-acciones">
         <a class="btn btn-sm btn-outline-secondary" href="{% url 'finanzas:envio_masivo' %}"><i class="bi bi-send-check"></i> Envío masivo de cuentas</a>
         <a class="btn btn-sm btn-outline-secondary" href="{% url 'finanzas:envio_masivo' %}?tipo=Recordatorio"><i class="bi bi-bell"></i> Recordatorios de pago</a>
         <a class="btn btn-sm btn-outline-secondary" href="{% url 'finanzas:bandeja_whatsapp' %}">

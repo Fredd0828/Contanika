@@ -525,3 +525,20 @@ def test_contenido_anotacion_se_escapa(client, usuario_administrador):
     contenido = client.get(reverse("calendario:calendario"), {"fecha": "2026-10-05"}).content.decode()
     assert "<script>alert('xss')</script>" not in contenido
     assert "&lt;script&gt;" in contenido
+
+
+# ---------------------------------------------------------------------------
+# Botón «Tarea» en el encabezado del calendario (22-nov-2026)
+# ---------------------------------------------------------------------------
+
+
+def test_calendario_ofrece_crear_tarea_a_quien_puede(client, usuario_administrador):
+    client.force_login(usuario_administrador)
+    contenido = client.get(reverse("calendario:calendario")).content.decode()
+    assert f"{reverse('tareas:crear')}?desde=calendario" in contenido
+
+
+def test_calendario_no_ofrece_crear_tarea_al_junior(client, usuario_junior):
+    client.force_login(usuario_junior)
+    contenido = client.get(reverse("calendario:calendario")).content.decode()
+    assert "?desde=calendario" not in contenido

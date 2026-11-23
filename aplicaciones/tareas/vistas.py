@@ -128,6 +128,10 @@ class CrearTareaView(ModuloHabilitadoMixin, RolRequeridoMixin, View):
         inicial = {}
         if request.GET.get("cliente"):
             inicial["cliente"] = request.GET["cliente"]
+        desde_calendario = request.GET.get("desde") == "calendario"
+        if desde_calendario:
+            # Creada desde el calendario: por defecto también se muestra allí.
+            inicial["mostrar_en_calendario"] = True
         return render(
             request,
             self._template(request),
@@ -135,19 +139,28 @@ class CrearTareaView(ModuloHabilitadoMixin, RolRequeridoMixin, View):
                 "formulario": TareaForm(usuario=request.user, initial=inicial),
                 "accion": "crear",
                 "opciones": opciones_filtro_tareas(request.user),
+                "desde_calendario": desde_calendario,
             },
         )
 
     def post(self, request):
         formulario = TareaForm(request.POST, usuario=request.user)
+        desde_calendario = request.POST.get("desde") == "calendario"
         if formulario.is_valid():
             crear_tarea(formulario)
             messages.success(request, "La tarea se creó correctamente.")
-            return _redirigir_o_recargar(request, "tareas:tablero")
+            return _redirigir_o_recargar(
+                request, "calendario:calendario" if desde_calendario else "tareas:tablero"
+            )
         return render(
             request,
             self._template(request),
-            {"formulario": formulario, "accion": "crear", "opciones": opciones_filtro_tareas(request.user)},
+            {
+                "formulario": formulario,
+                "accion": "crear",
+                "opciones": opciones_filtro_tareas(request.user),
+                "desde_calendario": desde_calendario,
+            },
         )
 
 

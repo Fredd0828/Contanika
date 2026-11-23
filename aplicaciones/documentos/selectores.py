@@ -20,6 +20,27 @@ from aplicaciones.seguridad.models import ConfiguracionDespacho, Rol, Usuario
 from .models import CampoPlantilla, Documento, Plantilla
 
 _MARCADOR_DESCRIPCION = re.compile(r"\{\{\s*descripcion\b")
+# Línea de cierre del documento («Se expide la presente…», «Esta certificación
+# se expide…»): la descripción va justo antes de la última.
+_LINEA_EXPEDICION = re.compile(r"^(?P<etiquetas>.*%\})?.*\bexpide\b.*$", re.IGNORECASE | re.MULTILINE)
+
+
+def _ubicar_descripcion(texto):
+    """
+    Agrega el marcador `{{ descripcion }}` antes del párrafo de expedición
+    (decisión del usuario, 22-nov-2026); si la plantilla no tiene uno, al final.
+    """
+    expediciones = list(_LINEA_EXPEDICION.finditer(texto))
+    if not expediciones:
+        return texto.rstrip() + "\n\n{{ descripcion }}"
+    # Si la línea empieza con etiquetas de plantilla (`{% endfor %}Se expide…`),
+    # el marcador va después de ellas, para no quedar dentro de un ciclo.
+    ultima = expediciones[-1]
+    inicio = ultima.end("etiquetas") if ultima.group("etiquetas") else ultima.start()
+    antes, despues = texto[:inicio], texto[inicio:]
+    # Un párrafo aparte: línea en blanco antes (salvo que ya la haya) y después.
+    separador = "" if antes.endswith("\n\n") or not antes else "\n" if antes.endswith("\n") else "\n\n"
+    return f"{antes}{separador}{{{{ descripcion }}}}\n\n{despues}"
 
 
 def clave_variable_campo(nombre_campo):
@@ -179,10 +200,10 @@ def renderizar_texto(texto_predeterminado, contexto):
     defecto) neutraliza cualquier `<`, `>` o `&` capturado en los valores
     antes de convertir los saltos de línea en `<br/>`.
     """
-    # La descripción anotada al generar el documento sale como párrafo final,
-    # salvo que la plantilla ya la ubique con su marcador `{{ descripcion }}`.
+    # La descripción anotada al generar el documento sale antes del párrafo de
+    # expedición, salvo que la plantilla ya la ubique con `{{ descripcion }}`.
     if contexto.get("descripcion") and not _MARCADOR_DESCRIPCION.search(texto_predeterminado):
-        texto_predeterminado = texto_predeterminado.rstrip() + "\n\n{{ descripcion }}"
+        texto_predeterminado = _ubicar_descripcion(texto_predeterminado)
     plantilla = Template(texto_predeterminado)
     # mark_safe es seguro aquí: las variables ya fueron escapadas por el
     # autoescape de Context (activo por defecto) y el texto literal que las

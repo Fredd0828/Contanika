@@ -127,7 +127,14 @@ models.py → servicios.py → selectores.py → formularios.py → vistas.py �
   tabla completa.
 - **Responsive:** toda pantalla debe acomodarse a teléfono, tableta y
   escritorio; comprobarlo (360, 768, 1024 y 1440 px) antes de darla por
-  terminada.
+  terminada. En teléfono las tablas `.tbl` se deslizan de lado con la primera
+  columna fija (el guion de `base.html` las envuelve en `.table-responsive`);
+  no se convierten en tarjetas (decisión del usuario, 22-nov-2026). Los
+  botones de `.ph-actions` van de a dos por fila; un grupo de accesos fuera
+  del encabezado usa `.grupo-acciones` para lo mismo.
+- **Botones de acción a la derecha:** en encabezados y al pie de los
+  formularios (Cancelar y luego la acción principal), como en el resto de
+  módulos (decisión del usuario, 22-nov-2026).
 - **Visibilidad por rol:** configurable por el Administrador en el módulo de Equipo.
 - **Colores:** solo los de la paleta (`:root` de `estaticos/css/contanika.css`:
   navy, teal, naranja, crema, marrón, verde y rojo). Bootstrap trae un azul

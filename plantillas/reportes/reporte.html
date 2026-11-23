@@ -11,13 +11,14 @@
         <div class="ph-actions">
             <a class="ph-link" href="{% url 'reportes:inicio' %}"><i class="bi bi-arrow-left"></i> Reportes</a>
             {% if resultado %}
-            <a class="ph-btn" href="?{% if querystring %}{{ querystring }}&amp;{% endif %}formato=Excel"><i class="bi bi-file-earmark-excel"></i> Excel</a>
-            <a class="ph-btn" href="?{% if querystring %}{{ querystring }}&amp;{% endif %}formato=PDF"><i class="bi bi-file-earmark-pdf"></i> PDF</a>
+            {# Botones del formulario de filtros: descargan con lo que se ve escrito, aunque no se haya pulsado «Aplicar». #}
+            <button type="submit" class="ph-btn" form="filtros-reporte" name="formato" value="Excel"><i class="bi bi-file-earmark-excel"></i> Excel</button>
+            <button type="submit" class="ph-btn" form="filtros-reporte" name="formato" value="PDF"><i class="bi bi-file-earmark-pdf"></i> PDF</button>
             {% endif %}
         </div>
     </div>
 
-    <form method="get" class="filters mb-3">
+    <form method="get" class="filters mb-3" id="filtros-reporte">
         {% for campo in formulario %}
         <div class="campo">
             {% if campo.field.widget.input_type == "checkbox" %}
@@ -33,10 +34,10 @@
         </div>
         {% endfor %}
         <div class="campo">
-            <button type="submit" class="ph-btn"><i class="bi bi-funnel"></i> Aplicar filtros</button>
+            <a class="ph-link" href="{% url 'reportes:reporte' definicion.slug %}">Limpiar</a>
         </div>
         <div class="campo">
-            <a class="ph-link" href="{% url 'reportes:reporte' definicion.slug %}">Limpiar</a>
+            <button type="submit" class="ph-btn"><i class="bi bi-funnel"></i> Aplicar filtros</button>
         </div>
     </form>
     {% if formulario.non_field_errors %}
