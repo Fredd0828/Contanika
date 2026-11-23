@@ -114,6 +114,36 @@ en `/var/backups/contanika` (se conservan 14 días). Para descargar el último:
 scp "root@203.0.113.10:/var/backups/contanika/*" .\respaldos-contanika\
 ```
 
+### Restaurar un respaldo
+
+Solo si hay que volver a un estado anterior. Como root, una línea a la vez,
+cambiando `AAAA-MM-DD` por la fecha del respaldo:
+
+```
+systemctl stop contanika
+sudo -u postgres dropdb --force contanika_bd
+sudo -u postgres createdb -E UTF8 -T template0 contanika_bd
+sudo -u postgres pg_restore -d contanika_bd /var/backups/contanika/contanika_AAAA-MM-DD.dump
+sudo -u postgres psql -q -d contanika_bd < /srv/contanika/codigo/scripts/bd/03_rol_aplicacion.sql
+sudo -u postgres psql -q -d contanika_bd < /srv/contanika/codigo/scripts/bd/04_activar_rls.sql
+tar -xzf /var/backups/contanika/media_AAAA-MM-DD.tar.gz -C /srv/contanika/codigo
+systemctl start contanika
+```
+
+No use `pg_restore --clean`: no borra lo que se creó después del respaldo y la
+base queda dañada. Si además hay que volver a una versión anterior del código,
+antes de `systemctl start contanika`:
+
+```
+sudo -u contanika git -C /srv/contanika/codigo checkout v1.0.0
+sudo -u contanika /srv/contanika/codigo/.venv/bin/pip install -q -r /srv/contanika/codigo/requirements.txt
+cd /srv/contanika/codigo && sudo -u contanika .venv/bin/python gestionar.py collectstatic --noinput -v 0
+```
+
+(con la etiqueta que corresponda). Para volver después a la última versión:
+`sudo -u contanika git -C /srv/contanika/codigo checkout main` y luego
+`actualizar.sh`.
+
 ## Qué quedó instalado
 
 | Pieza | Detalle |

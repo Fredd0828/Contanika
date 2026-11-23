@@ -1,8 +1,8 @@
 # Mapa de navegación — Contanika
 
-Entregable 3.3. Generado el 16/11/2026 con `python gestionar.py generar_mapa_navegacion` a partir de las rutas del sistema. No editar a mano: volver a generarlo cuando cambien las rutas.
+Entregable 3.3. Generado el 23/11/2026 con `python gestionar.py generar_mapa_navegacion` a partir de las rutas del sistema. No editar a mano: volver a generarlo cuando cambien las rutas.
 
-El sistema tiene **119 rutas**: 86 pantallas o descargas (GET) y 33 acciones que solo reciben formularios (POST).
+El sistema tiene **124 rutas**: 89 pantallas o descargas (GET) y 35 acciones que solo reciben formularios (POST).
 
 ## 1. Navegación general
 
@@ -136,6 +136,8 @@ flowchart LR
     calendario_calendario --> calendario_cargar_dian["cargar dian"]
     calendario_calendario --> calendario_plantilla_dian["plantilla dian"]
     calendario_calendario --> calendario_crear_anotacion["crear anotacion"]
+    calendario_calendario --> calendario_detalle_anotacion["detalle anotacion"]
+    calendario_calendario --> calendario_editar_anotacion["editar anotacion"]
 ```
 
 | Ruta | Nombre | Métodos | Admin. | Senior | Junior | Qué hace |
@@ -155,6 +157,8 @@ flowchart LR
 | `/calendario/vencimientos/<int:pk_vencimiento>/alertas/nueva/` | `calendario:crear_alerta` | POST | Sí | Sí | — | Agrega una alerta automática a un vencimiento. |
 | `/calendario/alertas/<int:pk>/eliminar/` | `calendario:eliminar_alerta` | POST | Sí | Sí | — | Elimina una alerta configurada. |
 | `/calendario/anotaciones/nueva/` | `calendario:crear_anotacion` | GET · POST | Sí | Sí | Sí | Crea una anotación libre del calendario (cualquier rol). |
+| `/calendario/anotaciones/<int:pk>/` | `calendario:detalle_anotacion` | GET | Sí | Sí | Sí | Muestra una anotación del calendario. Desde el calendario se abre en un modal; el autor o un Administrador la editan o la eliminan desde ahí. |
+| `/calendario/anotaciones/<int:pk>/editar/` | `calendario:editar_anotacion` | GET · POST | Sí | Sí | Sí | Edita una anotación del calendario (solo el autor o un Administrador). |
 | `/calendario/anotaciones/<int:pk>/eliminar/` | `calendario:eliminar_anotacion` | POST | Sí | Sí | Sí | Elimina una anotación; solo el autor o un Administrador. |
 
 ### MOD03 · Tablero de tareas Kanban
@@ -267,6 +271,7 @@ flowchart LR
 | `/honorarios/catalogos/<str:catalogo>/<int:pk>/editar/` | `finanzas:catalogo_editar` | GET · POST | Sí | — | — | Crea (sin `pk`) o edita (con `pk`) un elemento de cualquiera de los catálogos. |
 | `/honorarios/catalogos/<str:catalogo>/<int:pk>/eliminar/` | `finanzas:catalogo_eliminar` | POST | Sí | — | — | Elimina un elemento de catálogo que no esté usado en cuentas de cobro o abonos. |
 | `/honorarios/cuentas-cobro/<int:pk>/abonos/` | `finanzas:registrar_abono` | POST | Sí | — | — | Registra un pago o abono a una cuenta de cobro (solo Administrador, HU016). |
+| `/honorarios/abonos/<int:pk>/eliminar/` | `finanzas:eliminar_abono` | POST | Sí | — | — | Elimina el último pago o abono de una cuenta, con su motivo (solo Administrador, 23-nov-2026). |
 | `/honorarios/cartera/` | `finanzas:cartera` | GET | Sí | Sí | Sí | Panel de cartera (HU016-4, HU017): por cliente, facturado, cobrado, saldo y días en mora, con indicador rojo a más de 30 días. El Contador Senior y el Junior ven solo sus clientes asignados. |
 | `/honorarios/cuentas-cobro/<int:pk>/enviar/` | `finanzas:enviar` | POST | Sí | — | — | Envía o programa el envío de una cuenta de cobro o de un recordatorio (HU045, HU047). |
 | `/honorarios/envio-masivo/` | `finanzas:envio_masivo` | GET · POST | Sí | — | — | Envío masivo de cuentas de cobro o recordatorios (HU046, HU047) en tres pasos: selección de cuentas, canal y momento → confirmación del listado → resumen de éxitos y fallos. |
@@ -323,6 +328,7 @@ flowchart LR
     expediente_lista(["/expediente/"])
     expediente_lista --> expediente_crear["crear"]
     expediente_lista --> expediente_cliente["cliente"]
+    expediente_lista --> expediente_editar["editar"]
     expediente_lista --> expediente_descargar_adjunto["descargar adjunto"]
 ```
 
@@ -333,6 +339,8 @@ flowchart LR
 | `/expediente/cliente/<int:pk_cliente>/` | `expediente:cliente` | GET | Sí | Sí | Sí | Expediente completo de un cliente (acceso desde su ficha y el tablero Kanban). |
 | `/expediente/<int:pk>/archivar/` | `expediente:archivar` | POST | Sí | — | — | Archiva o restaura una anotación (solo el Administrador). |
 | `/expediente/<int:pk>/restaurar/` | `expediente:restaurar` | POST | Sí | — | — | Archiva o restaura una anotación (solo el Administrador). |
+| `/expediente/<int:pk>/editar/` | `expediente:editar` | GET · POST | Sí | — | — | Corrige una anotación archivada (solo el Administrador); se abre en un modal. |
+| `/expediente/<int:pk>/eliminar/` | `expediente:eliminar` | POST | Sí | — | — | Elimina una anotación archivada y sus archivos (solo el Administrador). |
 | `/expediente/adjuntos/<int:pk>/descargar/` | `expediente:descargar_adjunto` | GET | Sí | Sí | Sí | Descarga un archivo de soporte de una anotación visible para el usuario. |
 
 ### MOD10 · Reportes y análisis
@@ -361,14 +369,14 @@ Número de rutas que cada rol puede abrir, sobre el total del módulo.
 | Sin módulo | 17 | 17 | 17 | 17 |
 | ASISTENTE · Asistente de consultas | 2 | 2 | 2 | 2 |
 | MOD01 · Gestión de clientes | 12 | 12 | 12 | 6 |
-| MOD02 · Calendario | 16 | 16 | 13 | 6 |
+| MOD02 · Calendario | 18 | 18 | 15 | 8 |
 | MOD03 · Tablero de tareas Kanban | 8 | 8 | 8 | 5 |
 | MOD04 · Expedición de documentos y certificados | 12 | 12 | 8 | 6 |
 | MOD05 · Hallazgos y revisiones | 9 | 9 | 9 | 8 |
-| MOD06 · Honorarios, cartera y cuentas de cobro | 22 | 22 | 4 | 4 |
+| MOD06 · Honorarios, cartera y cuentas de cobro | 23 | 23 | 4 | 4 |
 | MOD07 · Comunicaciones integradas | 3 | 3 | 3 | 2 |
 | MOD08 · Gestión de equipo y roles | 8 | 8 | 1 | 0 |
-| MOD09 · Expediente y bitácora por cliente | 6 | 6 | 4 | 4 |
+| MOD09 · Expediente y bitácora por cliente | 8 | 8 | 4 | 4 |
 | MOD10 · Reportes y análisis | 4 | 4 | 2 | 2 |
 
 Entradas del menú que además se ocultan por rol: `seguridad:equipo`.

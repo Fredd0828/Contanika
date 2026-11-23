@@ -8,8 +8,17 @@
 #   media_AAAA-MM-DD.tar.gz     logos, firmas, fotos y adjuntos
 # y borra los de más de 14 días.
 #
-# Restaurar la base (con el servicio detenido):
-#   sudo -u postgres pg_restore --clean --if-exists -d contanika_bd ARCHIVO.dump
+# Restaurar (como root). No use pg_restore --clean: no borra lo que se creó
+# después del respaldo y la base queda dañada (defecto DEF-002). Se restaura
+# sobre una base vacía y luego se reaplican privilegios y RLS:
+#   systemctl stop contanika
+#   sudo -u postgres dropdb --force contanika_bd
+#   sudo -u postgres createdb -E UTF8 -T template0 contanika_bd
+#   sudo -u postgres pg_restore -d contanika_bd /var/backups/contanika/contanika_AAAA-MM-DD.dump
+#   sudo -u postgres psql -q -d contanika_bd < /srv/contanika/codigo/scripts/bd/03_rol_aplicacion.sql
+#   sudo -u postgres psql -q -d contanika_bd < /srv/contanika/codigo/scripts/bd/04_activar_rls.sql
+#   tar -xzf /var/backups/contanika/media_AAAA-MM-DD.tar.gz -C /srv/contanika/codigo
+#   systemctl start contanika
 # ============================================================
 set -euo pipefail
 
