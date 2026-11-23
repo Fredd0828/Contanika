@@ -26,6 +26,7 @@
             <div class="{% if campo.name == 'membrete' %}col-12{% else %}col-md-6{% endif %}">
                 <label class="form-label" for="{{ campo.id_for_label }}">{{ campo.label }}</label>
                 {{ campo }}
+                {% if campo.help_text %}<div class="form-text">{{ campo.help_text }}</div>{% endif %}
                 {% if campo.errors %}<div class="text-danger small">{{ campo.errors }}</div>{% endif %}
             </div>
             {% endfor %}

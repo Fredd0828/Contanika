@@ -2489,3 +2489,39 @@ los pares de dígitos, los errores y la fecha única). Ruff, formato y
 ### Pendientes
 - En la base local y en el servidor: `migrate`, `cargar_calendario_dian_2026`
   y «Calcular vencimientos DIAN».
+
+## Domingo 22 de noviembre de 2026 — Arreglos reportados por el usuario (18-nov)
+
+### Qué se hizo
+El usuario reportó tres problemas probando en contanika.tech:
+
+- **Tareas: «Unexpected token '<'» al arrastrar una tarjeta.** En el servidor
+  la cookie CSRF se llama `__Host-csrf` y el tablero buscaba `csrftoken`: el
+  cambio de estado salía sin token, el servidor contestaba una página HTML y el
+  navegador fallaba al leerla como JSON. El token va ahora dentro de la página
+  (`plantillas/tareas/tablero.html`) y, si la respuesta no es JSON, sale un
+  mensaje claro. Ninguna otra pantalla leía la cookie.
+- **Documentos: la descripción no salía en el PDF.** Se guardaba, pero solo se
+  imprimía con el marcador `{{ descripcion }}`, que ninguna plantilla trae.
+  Ahora sale como último párrafo en la vista previa, el detalle y el PDF; si la
+  plantilla ya trae el marcador, no se repite. Los PDF ya generados no cambian.
+- **Campana siempre vacía.** Solo mostraba vencimientos con alerta configurada
+  a mano. Ahora avisa sola los vencimientos pendientes de cada responsable con
+  `ConfiguracionDespacho.dias_aviso_vencimientos` días de anticipación (5 por
+  defecto, 0 = solo alertas configuradas; se cambia en Datos del despacho;
+  migración `seguridad 0007`). La campana de la barra superior también muestra
+  «Cambios en mis tareas» (`tareas/context_processors.py`).
+- Guía de alertas de la Ayuda actualizada con el aviso automático.
+
+### Cómo verificarlo
+En contanika.tech, tras `actualizar.sh`: arrastrar una tarea de Por hacer a
+En progreso; generar un documento con descripción y descargar el PDF; revisar
+la campana.
+
+### Resultado
+Suite completa 1464 en verde. Ruff, formato y `makemigrations --check` limpios.
+Migración `seguridad 0007`
+aplicada en la base local.
+
+### Pendientes
+- Servidor: mergear el PR #36 y correr `despliegue/actualizar.sh`.

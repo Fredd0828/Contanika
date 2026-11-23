@@ -154,7 +154,16 @@ class DatosDespachoForm(ModeloFormularioBase):
 
     class Meta:
         model = ConfiguracionDespacho
-        fields = ["nombre_despacho", "nit_despacho", "membrete", "ciudad", "direccion", "telefono", "correo"]
+        fields = [
+            "nombre_despacho",
+            "nit_despacho",
+            "membrete",
+            "ciudad",
+            "direccion",
+            "telefono",
+            "correo",
+            "dias_aviso_vencimientos",
+        ]
         widgets = {
             "membrete": forms.ClearableFileInput(attrs={"accept": ".jpg,.jpeg,.png"}),
         }
